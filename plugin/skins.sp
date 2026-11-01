@@ -32,6 +32,7 @@ public void OnPluginStart()
 	RegConsoleCmd("sm_cuchillo", CmdKnife, "Elegir cuchillo");
 	RegConsoleCmd("sm_armas", CmdArmas, "Elegir cualquier arma");
 	RegConsoleCmd("sm_guns", CmdArmas, "Elegir cualquier arma");
+	RegServerCmd("skins_estado", CmdEstado, "Muestra el SteamID y las skins cargadas de cada jugador");
 	CargarLista();
 	Database.Connect(OnDb, "storage-local");
 	for (int c = 1; c <= MaxClients; c++)
@@ -93,6 +94,13 @@ public void OnClientPutInServer(int c)
 	Cargar(c);
 }
 
+// El SteamID llega después de entrar: se carga cuando el servidor lo confirma.
+public void OnClientPostAdminCheck(int c)
+{
+	if (!IsFakeClient(c) && !g_SteamId[c][0])
+		Cargar(c);
+}
+
 public void OnClientDisconnect(int c)
 {
 	delete g_Prefs[c];
@@ -101,11 +109,41 @@ public void OnClientDisconnect(int c)
 void Cargar(int c)
 {
 	// validate=false: el servidor es -insecure y Steam no valida el ID, pero sigue siendo el del jugador.
-	if (g_Db == null || IsFakeClient(c) || !GetClientAuthId(c, AuthId_SteamID64, g_SteamId[c], sizeof(g_SteamId[]), false))
+	if (g_Db == null || IsFakeClient(c) || g_SteamId[c][0])
 		return;
+	char id[32];
+	if (!SteamId64(c, id, sizeof(id)))
+	{
+		CreateTimer(2.0, ReintentarCarga, GetClientUserId(c));
+		return;
+	}
+	strcopy(g_SteamId[c], sizeof(g_SteamId[]), id);
 	char q[160];
 	g_Db.Format(q, sizeof(q), "SELECT clave, valor FROM skins_prefs WHERE steamid = '%s'", g_SteamId[c]);
 	g_Db.Query(OnCargado, q, GetClientUserId(c));
+}
+
+// SteamID64 del jugador. Con el servidor en modo LAN/-insecure, SourceMod no lo da (devuelve
+// "STEAM_ID_STOP_IGNORING_RETVALS"), pero sí el número de cuenta: 76561197960265728 + cuenta.
+bool SteamId64(int c, char[] out, int len)
+{
+	if (GetClientAuthId(c, AuthId_SteamID64, out, len, false) && strlen(out) == 17 && strncmp(out, "7656", 4) == 0)
+		return true;
+	int cuenta = GetSteamAccountID(c, false);
+	if (cuenta <= 0)
+		return false;
+	// Suma en dos mitades de 9 cifras: los enteros de SourcePawn son de 32 bits
+	int lo = 960265728 + cuenta % 1000000000, hi = 76561197 + cuenta / 1000000000 + lo / 1000000000;
+	Format(out, len, "%d%09d", hi, lo % 1000000000);
+	return true;
+}
+
+public Action ReintentarCarga(Handle t, int userid)
+{
+	int c = GetClientOfUserId(userid);
+	if (c && IsClientInGame(c))
+		Cargar(c);
+	return Plugin_Stop;
 }
 
 public void OnCargado(Database db, DBResultSet r, const char[] error, int userid)
@@ -458,4 +496,16 @@ public int OnArmas(Menu m, MenuAction a, int c, int item)
 	else if (a == MenuAction_End)
 		delete m;
 	return 0;
+}
+
+public Action CmdEstado(int args)
+{
+	char id[32];
+	for (int c = 1; c <= MaxClients; c++)
+		if (IsClientInGame(c) && !IsFakeClient(c))
+		{
+			SteamId64(c, id, sizeof(id));
+			PrintToServer("%N guardado=%s ahora=%s skins=%d", c, g_SteamId[c], id, g_Prefs[c] == null ? -1 : g_Prefs[c].Size);
+		}
+	return Plugin_Handled;
 }
