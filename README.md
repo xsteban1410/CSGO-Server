@@ -179,5 +179,5 @@ desplegar.sh  rcon.py          compilar/copiar y control remoto (`python3 rcon.p
 - **NoLobbyReservation:** CS:GO Legacy rechaza conexiones directas sin este parche. Las firmas para Linux de esta versión del `engine.so` las regeneré yo. Si Valve actualizara los binarios, habría que buscarlas de nuevo. El código original es de [vanz666/NoLobbyReservation](https://github.com/vanz666/NoLobbyReservation), que no declara licencia: pide permiso antes de publicar la versión modificada.
 - El servidor arranca con `-insecure` (sin VAC) y sin token GSLT. Es para jugar en privado, no para listarse en público.
 - Las skins son cosméticas y solo se ven en este servidor. Usar skin changers en servidores con GSLT público va contra las normas de Valve.
-- Licencia: MIT para el código propio (ver `LICENSE`), excepto `plugin/nolobbyreservation/`.
+- Licencia: todos los derechos reservados (ver `LICENSE`). No se permite usar, copiar ni distribuir este código sin permiso escrito del autor. `plugin/nolobbyreservation/` es de su autor original.
 - No hay guantes: necesitan crear entidades aparte y no están implementados.
