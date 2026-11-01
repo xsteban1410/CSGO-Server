@@ -1,0 +1,16 @@
+# Servidor y herramientas descargadas (decenas de GB)
+server/
+steamcmd/
+stage/
+dl/
+nlr/
+
+# Generados / locales
+*.smx
+*.log
+engine.dis
+appmanifest_*.bak
+__pycache__/
+
+# config.env lleva la contraseña rcon: se versiona config.example.env
+config.env
