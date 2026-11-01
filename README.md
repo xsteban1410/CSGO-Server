@@ -26,7 +26,7 @@ cd CSGO-Server
 
 Cada jugador necesita **CS2 con la beta `csgo_legacy`** (Steam > CS2 > Propiedades > Betas) y entra desde la consola con `connect <IP>:<PUERTO>`.
 Con la beta, Steam sigue abriendo CS2 al darle a Jugar, aunque CS:GO Legacy está instalado en la misma carpeta. Para abrir cada uno:
-`./jugar.sh csgo [IP:PUERTO]` abre CS:GO Legacy, y si le pasas una dirección se conecta directamente; `./jugar.sh cs2` abre CS2.
+`./jugar.sh csgo [IP:PUERTO|local]` abre CS:GO Legacy y, si le pasas una dirección (o `local` para el servidor de este PC), se conecta directamente; `./jugar.sh cs2` abre CS2.
 
 Para que alguien se conecte desde fuera de tu red, abre el puerto UDP (27030 por defecto) en el router o usad la VPN que prefiráis.
 
