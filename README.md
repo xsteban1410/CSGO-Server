@@ -25,6 +25,9 @@ cd CSGO-Server
 `./setup.sh --actualizar` vuelve a validar los archivos del servidor con SteamCMD y reaplica los arreglos.
 
 Cada jugador necesita **CS2 con la beta `csgo_legacy`** (Steam > CS2 > Propiedades > Betas) y entra desde la consola con `connect <IP>:<PUERTO>`.
+Con la beta, Steam sigue abriendo CS2 al darle a Jugar, aunque CS:GO Legacy está instalado en la misma carpeta. Para abrir cada uno:
+`./jugar.sh csgo [IP:PUERTO]` abre CS:GO Legacy, y si le pasas una dirección se conecta directamente; `./jugar.sh cs2` abre CS2.
+
 Para que alguien se conecte desde fuera de tu red, abre el puerto UDP (27030 por defecto) en el router o usad la VPN que prefiráis.
 
 ## Uso
@@ -163,6 +166,7 @@ Las elecciones se guardan por SteamID en SQLite (`addons/sourcemod/data/sqlite/s
 setup.sh                       instalación completa
 arrancar.sh  modo.sh  lib.sh   CLI (opciones compartidas en lib.sh)
 nav.sh                         genera el .nav del mapa actual
+jugar.sh                       abre CS:GO Legacy o CS2 (cliente)
 config.example.env             valores por defecto
 cfg/                           server.cfg, modo_base.cfg y un cfg por modo
 plugin/modos.sp                modos, calentamiento, ajustes por equipo, retakes
