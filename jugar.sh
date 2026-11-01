@@ -27,7 +27,7 @@ case ${1:-} in
     dest=${2:-}
     if [ "$dest" = local ]; then  # el servidor de este PC: su IP de red y el PUERTO de config.env
       p=$(sed -n 's/^PUERTO=//p' "$(dirname "$(readlink -f "$0")")/config.env" 2>/dev/null)
-      dest="$(hostname -I | awk '{print $1}'):${p:-27030}"
+      dest="$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src"){print $(i+1); exit}}'):${p:-27030}"
     fi
     [ -n "$dest" ] && extra=(+connect "$dest")
     cd "$JUEGO"

@@ -24,7 +24,7 @@ AUTH=()
 [ -n "${WORKSHOP_AUTHKEY:-}" ] && AUTH=(-authkey "$WORKSHOP_AUTHKEY")
 [ -n "$WORKSHOP" ] && MAPA_CMD=(+host_workshop_map "$WORKSHOP")
 
-IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+IP=$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src"){print $(i+1); exit}}')  # hostname -I no existe en todas las distros
 echo "Modo $MODO en $MAPA_FINAL. Conectar con: connect ${IP:-IP_DE_ESTE_PC}:$PUERTO"
 export LD_LIBRARY_PATH=".:bin:$LD_LIBRARY_PATH"
 exec ./srcds_run -game csgo -console -insecure -condebug -usercon -port "$PUERTO" "${AUTH[@]}" \
