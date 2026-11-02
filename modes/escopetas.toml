@@ -1,0 +1,4 @@
+# Metadata for cfg/modo_escopetas.cfg
+category = "weapons"
+name = { en = "Shotguns", es = "Escopetas" }
+description = { en = "XM1014 + P250", es = "XM1014 + P250" }

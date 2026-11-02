@@ -1,0 +1,4 @@
+# Metadata for cfg/modo_headshot.cfg
+category = "weapons"
+name = { en = "Headshots only", es = "Solo cabeza" }
+description = { en = "AK-47 + Deagle, only head damage counts", es = "AK-47 + Deagle, solo daño a la cabeza" }

@@ -1,0 +1,447 @@
+//! csgo-legacy-server: CLI para servidores sin pantalla (la app GTK usa el mismo núcleo).
+use anyhow::{bail, Context, Result};
+use clap::{Args, Parser, Subcommand};
+use csls_core::config::{Config, Kind};
+use csls_core::launch::{parse_cvar, LaunchOptions, Site};
+use csls_core::modes::Modes;
+use csls_core::server::{Server, State};
+use csls_core::{bridge, deploy, install, modes, net, players, steam_client, workshop};
+use std::sync::atomic::AtomicBool;
+use std::time::Duration;
+
+#[derive(Parser)]
+#[command(name = "csgo-legacy-server", version, about = "CS:GO Legacy dedicated server manager")]
+struct Cli {
+    #[command(subcommand)]
+    cmd: Cmd,
+}
+
+#[derive(Args, Clone)]
+struct Game {
+    /// Game mode (see `modes`)
+    mode: Option<String>,
+    /// Humans needed to start: a number or `alone`
+    humans: Option<String>,
+    #[arg(short, long)]
+    map: Option<String>,
+    /// competitive | casual | wingman
+    #[arg(short = 't', long = "type")]
+    kind: Option<String>,
+    /// Bot difficulty 0-3
+    #[arg(short, long)]
+    difficulty: Option<u8>,
+    #[arg(short, long)]
+    bots: Option<u32>,
+    #[arg(short, long)]
+    rounds: Option<u32>,
+    /// Retake/post-plant site: a | b | random
+    #[arg(short, long)]
+    site: Option<String>,
+    /// Infinite accuracy: no spread and no recoil for everyone
+    #[arg(short, long)]
+    precision: bool,
+    /// No automatic kicks or bans
+    #[arg(long)]
+    anarchy: bool,
+    /// Workshop map id
+    #[arg(short, long)]
+    workshop: Option<u64>,
+    /// Any server variable, repeatable: --set cvar=value
+    #[arg(long = "set")]
+    set: Vec<String>,
+    /// Start from a saved preset (other flags override it)
+    #[arg(long)]
+    preset: Option<String>,
+    /// Save these options as a preset with this name
+    #[arg(long)]
+    save_preset: Option<String>,
+}
+
+#[derive(Subcommand)]
+enum Cmd {
+    /// Download and set up the dedicated server (~33 GB). Safe to repeat; resumes
+    Install {
+        /// Validate files and update SourceMod too
+        #[arg(long)]
+        update: bool,
+    },
+    /// Check the system and say how to fix what is missing
+    Doctor,
+    /// Open CS:GO Legacy (or CS2) on this PC, optionally connecting: play [cs2] [IP:PORT|local]
+    Play { target: Vec<String> },
+    /// Start the server
+    Start(Game),
+    /// Stop the server
+    Stop,
+    /// Show whether it is running, map and players
+    Status,
+    /// Change mode/map with the server running
+    Mode(Game),
+    /// List available modes
+    Modes,
+    /// List installed maps
+    Maps,
+    /// List players
+    Players,
+    /// Kick a player by userid
+    Kick { userid: u32, reason: Vec<String> },
+    /// Ban a player by userid (minutes, 0 = permanent)
+    Ban { userid: u32, minutes: u32, reason: Vec<String> },
+    /// Unban a SteamID (STEAM_1:x:y)
+    Unban { steamid: String },
+    /// Run rcon commands
+    Rcon { commands: Vec<String> },
+    /// Compile plugins and copy configs (only what changed)
+    Deploy {
+        #[arg(long)]
+        force: bool,
+        /// Keep watching plugin and mode folders and redeploy on changes
+        #[arg(long)]
+        watch: bool,
+    },
+    /// Workshop maps (CS:GO only; CS2 maps cannot run on CS:GO Legacy)
+    #[command(subcommand)]
+    Workshop(Ws),
+    /// Share custom modes: export <mode> > file.toml, import file.toml, delete <mode>
+    #[command(subcommand)]
+    ModeFile(ModeFile),
+    /// UDP bridge for friends over VPN. Without arguments: server side (PORT+1 -> server)
+    Bridge {
+        /// Friend side: local port to listen on
+        listen: Option<u16>,
+        /// Friend side: server bridge address (VPN_IP:PORT+1)
+        to: Option<String>,
+    },
+    /// Generate the bot navigation mesh of the current map (workshop maps without .nav)
+    Nav {
+        /// Also regenerate maps that already have one (official maps have better hand-made ones)
+        #[arg(long)]
+        force: bool,
+    },
+    /// Add or remove bots with the server running: bots +2 | bots -1
+    Bots {
+        #[arg(allow_hyphen_values = true)]
+        delta: i32,
+    },
+    /// Restart the round (or end the warmup with --warmup)
+    Round {
+        #[arg(long)]
+        warmup: bool,
+    },
+    /// Saved presets: list or delete <name>
+    Presets { delete: Option<String> },
+    /// Regenerate the skins list from the game files (after a game update)
+    Skins,
+    /// Print the config file path
+    Config,
+}
+
+#[derive(Subcommand)]
+enum Ws {
+    /// Search maps (no API key needed)
+    Search { text: Vec<String> },
+    /// Install by id (a map or a whole collection)
+    Install { ids: Vec<u64> },
+    /// Installed workshop maps
+    List,
+    /// Remove an installed map by its folder (id or `local`)
+    Remove { dir: String },
+    /// Import a local .bsp file
+    Import { file: std::path::PathBuf },
+}
+
+#[derive(Subcommand)]
+enum ModeFile {
+    Export { mode: String },
+    Import { file: std::path::PathBuf },
+    Delete { mode: String },
+}
+
+fn watch_loop(cfg: &Config) -> Result<()> {
+    // shortcut: sondeo cada 2 s en vez de inotify (sin dependencias); deploy ya solo compila lo cambiado
+    let mut last = String::new();
+    loop {
+        let r = deploy::deploy(cfg, false, true)?;
+        let msg = match r.error_text() {
+            Some(e) => format!("compile errors:\n{e}"),
+            None if !r.compiled.is_empty() => format!("Compiled{}: {}", if r.reloaded { " and reloaded" } else { "" }, r.compiled.join(", ")),
+            None if !r.removed.is_empty() => format!("Removed: {}", r.removed.join(", ")),
+            None => String::new(),
+        };
+        if !msg.is_empty() && msg != last {
+            println!("{msg}");
+        }
+        last = msg;
+        std::thread::sleep(Duration::from_secs(2));
+    }
+}
+
+fn options(g: &Game, cfg: &Config) -> Result<LaunchOptions> {
+    let mut o = match &g.preset {
+        Some(p) => csls_core::presets::Presets::load()?.get(p)?.clone(),
+        None => LaunchOptions::from_config(cfg),
+    };
+    if let Some(m) = &g.mode {
+        o.mode = m.clone();
+    }
+    if let Some(h) = &g.humans {
+        o.humans = if h == "alone" { 1 } else { h.parse().with_context(|| format!("humans must be a number or `alone`, got '{h}'"))? };
+    }
+    if g.map.is_some() {
+        o.map = g.map.clone();
+    }
+    if let Some(k) = &g.kind {
+        o.kind = Kind::parse(k).context("--type is competitive, casual or wingman")?;
+    }
+    if let Some(d) = g.difficulty {
+        o.difficulty = d;
+    }
+    o.bots = g.bots.or(o.bots);
+    o.rounds = g.rounds.or(o.rounds);
+    if let Some(s) = &g.site {
+        o.site = Some(Site::parse(s).context("--site is a, b or random")?);
+    }
+    o.precision |= g.precision;
+    o.anarchy |= g.anarchy;
+    o.workshop = g.workshop.or(o.workshop);
+    for s in &g.set {
+        o.cvars.push(parse_cvar(s)?);
+    }
+    if let Some(n) = &g.save_preset {
+        csls_core::presets::Presets::put(n, &o)?;
+        println!("Saved preset '{n}'.");
+    }
+    Ok(o)
+}
+
+fn main() -> Result<()> {
+    let cli = Cli::parse();
+    let cfg = Config::load()?;
+    let srv = Server::new(&cfg);
+    let lang = csls_core::lang();
+    match cli.cmd {
+        Cmd::Install { update } => {
+            let cancel = AtomicBool::new(false);
+            let mut last = String::new();
+            // la app lee el progreso de este archivo (la instalación sigue aunque se cierre)
+            let pf = csls_core::server::install_progress_file();
+            let r = install::install(&cfg, update, &cancel, &mut |p| {
+                let _ = std::fs::write(&pf, format!("{}|{}", p.fraction.map(|f| f.to_string()).unwrap_or_default(), p.message));
+                let m = match p.fraction {
+                    Some(f) if p.step == "server" => format!("{} {:5.1}%", p.message, f * 100.0),
+                    _ => p.message.clone(),
+                };
+                if m != last {
+                    println!("==> {m}");
+                    last = m;
+                }
+            });
+            match &r {
+                Ok(()) => std::fs::write(&pf, "done|")?,
+                Err(e) => std::fs::write(&pf, format!("error|{e:#}"))?,
+            }
+            r?;
+            println!("Ready. Start with: csgo-legacy-server start awp alone");
+            println!("Players need CS2 with the \"csgo_legacy\" beta and connect with: connect {}", srv.connect_address());
+        }
+        Cmd::Doctor => {
+            let ok = |b: bool| if b { "ok " } else { "!! " };
+            let falta = install::missing_deps();
+            println!("{}dependencies{}", ok(falta.is_empty()), if falta.is_empty() { String::new() } else { format!(": missing {} -> {}", falta.join(", "), install::deps_command()) });
+            println!("{}server installed in {}", ok(srv.is_installed()), cfg.install_dir().display());
+            if !srv.is_installed() {
+                let free = install::free_bytes(cfg.install_dir()).unwrap_or(0);
+                println!("{}free space: {} GB (needs ~40)", ok(free >= install::NEEDED_BYTES), free >> 30);
+            }
+            println!("{}systemd --user (server keeps running after closing the app)", ok(csls_core::server::systemd_available()));
+            println!("{}local IP: {}", ok(net::local_ip().is_some()), net::local_ip().map(|i| i.to_string()).unwrap_or("none".into()));
+            let port_ok = srv.state() == State::Running || net::udp_port_free(cfg.server.port);
+            println!("{}UDP port {} {}", ok(port_ok), cfg.server.port, if port_ok { "free" } else { "busy" });
+            if let Some(h) = net::firewall_hint(cfg.server.port) {
+                println!("-- firewall active; for internet players: {h}");
+            }
+            match steam_client::find_steam() {
+                Some(s) => println!("{}CS:GO Legacy client ({:?} Steam): {}", ok(s.game_dir().is_some()), s.flavor, s.game_dir().map(|d| d.display().to_string()).unwrap_or("not installed: enable the csgo_legacy beta of CS2".into())),
+                None => println!("-- Steam not found (only needed to play on this PC)"),
+            }
+            println!("-- config: {}", csls_core::config::config_path().display());
+        }
+        Cmd::Play { target } => {
+            let t: Vec<&str> = target.iter().map(String::as_str).collect();
+            match t.as_slice() {
+                ["cs2"] => steam_client::launch_cs2()?,
+                [] | ["csgo"] => steam_client::launch_csgo(None)?,
+                ["local"] | ["csgo", "local"] => steam_client::launch_csgo(Some(&srv.connect_address()))?,
+                [a] | ["csgo", a] => steam_client::launch_csgo(Some(a))?,
+                _ => bail!("usage: play [cs2 | csgo] [IP:PORT | local]"),
+            }
+            println!("Opening...");
+        }
+        Cmd::Start(g) => {
+            let modes = Modes::load()?;
+            let o = options(&g, &cfg)?;
+            let s = srv.start(&modes, &o)?;
+            println!("Mode {} on {}. Connect with: connect {}", o.mode, s.map, s.connect);
+            for w in &s.warnings {
+                eprintln!("warning: {w}");
+            }
+            if srv.public() {
+                if let Some(p) = srv.public_address() {
+                    println!("From the internet: connect {p}");
+                }
+            }
+            if !s.deploy.compiled.is_empty() {
+                println!("Compiled: {}", s.deploy.compiled.join(", "));
+            }
+            srv.wait_rcon(Duration::from_secs(90))?;
+            println!("Server ready.");
+        }
+        Cmd::Stop => {
+            srv.stop()?;
+            println!("Server stopped.");
+        }
+        Cmd::Status => {
+            if srv.state() == State::Stopped {
+                println!("Stopped.");
+                return Ok(());
+            }
+            let mut r = srv.rcon()?;
+            let st = players::parse_status(&r.exec("status")?);
+            let modo = r.exec("modo_nombre").unwrap_or_default();
+            let modo = modo.split('"').nth(3).unwrap_or("?");
+            println!("Running: {} | mode {modo} | map {} | {} humans, {} bots / {}", st.hostname, st.map, st.humans, st.bots, st.max);
+            println!("Connect with: connect {}", srv.connect_address());
+        }
+        Cmd::Mode(g) => {
+            if g.mode.is_none() {
+                bail!("which mode? (see `csgo-legacy-server modes`)");
+            }
+            let modes = Modes::load()?;
+            let o = options(&g, &cfg)?;
+            let map = srv.change(&modes, &o)?;
+            println!("Mode {} on {map}; starts with {} human(s). Settings: {}", o.mode, o.humans, o.extra());
+        }
+        Cmd::Modes => {
+            for m in Modes::load()?.0.values() {
+                println!("{:<12} {:<11} {}", m.id, m.meta.category, m.meta.description.get(lang));
+            }
+        }
+        Cmd::Maps => {
+            for m in csls_core::launch::installed_maps(&srv.maps_dir()) {
+                println!("{m}");
+            }
+        }
+        Cmd::Players => {
+            let st = players::parse_status(&srv.rcon()?.exec("status")?);
+            println!("{:>4}  {:<24} {:<20} {:>5}", "id", "name", "steamid", "ping");
+            for p in st.players {
+                println!("{:>4}  {:<24} {:<20} {:>5}", p.userid, p.name, p.steamid, p.ping);
+            }
+        }
+        Cmd::Kick { userid, reason } => println!("{}", srv.rcon()?.exec(&players::kick_cmd(userid, &reason.join(" ")))?),
+        Cmd::Ban { userid, minutes, reason } => {
+            println!("{}", srv.rcon()?.exec(&players::ban_cmd(userid, minutes, &reason.join(" ")))?)
+        }
+        Cmd::Unban { steamid } => println!("{}", srv.rcon()?.exec(&players::unban_cmd(&steamid)?)?),
+        Cmd::Rcon { commands } => {
+            let mut r = srv.rcon()?;
+            for c in commands {
+                print!("{}", r.exec(&c)?);
+            }
+        }
+        Cmd::Deploy { watch: true, .. } => watch_loop(&cfg)?,
+        Cmd::Deploy { force, .. } => {
+            let r = deploy::deploy(&cfg, force, true)?;
+            if !r.compiled.is_empty() {
+                println!("Compiled: {}", r.compiled.join(", "));
+            }
+            if let Some(e) = r.error_text() {
+                bail!("compile errors:\n{e}");
+            }
+            println!("{}", if r.reloaded { "Deployed and reloaded." } else { "Deployed." });
+        }
+        Cmd::Bridge { listen, to } => {
+            let log = |m: String| println!("{m}");
+            match (listen, to) {
+                (Some(p), Some(t)) => {
+                    let target = t.parse().context("expected VPN_IP:PORT")?;
+                    bridge::run(p, target, "0.0.0.0".parse()?, log)?;
+                }
+                (None, None) => {
+                    let ip = net::local_ip().context("no local IP")?;
+                    let port = cfg.server.port;
+                    bridge::run(port + 1, (ip, port).into(), ip, log)?;
+                }
+                _ => bail!("friend side needs both: bridge <listen-port> <VPN_IP:PORT>"),
+            }
+        }
+        Cmd::Workshop(w) => {
+            let maps = srv.maps_dir();
+            match w {
+                Ws::Search { text } => {
+                    for it in workshop::search(&text.join(" "), None, workshop::Sort::Trend, 1)? {
+                        let c = match it.compat() { workshop::Compat::Csgo => "csgo", workshop::Compat::Cs2 => "CS2!", _ => "?" };
+                        println!("{:>11}  {c:<4}  {:>6} MB  {}", it.id, it.file_size >> 20, it.title);
+                    }
+                }
+                Ws::Install { ids } => {
+                    for it in workshop::details(&ids)? {
+                        let items = if it.collection { workshop::details(&workshop::collection(it.id)?)? } else { vec![it] };
+                        for it in items {
+                            match workshop::install(&maps, &it) {
+                                Ok(m) => println!("Installed {} -> {m}", it.title),
+                                Err(e) => println!("Skipped: {e:#}"),
+                            }
+                        }
+                    }
+                }
+                Ws::List => {
+                    for i in workshop::installed(&maps) {
+                        println!("{:<40} {:<12} {}{}", i.map, i.dir, i.title, if i.has_nav { "" } else { "  (no .nav: load it and run `nav`)" });
+                    }
+                }
+                Ws::Remove { dir } => workshop::remove(&maps, &dir)?,
+                Ws::Import { file } => println!("Imported as {}", workshop::import_local(&maps, &file)?),
+            }
+        }
+        Cmd::ModeFile(m) => {
+            let dir = csls_core::paths::user_modes_dir();
+            match m {
+                ModeFile::Export { mode } => print!("{}", modes::export_mode(Modes::load()?.get(&mode)?)?),
+                ModeFile::Import { file } => println!("Imported mode {}", modes::import_mode(&dir, &std::fs::read_to_string(file)?)?),
+                ModeFile::Delete { mode } => modes::delete_user_mode(&dir, &mode)?,
+            }
+        }
+        Cmd::Nav { force } => {
+            println!("Generating .nav (seconds to minutes)...");
+            let m = srv.generate_nav(Duration::from_secs(600), force)?;
+            println!("Saved {m}.nav and reloaded the map.");
+        }
+        Cmd::Bots { delta } => println!("bot_quota {}", srv.add_bots(delta)?),
+        Cmd::Round { warmup } => {
+            if warmup { srv.end_warmup()? } else { srv.restart_round()? }
+            println!("OK");
+        }
+        Cmd::Presets { delete } => match delete {
+            Some(n) => {
+                csls_core::presets::Presets::remove(&n)?;
+                println!("Deleted preset '{n}'.");
+            }
+            None => {
+                for (n, o) in csls_core::presets::Presets::load()?.0 {
+                    println!("{n}: {} {}", o.mode, o.map.as_deref().unwrap_or(""));
+                }
+            }
+        },
+        Cmd::Skins => {
+            let (txt, (w, k, n)) = csls_core::skins_gen::generate(&srv.csgo_dir(), lang)?;
+            let out = csls_core::paths::data_dir().join("skins.cfg");
+            std::fs::create_dir_all(csls_core::paths::data_dir())?;
+            std::fs::write(&out, txt)?;
+            println!("{w} weapons, {k} knives, {n} skins -> {}", out.display());
+            deploy::deploy(&cfg, false, true)?;
+        }
+        Cmd::Config => println!("{}", csls_core::config::config_path().display()),
+    }
+    Ok(())
+}

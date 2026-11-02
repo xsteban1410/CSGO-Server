@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // Zombies por oleadas: tipos de zombi, retroceso, infección y niebla. Lo incluye modos.sp.
 // Cada oleada es una ronda: los zombis (T) reaparecen sin parar y los humanos (CT) tienen que aguantar el tiempo.
 // Si ganan los CT se pasa a la siguiente oleada; si caen todos, se repite. Tras la última oleada, victoria.
@@ -62,7 +63,7 @@ public void Zombies_RoundStart(Event e, const char[] name, bool dontBroadcast)
 		return;
 	Niebla();
 	if (!GameRules_GetProp("m_bWarmupPeriod"))
-		PrintCenterTextAll("Oleada %d de %d", g_Oleada, g_ZOleadas.IntValue);
+		PrintCenterTextAll("%t", "wave_of", g_Oleada, g_ZOleadas.IntValue);
 }
 
 public void Zombies_RoundEnd(Event e, const char[] name, bool dontBroadcast)
@@ -71,19 +72,19 @@ public void Zombies_RoundEnd(Event e, const char[] name, bool dontBroadcast)
 		return;
 	if (e.GetInt("winner") != CS_TEAM_CT)
 	{
-		PrintToChatAll(" \x04[Zombies]\x01 Os han comido. Se repite la oleada \x02%d\x01.", g_Oleada);
+		PrintToChatAll(" \x04[Zombies]\x01 %t", "zombies_ate_you", g_Oleada);
 		return;
 	}
 	if (g_Oleada >= g_ZOleadas.IntValue)
 	{
-		PrintToChatAll(" \x04[Zombies]\x01 ¡\x04VICTORIA\x01! Habéis sobrevivido a las %d oleadas. Se reinicia en 15 s.", g_Oleada);
-		PrintCenterTextAll("¡VICTORIA! %d oleadas superadas", g_Oleada);
+		PrintToChatAll(" \x04[Zombies]\x01 %t", "zombies_victory_chat", g_Oleada);
+		PrintCenterTextAll("%t", "zombies_victory_center", g_Oleada);
 		g_Oleada = 1;
 		ServerCommand("mp_restartgame 15");
 		return;
 	}
 	g_Oleada++;
-	PrintToChatAll(" \x04[Zombies]\x01 Oleada superada. Viene la \x02%d\x01: más zombis y más duros.", g_Oleada);
+	PrintToChatAll(" \x04[Zombies]\x01 %t", "wave_cleared", g_Oleada);
 }
 
 // Tipo, vida, velocidad, tamaño y color del zombi. Se llama desde Equip (después de dar las armas).
@@ -112,7 +113,7 @@ void Zombies_Equip(int c)
 	SetEntityRenderMode(c, RENDER_TRANSCOLOR);
 	SetEntityRenderColor(c, g_ZColor[tipo][0], g_ZColor[tipo][1], g_ZColor[tipo][2], 255);
 	if (!IsFakeClient(c))
-		PrintCenterText(c, "Eres un zombi: ¡a por ellos!");
+		PrintCenterText(c, "%t", "you_are_zombie");
 }
 
 // Fuego x3 contra zombis.
@@ -169,7 +170,9 @@ public void Zombies_Death(Event e, const char[] name, bool dontBroadcast)
 		if (i != v && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == CS_TEAM_CT)
 		{
 			g_Infectado[v] = true;
-			PrintToChatAll(" \x04[Zombies]\x01 \x02%N\x01 ha sido infectado.", v);
+			char vn[MAX_NAME_LENGTH];
+			GetClientName(v, vn, sizeof(vn));
+			PrintToChatAll(" \x04[Zombies]\x01 %t", "infected", vn);
 			CreateTimer(2.0, Infectar, GetClientUserId(v));
 			return;
 		}

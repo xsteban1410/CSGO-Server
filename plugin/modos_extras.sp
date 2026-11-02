@@ -1,6 +1,15 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // Modos con reglas propias: una bala, arma aleatoria, vampiro y jefe. Lo incluye modos.sp.
 
-ConVar g_UnaBala, g_Aleatorio, g_Vampiro, g_VampiroMax, g_Jefe;
+ConVar g_UnaBala, g_Aleatorio, g_Vampiro, g_VampiroMax, g_Jefe, g_Anarquia;
+
+// Anarquía: cvars que echan o banean solos y plugins de SourceMod que también lo hacen
+char g_AnarquiaCvars[][][] = {
+	{"mp_autokick", "0"}, {"mp_tkpunish", "0"}, {"sv_kick_ban_duration", "0"},
+	{"sv_vote_issue_kick_allowed", "0"}, {"mp_spawnprotectiontime", "0"}, {"sv_timeout", "300"},
+	{"mp_disconnect_kills_players", "0"}
+};
+char g_AnarquiaPlugins[][] = { "basevotes", "antiflood", "reservedslots" };
 
 // Armas del modo aleatorio (la misma para todos en cada ronda)
 char g_Aleatorias[][] = {
@@ -18,6 +27,8 @@ void Extras_Start()
 	g_Vampiro    = CreateConVar("modo_vampiro", "0", "Fracción del daño hecho que cura al atacante (0 = apagado)");
 	g_VampiroMax = CreateConVar("modo_vampiro_max", "200", "Vida máxima que se puede alcanzar curándose");
 	g_Jefe       = CreateConVar("modo_jefe", "0", "Vida del bot jefe gigante de cada ronda (0 = sin jefe)");
+	g_Anarquia   = CreateConVar("modo_anarquia", "0", "1 = nadie es expulsado ni baneado automáticamente (los kick/ban del admin siguen)");
+	g_Anarquia.AddChangeHook(Extras_Anarquia);
 	HookEvent("player_death", Extras_Death);
 	HookEvent("player_hurt", Extras_Hurt);
 }
@@ -81,7 +92,7 @@ void Extras_PreStart()
 		g_Arma[i].SetString(w);
 		g_Quitar[i].SetInt(1);
 	}
-	PrintToChatAll(" \x04[Aleatorio]\x01 Esta ronda: \x10%s", w[7]);
+	PrintToChatAll(" \x04[Aleatorio]\x01 %t", "random_round", w[7]);
 }
 
 // Jefe: un bot T al azar se vuelve gigante, lento y con mucha vida.
@@ -101,5 +112,29 @@ void Extras_FreezeEnd()
 	SetEntPropFloat(b, Prop_Send, "m_flLaggedMovementValue", 0.85);
 	SetEntityRenderMode(b, RENDER_TRANSCOLOR);
 	SetEntityRenderColor(b, 255, 60, 60, 255);
-	PrintToChatAll(" \x04[Jefe]\x01 ¡\x02%N\x01 es el jefe con \x02%d\x01 de vida!", b, g_Jefe.IntValue);
+	char bn[MAX_NAME_LENGTH];
+	GetClientName(b, bn, sizeof(bn));
+	PrintToChatAll(" \x04[Jefe]\x01 %t", "boss_is", bn, g_Jefe.IntValue);
+}
+
+// --- anarquía ----------------------------------------------------------------
+
+public void Extras_Anarquia(ConVar cv, const char[] viejo, const char[] nuevo)
+{
+	bool on = cv.BoolValue;
+	if (on == (StringToInt(viejo) != 0))
+		return;
+	for (int i = 0; i < sizeof(g_AnarquiaCvars); i++)
+	{
+		ConVar c = FindConVar(g_AnarquiaCvars[i][0]);
+		if (c == null)
+			continue;
+		if (on)
+			c.SetString(g_AnarquiaCvars[i][1]);
+		else
+			c.RestoreDefault();
+	}
+	for (int i = 0; i < sizeof(g_AnarquiaPlugins); i++)
+		ServerCommand("sm plugins %s %s", on ? "unload" : "load", g_AnarquiaPlugins[i]);
+	PrintToChatAll(" \x04[Modos]\x01 %t", on ? "anarchy_on" : "anarchy_off");
 }

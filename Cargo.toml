@@ -1,0 +1,19 @@
+[workspace]
+members = ["crates/core", "crates/cli", "crates/gtk"]
+resolver = "2"
+
+[workspace.package]
+version = "1.0.0"
+edition = "2021"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/xsteban1410/CSGO-Server"
+
+[workspace.dependencies]
+anyhow = "1"
+serde = { version = "1", features = ["derive"] }
+toml = "1"
+csls-core = { path = "crates/core" }
+
+[profile.release]
+lto = "thin"
+strip = true

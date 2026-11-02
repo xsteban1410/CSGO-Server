@@ -1,0 +1,4 @@
+# Metadata for cfg/modo_decoy.cfg
+category = "fun"
+name = { en = "Decoy", es = "Señuelo" }
+description = { en = "Decoy grenade and 1 HP, with respawn", es = "Granada señuelo y 1 de vida, con reaparición" }

@@ -1,0 +1,4 @@
+# Metadata for cfg/modo_normal.cfg
+category = "classic"
+name = { en = "Normal", es = "Normal" }
+description = { en = "Normal match, free buys with 16000", es = "Partida normal, compras libres con 16000" }

@@ -1,0 +1,4 @@
+# Metadata for cfg/modo_libre.cfg
+category = "classic"
+name = { en = "Free play", es = "Libre" }
+description = { en = "Any weapon with !guns, respawn, infinite money", es = "Cualquier arma con !armas, reaparición, dinero infinito" }

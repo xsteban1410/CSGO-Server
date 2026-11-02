@@ -1,0 +1,9 @@
+# Metadata for cfg/modo_armsrace.cfg
+category = "objective"
+name = { en = "Arms Race", es = "Carrera de armas" }
+description = { en = "Official Arms Race (ar_ maps)", es = "Carrera de armas oficial (mapas ar_)" }
+game_type = 1
+game_mode = 0
+map_prefixes = ["ar_"]
+default_map = "ar_shoots"
+exclusive_maps = true

@@ -1,0 +1,4 @@
+# Metadata for cfg/modo_zeus.cfg
+category = "fun"
+name = { en = "Zeus", es = "Zeus" }
+description = { en = "Zeus only, with respawn", es = "Solo Zeus, con reaparición" }

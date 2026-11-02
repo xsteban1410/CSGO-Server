@@ -1,0 +1,9 @@
+# Metadata for cfg/modo_guardian.cfg
+category = "pve"
+name = { en = "Guardian", es = "Guardián" }
+description = { en = "Official Guardian, defend the zone against waves of bots", es = "Guardián oficial, defendéis la zona contra oleadas de bots" }
+game_type = 4
+game_mode = 0
+map_prefixes = ["gd_"]
+default_map = "gd_cbble"
+exclusive_maps = true

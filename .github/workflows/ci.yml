@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Dependencies
+        run: pacman -Syu --noconfirm --needed base-devel git rust gtk4 libadwaita sqlite curl appstream desktop-file-utils namcap
+      - uses: actions/checkout@v4
+      - name: Build
+        run: cargo build --locked --release
+      - name: Test
+        run: cargo test --locked --release
+      - name: Clippy
+        run: cargo clippy --locked --all-targets
+      - name: Desktop files
+        run: |
+          desktop-file-validate packaging/*.desktop
+          appstreamcli validate --no-net packaging/*.metainfo.xml
+      - name: PKGBUILD lint
+        run: namcap packaging/aur/*/PKGBUILD
+
+  plugins:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: SourceMod compiler
+        run: |
+          sudo dpkg --add-architecture i386 && sudo apt-get update -q && sudo apt-get install -yq lib32stdc++6
+          base=https://sm.alliedmods.net/smdrop/1.12
+          curl -fsSL "$base/$(curl -fsSL $base/sourcemod-latest-linux)" | tar xz
+      - name: Compile plugins
+        run: |
+          set -e
+          inc=addons/sourcemod/scripting/include
+          for p in plugin/modos.sp plugin/modos_cheats.sp plugin/skins.sp plugin/csls_directconnect/csls_directconnect.sp; do
+            addons/sourcemod/scripting/spcomp64 -i$inc -iplugin "$p" -o/tmp/out.smx
+          done

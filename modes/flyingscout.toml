@@ -1,0 +1,4 @@
+# Metadata for cfg/modo_flyingscout.cfg
+category = "fun"
+name = { en = "Flying Scoutsman", es = "Flying Scoutsman" }
+description = { en = "SSG 08, low gravity and perfect accuracy in the air", es = "SSG 08, gravedad baja y precisión total en el aire" }

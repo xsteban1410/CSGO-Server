@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // Modos de juego contra bots para CS:GO Legacy.
 // Al cargar el mapa ejecuta: modo_base.cfg -> modo_<modo_nombre>.cfg -> modo_extra
 #pragma semicolon 1
@@ -7,7 +8,7 @@
 #include <sdkhooks>
 #pragma newdecls required
 
-public Plugin myinfo = { name = "Modos", author = "luis", version = "4.0" };
+public Plugin myinfo = { name = "Modos", author = "xsteban1410", version = "4.0" };
 
 #define T_IDX 0
 #define CT_IDX 1
@@ -23,6 +24,7 @@ float g_SiteCenter[3];
 
 public void OnPluginStart()
 {
+	LoadTranslations("csls.phrases");
 	g_Nombre  = CreateConVar("modo_nombre", "awp", "Modo activo (cfg/modo_<nombre>.cfg)");
 	g_Humanos = CreateConVar("modo_humanos", "2", "Humanos en equipo para acabar el calentamiento (0 = no controlar)");
 	g_Extra   = CreateConVar("modo_extra", "", "Comandos que se ejecutan despues del cfg del modo (separados por ;)");
@@ -61,7 +63,7 @@ public void OnPluginStart()
 	HookEvent("round_freeze_end", OnFreezeEnd);
 	CreateTimer(1.0, CheckWarmup, _, TIMER_REPEAT);
 	RegServerCmd("modo_sitios", CmdSitios, "Muestra el centro de los sitios A/B y un punto de aparicion de prueba");
-	// modo inicial que escribe arrancar.sh (solo al cargar el plugin)
+	// modo inicial que escribe csgo-legacy-server start (solo al cargar el plugin)
 	ServerCommand("exec modo_inicio");
 	ServerExecute();
 }
@@ -122,12 +124,12 @@ public Action CheckWarmup(Handle t)
 	{
 		g_Pausa.SetInt(0);
 		ServerCommand("mp_warmup_end");
-		PrintToChatAll(" \x04[Modos]\x01 Ya estáis %d. ¡Empieza la partida!", h);
+		PrintToChatAll(" \x04[Modos]\x01 %t", "match_starts", h);
 	}
 	else
 	{
 		g_Pausa.SetInt(1);
-		PrintHintTextToAll("Calentamiento: esperando humanos %d/%d", h, need);
+		PrintHintTextToAll("%t", "warmup_waiting", h, need);
 	}
 	return Plugin_Continue;
 }
@@ -321,6 +323,6 @@ public void OnFreezeEnd(Event e, const char[] name, bool dontBroadcast)
 			ev.SetInt("site", g_Site);
 			ev.Fire();
 		}
-		PrintToChatAll(" \x04[Retake]\x01 Bomba plantada en \x02%c\x01", g_Site == 0 ? 'A' : 'B');
+		PrintToChatAll(" \x04[Retake]\x01 %t", "bomb_planted_at", g_Site == 0 ? 'A' : 'B');
 	}
 }

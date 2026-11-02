@@ -1,0 +1,4 @@
+# Metadata for cfg/modo_zombies.cfg
+category = "pve"
+name = { en = "Zombies", es = "Zombis" }
+description = { en = "Waves of ever tougher zombie bots", es = "Oleadas de zombis cada vez más duros" }

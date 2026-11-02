@@ -1,0 +1,6 @@
+# Metadata for cfg/modo_retake.cfg
+category = "objective"
+name = { en = "Retake", es = "Retake" }
+description = { en = "The bomb is planted; you (CT) defuse it against 5 bots", es = "La bomba ya está plantada; vosotros (CT) la desactiváis contra 5 bots" }
+map_prefixes = ["de_"]
+options = ["site"]

@@ -1,0 +1,6 @@
+# Metadata for cfg/modo_defensa.cfg
+category = "objective"
+name = { en = "Post-plant", es = "Defensa" }
+description = { en = "The bomb is planted; you (T) defend it against 5 bots", es = "La bomba ya está plantada; vosotros (T) la defendéis contra 5 bots" }
+map_prefixes = ["de_"]
+options = ["site"]

@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=CS:GO Legacy Server
+GenericName=Game Server Manager
+GenericName[es]=Gestor de servidor de juego
+Comment=Host a CS:GO Legacy dedicated server with bots, custom modes and workshop maps
+Comment[es]=Monta un servidor dedicado de CS:GO Legacy con bots, modos propios y mapas del workshop
+Exec=csgo-legacy-server-gtk
+Icon=io.github.xsteban1410.CsgoLegacyServer
+Terminal=false
+Categories=Game;
+Keywords=csgo;counter-strike;server;srcds;bots;sourcemod;workshop;
+StartupNotify=true

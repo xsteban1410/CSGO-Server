@@ -1,0 +1,4 @@
+# Metadata for cfg/modo_unabala.cfg
+category = "fun"
+name = { en = "One in the Chamber", es = "Una bala" }
+description = { en = "Deagle with one bullet, any hit kills, each kill gives a bullet", es = "Deagle con una bala, cualquier impacto mata, cada baja da otra" }

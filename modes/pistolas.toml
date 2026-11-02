@@ -1,0 +1,4 @@
+# Metadata for cfg/modo_pistolas.cfg
+category = "weapons"
+name = { en = "Pistols", es = "Pistolas" }
+description = { en = "Deagle only", es = "Solo Deagle" }

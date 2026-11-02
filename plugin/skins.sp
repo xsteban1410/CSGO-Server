@@ -1,8 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // Skins, cuchillos y armas a elección, guardados por jugador (SQLite).
 //   !ws      skin del arma en la mano (o de otra arma)
 //   !knife   modelo de cuchillo (también !cuchillo)
 //   !armas   cualquier arma (solo si skins_armas_libres = 1, p.ej. en el modo "libre"; también !guns)
-// La lista de skins sale de configs/skins.cfg (tools/generar_skins.py).
+// La lista de skins sale de configs/skins.cfg (csgo-legacy-server skins).
 #pragma semicolon 1
 #include <sourcemod>
 #include <sdktools>
@@ -10,7 +11,7 @@
 #include <cstrike>
 #pragma newdecls required
 
-public Plugin myinfo = { name = "Skins", author = "luis", version = "1.0" };
+public Plugin myinfo = { name = "Skins", author = "xsteban1410", version = "1.0" };
 
 #define CLAVE_CUCHILLO "cuchillo"
 #define DESGASTE 0.0001  // Recién fabricado
@@ -25,6 +26,7 @@ ConVar g_ArmasLibres;
 
 public void OnPluginStart()
 {
+	LoadTranslations("csls.phrases");
 	g_ArmasLibres = CreateConVar("skins_armas_libres", "0", "1 = permite !armas para coger cualquier arma");
 	RegConsoleCmd("sm_ws", CmdWs, "Elegir skin");
 	RegConsoleCmd("sm_skins", CmdWs, "Elegir skin");
@@ -46,7 +48,7 @@ void CargarLista()
 	BuildPath(Path_SM, path, sizeof(path), "configs/skins.cfg");
 	g_Kv = new KeyValues("skins");
 	if (!g_Kv.ImportFromFile(path))
-		SetFailState("No pude leer %s (genéralo con tools/generar_skins.py)", path);
+		SetFailState("No pude leer %s (genéralo con: csgo-legacy-server skins)", path);
 	g_PorIndice = new StringMap();
 	g_Kv.JumpToKey("armas");
 	if (g_Kv.GotoFirstSubKey())
@@ -350,7 +352,7 @@ void MenuSkins(int c, const char[] arma)
 	{
 		g_Kv.Rewind();
 		delete m;
-		PrintToChat(c, " \x04[Skins]\x01 Esa arma no tiene skins.");
+		PrintToChat(c, " \x04[Skins]\x01 %t", "skins_none");
 		return;
 	}
 	g_Kv.GetString("nombre", nombre, sizeof(nombre), arma);
@@ -390,7 +392,7 @@ public int OnSkin(Menu m, MenuAction a, int c, int item)
 		Guardar(c, partes[0], partes[1]);
 		if (IsPlayerAlive(c))
 			Refrescar(c, partes[0]);
-		PrintToChat(c, " \x04[Skins]\x01 Guardado. Se aplicará siempre que uses esa arma.");
+		PrintToChat(c, " \x04[Skins]\x01 %t", "skins_saved");
 		MenuSkins(c, partes[0]);
 	}
 	else if (a == MenuAction_End)
@@ -460,7 +462,7 @@ public Action CmdArmas(int c, int args)
 		return Plugin_Handled;
 	if (!g_ArmasLibres.BoolValue)
 	{
-		PrintToChat(c, " \x04[Skins]\x01 !armas solo está activo en el modo libre.");
+		PrintToChat(c, " \x04[Skins]\x01 %t", "skins_guns_free_only");
 		return Plugin_Handled;
 	}
 	Menu m = new Menu(OnArmas);

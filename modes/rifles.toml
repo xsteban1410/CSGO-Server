@@ -1,0 +1,4 @@
+# Metadata for cfg/modo_rifles.cfg
+category = "weapons"
+name = { en = "Rifles", es = "Rifles" }
+description = { en = "AK-47 + Deagle", es = "AK-47 + Deagle" }

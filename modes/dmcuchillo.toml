@@ -1,0 +1,6 @@
+# Metadata for cfg/modo_dmcuchillo.cfg
+category = "deathmatch"
+name = { en = "Knife deathmatch", es = "Deathmatch cuchillo" }
+description = { en = "Deathmatch with knives only", es = "Deathmatch solo cuchillo" }
+game_type = 1
+game_mode = 2

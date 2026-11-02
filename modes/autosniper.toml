@@ -1,0 +1,4 @@
+# Metadata for cfg/modo_autosniper.cfg
+category = "weapons"
+name = { en = "Auto-sniper", es = "Autosniper" }
+description = { en = "SCAR-20 + Deagle", es = "SCAR-20 + Deagle" }

@@ -1,0 +1,167 @@
+// Mensajes de los plugins de csgo-legacy-server. Cada jugador los ve en el idioma de su cliente.
+"Phrases"
+{
+	"match_starts"
+	{
+		"#format"	"{1:d}"
+		"en"		"{1} players here. The match starts!"
+		"es"		"Ya estáis {1}. ¡Empieza la partida!"
+	}
+	"warmup_waiting"
+	{
+		"#format"	"{1:d},{2:d}"
+		"en"		"Warmup: waiting for players {1}/{2}"
+		"es"		"Calentamiento: esperando humanos {1}/{2}"
+	}
+	"bomb_planted_at"
+	{
+		"#format"	"{1:c}"
+		"en"		"Bomb planted at {1}"
+		"es"		"Bomba plantada en {1}"
+	}
+	"wave_of"
+	{
+		"#format"	"{1:d},{2:d}"
+		"en"		"Wave {1} of {2}"
+		"es"		"Oleada {1} de {2}"
+	}
+	"zombies_ate_you"
+	{
+		"#format"	"{1:d}"
+		"en"		"You got eaten. Wave {1} starts again."
+		"es"		"Os han comido. Se repite la oleada {1}."
+	}
+	"zombies_victory_chat"
+	{
+		"#format"	"{1:d}"
+		"en"		"VICTORY! You survived all {1} waves. Restarting in 15 s."
+		"es"		"¡VICTORIA! Habéis sobrevivido a las {1} oleadas. Se reinicia en 15 s."
+	}
+	"zombies_victory_center"
+	{
+		"#format"	"{1:d}"
+		"en"		"VICTORY! {1} waves cleared"
+		"es"		"¡VICTORIA! {1} oleadas superadas"
+	}
+	"wave_cleared"
+	{
+		"#format"	"{1:d}"
+		"en"		"Wave cleared. Wave {1} is coming: more and tougher zombies."
+		"es"		"Oleada superada. Viene la {1}: más zombis y más duros."
+	}
+	"you_are_zombie"
+	{
+		"en"		"You are a zombie: get them!"
+		"es"		"Eres un zombi: ¡a por ellos!"
+	}
+	"infected"
+	{
+		"#format"	"{1:s}"
+		"en"		"{1} has been infected."
+		"es"		"{1} ha sido infectado."
+	}
+	"random_round"
+	{
+		"#format"	"{1:s}"
+		"en"		"This round: {1}"
+		"es"		"Esta ronda: {1}"
+	}
+	"boss_is"
+	{
+		"#format"	"{1:s},{2:d}"
+		"en"		"{1} is the boss with {2} health!"
+		"es"		"¡{1} es el jefe con {2} de vida!"
+	}
+	"anarchy_on"
+	{
+		"en"		"Anarchy: nobody gets kicked here."
+		"es"		"Anarquía: aquí no se echa a nadie."
+	}
+	"anarchy_off"
+	{
+		"en"		"Anarchy is over."
+		"es"		"Fin de la anarquía."
+	}
+	"skins_none"
+	{
+		"en"		"That weapon has no skins."
+		"es"		"Esa arma no tiene skins."
+	}
+	"skins_saved"
+	{
+		"en"		"Saved. It will be applied whenever you use that weapon."
+		"es"		"Guardado. Se aplicará siempre que uses esa arma."
+	}
+	"skins_guns_free_only"
+	{
+		"en"		"!guns only works in free mode."
+		"es"		"!armas solo está activo en el modo libre."
+	}
+	"cheat_got"
+	{
+		"#format"	"{1:s},{2:d}"
+		"en"		"You have {1} for {2} s."
+		"es"		"Tienes {1} durante {2} s."
+	}
+	"cheat_over"
+	{
+		"#format"	"{1:s}"
+		"en"		"{1} is over."
+		"es"		"Se acabó: {1}."
+	}
+	"cheat_0"
+	{
+		"en"		"Wallhack"
+		"es"		"Wallhack"
+	}
+	"cheat_1"
+	{
+		"en"		"Aimbot"
+		"es"		"Aimbot"
+	}
+	"cheat_2"
+	{
+		"en"		"Infinite ammo"
+		"es"		"Munición infinita"
+	}
+	"cheat_3"
+	{
+		"en"		"Super speed"
+		"es"		"Supervelocidad"
+	}
+	"cheat_4"
+	{
+		"en"		"Low gravity"
+		"es"		"Gravedad baja"
+	}
+	"cheat_5"
+	{
+		"en"		"God mode"
+		"es"		"Invencible"
+	}
+	"cheat_6"
+	{
+		"en"		"Invisible"
+		"es"		"Invisible"
+	}
+	"cheat_7"
+	{
+		"en"		"One-shot kills"
+		"es"		"Un tiro mata"
+	}
+	"cheat_8"
+	{
+		"en"		"Autobhop"
+		"es"		"Autobhop"
+	}
+	"cheat_9"
+	{
+		"en"		"Super jump"
+		"es"		"Superpulso"
+	}
+	"cheat_10"
+	{
+		"en"		"Regeneration"
+		"es"		"Regeneración"
+	}
+}

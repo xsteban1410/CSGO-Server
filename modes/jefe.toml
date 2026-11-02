@@ -1,0 +1,4 @@
+# Metadata for cfg/modo_jefe.cfg
+category = "fun"
+name = { en = "Boss", es = "Jefe" }
+description = { en = "Normal match, but one bot per round is a giant boss with 5000 HP", es = "Partida normal, pero un bot por ronda es un jefe gigante con 5000 de vida" }

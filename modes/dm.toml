@@ -1,0 +1,6 @@
+# Metadata for cfg/modo_dm.cfg
+category = "deathmatch"
+name = { en = "Deathmatch", es = "Deathmatch" }
+description = { en = "Official deathmatch", es = "Deathmatch oficial" }
+game_type = 1
+game_mode = 2

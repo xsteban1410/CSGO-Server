@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.xsteban1410.CsgoLegacyServer</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>CS:GO Legacy Server</name>
+  <summary>Host a CS:GO Legacy dedicated server with bots</summary>
+  <summary xml:lang="es">Monta un servidor dedicado de CS:GO Legacy contra bots</summary>
+  <developer id="io.github.xsteban1410">
+    <name>xsteban1410</name>
+  </developer>
+  <description>
+    <p>
+      Download, set up and run a CS:GO Legacy (app 740) dedicated server from one window,
+      with more than thirty game modes against bots, SourceMod plugins compiled automatically,
+      a custom mode editor and a workshop map browser.
+    </p>
+    <p xml:lang="es">
+      Descarga, configura y arranca un servidor dedicado de CS:GO Legacy (app 740) desde una ventana,
+      con más de treinta modos contra bots, plugins de SourceMod que se compilan solos,
+      editor de modos propios y buscador de mapas del workshop.
+    </p>
+    <ul>
+      <li>Start, stop and change mode or map live</li>
+      <li>Kick, ban and see each player's skins</li>
+      <li>LAN, friends over VPN, internet or Steam community server profiles</li>
+      <li>Workshop search; CS2-only maps are flagged as incompatible</li>
+      <li>Command line tool for headless servers</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">io.github.xsteban1410.CsgoLegacyServer.desktop</launchable>
+  <provides>
+    <binary>csgo-legacy-server</binary>
+    <binary>csgo-legacy-server-gtk</binary>
+  </provides>
+  <screenshots>
+    <screenshot type="default">
+      <caption>Server status, live match controls and presets</caption>
+      <image>https://raw.githubusercontent.com/xsteban1410/CSGO-Server/master/packaging/screenshots/server.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Custom modes</caption>
+      <image>https://raw.githubusercontent.com/xsteban1410/CSGO-Server/master/packaging/screenshots/modes.png</image>
+    </screenshot>
+  </screenshots>
+  <url type="homepage">https://github.com/xsteban1410/CSGO-Server</url>
+  <url type="bugtracker">https://github.com/xsteban1410/CSGO-Server/issues</url>
+  <content_rating type="oars-1.1">
+    <content_attribute id="violence-realistic">moderate</content_attribute>
+  </content_rating>
+  <requires>
+    <display_length compare="ge">360</display_length>
+  </requires>
+  <releases>
+    <release version="1.0.0" date="2026-11-01">
+      <description>
+        <p>First release: GTK app and command line, replacing the old shell scripts.</p>
+      </description>
+    </release>
+  </releases>
+</component>

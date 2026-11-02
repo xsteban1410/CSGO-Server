@@ -1,0 +1,4 @@
+# Metadata for cfg/modo_scout.cfg
+category = "weapons"
+name = { en = "Scout", es = "Scout" }
+description = { en = "SSG 08 + P250", es = "SSG 08 + P250" }

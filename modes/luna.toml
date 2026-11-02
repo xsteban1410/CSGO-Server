@@ -1,0 +1,4 @@
+# Metadata for cfg/modo_luna.cfg
+category = "fun"
+name = { en = "Moon", es = "Luna" }
+description = { en = "AWP + Deagle with low gravity", es = "AWP + Deagle con gravedad baja" }

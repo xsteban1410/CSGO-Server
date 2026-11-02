@@ -1,0 +1,4 @@
+# Metadata for cfg/modo_awp.cfg
+category = "weapons"
+name = { en = "AWP", es = "AWP" }
+description = { en = "AWP + Deagle", es = "AWP + Deagle" }

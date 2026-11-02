@@ -1,200 +1,197 @@
-# CSGO Server
+# CS:GO Legacy Server
 
-Servidor privado de **CS:GO Legacy** para jugar con amigos contra bots. Usa la rama `csgo_legacy` de la app 730.
-Trae más de 30 modos: francotiradores, zombies por oleadas, retakes, Guardián, One in the Chamber… También guarda las skins de cada jugador.
-Todo se configura desde la terminal.
+[Español](README.es.md)
 
-Probado en Linux (CachyOS, Arch). Debería funcionar en cualquier distro de 64 bits con las librerías de 32 bits.
+Host a **CS:GO Legacy** dedicated server (app 740) and play with friends against bots, from a GTK app or the command line.
+It ships more than 30 game modes (snipers, zombie waves, retakes, Guardian, random cheats, anarchy…), remembers every
+player's skins, compiles SourceMod plugins by itself and browses the Steam Workshop for maps.
 
-## Instalación
+Works on any 64-bit glibc distro with 32-bit libraries. Tested on Arch/CachyOS.
 
-```bash
-git clone https://github.com/xsteban1410/CSGO-Server.git
-cd CSGO-Server
-./setup.sh
-```
+<p><img src="packaging/screenshots/server.png" width="49%" alt="Server tab"> <img src="packaging/screenshots/modes.png" width="49%" alt="Modes"></p>
 
-`setup.sh` hace todo esto, y si lo vuelves a lanzar se salta lo que ya está hecho:
-1. Comprueba las dependencias (curl, tar, python3 y las librerías de 32 bits). Si falta algo, te dice el comando para apt, pacman o dnf.
-2. Descarga SteamCMD y el servidor dedicado de CS:GO (app **740**, unos 33 GB) en `server/`.
-3. Borra `server/bin/libgcc_s.so.1`. Esa copia vieja hace que el servidor se cuelgue en distros modernas.
-4. Instala [Metamod:Source 1.12](https://www.sourcemm.net/) y [SourceMod 1.12](https://www.sourcemod.net/), y deja `metamod.vdf` preparado para 32 bits.
-5. Crea `config.env` con una contraseña rcon aleatoria.
-6. Genera la lista de skins, compila los plugins y copia las configs.
+## Install
 
-`./setup.sh --actualizar` vuelve a validar los archivos del servidor con SteamCMD y reaplica los arreglos.
-
-Cada jugador necesita **CS2 con la beta `csgo_legacy`** (Steam > CS2 > Propiedades > Betas) y entra desde la consola con `connect <IP>:<PUERTO>`.
-Con la beta, Steam sigue abriendo CS2 al darle a Jugar, aunque CS:GO Legacy está instalado en la misma carpeta. Para abrir cada uno:
-`./jugar.sh csgo [IP:PUERTO|local]` abre CS:GO Legacy y, si le pasas una dirección (o `local` para el servidor de este PC), se conecta directamente; `./jugar.sh cs2` abre CS2.
-
-Para que alguien se conecte desde fuera de tu red, abre el puerto UDP (27030 por defecto) en el router o usad la VPN que prefiráis.
-
-## Jugar con amigos por VPN (sin abrir puertos)
-
-Si no puedes abrir puertos en el router, podéis entrar por una VPN como Tailscale. Hay un problema: Steam echa a
-quien se conecta a una IP de VPN (`STEAMAUTH: ... failure code 10`, "Client dropped by server"). La solución es esta:
-
-1. En `config.env`, pon `SV_LAN=1` y reinicia el servidor. En modo LAN no se hace esa verificación de Steam.
-2. En tu PC, deja corriendo el puente: `python3 -I puente.py`. Recibe a los amigos en el puerto `PUERTO+1` y se los
-   pasa al servidor como si fueran jugadores de tu red local.
-3. Cada amigo copia `puente.py` y lanza en su PC `python3 -I puente.py 27030 <tu IP de VPN>:27031`. Luego se conecta a su
-   **propia IP local**: `connect <su IP local>:27030`. Si se conectara directamente a la IP de VPN, Steam lo rechazaría.
-4. Tú entras por tu IP local: `./jugar.sh csgo local`.
-
-
-
-```
-./arrancar.sh [modo] [alone|N] [opciones]   # arrancar el servidor
-./modo.sh     <modo> [alone|N] [opciones]   # cambiar de modo con el servidor encendido
-```
-
-| Argumento | Qué hace |
-|---|---|
-| *(nada)* | la partida empieza cuando haya `HUMANOS` humanos (2 por defecto) |
-| `alone` | empieza en cuanto entras tú |
-| `N` | espera a N humanos |
-| `-m, --mapa` | mapa (`de_dust2`, `de_inferno`, `de_mirage`, `de_nuke`…) |
-| `-t, --tipo` | `competitivo`, `casual` o `wingman` |
-| `-d, --dificultad` | bots de 0 (fácil) a 3 (experto) |
-| `-b, --bots` | cantidad de bots |
-| `-r, --rondas` | rondas máximas |
-| `-s, --sitio` | retake/defensa: `a`, `b` o `random` |
-| `-p, --precision` | precisión infinita: las balas van al centro aunque te muevas o saltes, y sin retroceso (también para los bots) |
-| `-w, --workshop` | mapa del workshop por su ID (ver abajo) |
-| `--set cvar=valor` | cualquier variable del servidor, repetible |
-
-Ejemplos:
+**Arch Linux (AUR):**
 
 ```bash
-./modo.sh awp alone
-./modo.sh retake 2 -s b -d 2 -m de_inferno
-./modo.sh zombies --set modo_t_vida=800 --set modo_t_velocidad=1.5
-./modo.sh libre alone -t casual
+yay -S csgo-legacy-server        # or csgo-legacy-server-git
 ```
 
-Cada cambio de modo recarga el mapa. Así las reglas oficiales del tipo elegido se aplican limpias y no quedan restos del modo anterior.
-
-## Modos
-
-Por defecto, los humanos van en CT y los bots en T (5, en dificultad experto). Cada modo es un archivo `cfg/modo_<nombre>.cfg`, así que añadir uno nuevo es crear otro archivo.
-
-| Modo | Descripción |
-|---|---|
-| `awp` | AWP + Deagle |
-| `scout` | SSG 08 + P250 |
-| `autosniper` | SCAR-20 + Deagle |
-| `luna` | AWP + Deagle con gravedad baja |
-| `rifles` | AK-47 + Deagle |
-| `headshot` | AK-47 + Deagle, solo daño a la cabeza |
-| `escopetas` | XM1014 + P250 |
-| `negev` | Negev |
-| `pistolas` | solo Deagle |
-| `cuchillo` | solo cuchillo |
-| `zeus` | solo Zeus, con reaparición |
-| `decoy` | granada señuelo y 1 de vida, con reaparición |
-| `normal` | partida normal con compras libres |
-| `libre` | partida libre: cualquier arma con `!armas`, reaparición, dinero infinito |
-| `zombies` | oleadas de zombis cada vez más duros (ver abajo) |
-| `retake` | la bomba ya está plantada en A/B; vosotros (CT) la desactiváis contra 5 bots que la defienden |
-| `defensa` | la bomba ya está plantada; vosotros (T) la defendéis contra 5 bots que vienen a desactivarla |
-| `dm` | deathmatch oficial |
-| `awpdm` | deathmatch solo AWP |
-| `dmcuchillo` | deathmatch solo cuchillo |
-| `armsrace` | carrera de armas oficial (mapas `ar_*`) |
-| `demolicion` | Demolición oficial: arma nueva cada ronda según tus bajas (`de_shortdust`, `de_lake`…) |
-| `guardian` | Guardián oficial: defendéis la zona contra oleadas de bots (`gd_cbble`) |
-| `rehenes` | rescatad a los rehenes contra 5 bots (mapas `cs_*`, por defecto `cs_office`) |
-| `flyingscout` | Flying Scoutsman: SSG 08, gravedad baja y precisión total en el aire |
-| `unabala` | One in the Chamber: Deagle con una bala, cualquier impacto mata, cada baja da otra bala |
-| `aleatorio` | cada ronda se sortea un arma (de la AWP al Zeus) igual para todos |
-| `vampiro` | AK + Deagle; el daño que haces te cura (hasta 200) |
-| `jefe` | partida normal, pero un bot por ronda es un jefe gigante con 5000 de vida |
-| `dmcabeza` | deathmatch solo con tiros a la cabeza |
-
-Ajustes por equipo disponibles para los cfg o para `--set` (con `t` o `ct`):
-`modo_<eq>_quitar`, `_arma`, `_pistola`, `_objeto`, `_vida`, `_velocidad`, `_color` (formato `R,G,B`).
-
-### Zombies
-
-Cada oleada es una ronda. Los bots zombi (T) solo llevan cuchillo y reaparecen sin parar. Vosotros (CT) tenéis dinero y munición infinitos:
-- Si aguantáis el tiempo de la oleada, pasáis a la siguiente, con más zombis y más vida. Si os comen, se repite.
-- Si superáis la última oleada, ganáis.
-- Hay tres tipos de zombi:
-  - **normal** (verde)
-  - **corredor** (amarillo): rápido y débil
-  - **tanque** (rojo): grande, lento y con el triple de vida; aparece desde la oleada 2
-- Las balas los empujan hacia atrás (las escopetas y la AWP más), y el fuego les hace el triple de daño.
-- **Infección**: si un zombi te mata, vuelves como zombi hasta la siguiente oleada.
-- Se juega con niebla.
-
-Todo se ajusta con `--set`:
-
-| Variable | Por defecto | Qué es |
-|---|---|---|
-| `modo_z_oleadas` | 5 | oleadas para ganar |
-| `modo_z_base` / `modo_z_incremento` | 6 / 2 | zombis en la 1.ª oleada y cuántos más en cada una |
-| `modo_z_vida` / `modo_z_vida_oleada` | 250 / 75 | vida inicial y la que suma cada oleada |
-| `modo_z_velocidad` | 1.2 | velocidad base |
-| `modo_z_retroceso` | 1.0 | fuerza del empujón (0 = sin empujón) |
-| `modo_z_infeccion` | 1 | 0 = sin infección |
-| `modo_z_niebla` | 1 | 0 = sin niebla |
-| `mp_roundtime` | 1.5 | minutos por oleada |
+**From source** (any distro; needs Rust, GTK 4 ≥ 4.14 and libadwaita ≥ 1.6 development files):
 
 ```bash
-./modo.sh zombies alone --set modo_z_oleadas=10 --set modo_z_vida=400
+git clone https://github.com/xsteban1410/CSGO-Server.git && cd CSGO-Server
+cargo build --release
+./target/release/csgo-legacy-server-gtk       # run from the repo: it finds cfg/, modes/ and plugin/ here
 ```
 
-### Otros ajustes de los modos
+To install elsewhere, copy `cfg/ modes/ plugin/ data/` to `<prefix>/share/csgo-legacy-server/` next to
+`<prefix>/bin`, or point `CSLS_RESOURCES` at a folder that has them.
 
-| Variable | Modo |
+### First run
+
+Nothing is downloaded until you ask. The app offers **Create a server** or **Just join servers**:
+
+- *Create a server* looks for an existing install first (any folder with `srcds_run`) and reuses it. Otherwise pick a
+  folder (~40 GB free), and it downloads SteamCMD, the dedicated server (~33 GB), Metamod:Source and SourceMod, then compiles
+  the plugins. The download keeps going in the background if you close the app, and resumes if it is interrupted.
+- *Just join* skips all of that: it is for friends who only play.
+
+Headless: `csgo-legacy-server install` does the same, and `csgo-legacy-server doctor` tells you what is missing and the
+exact command for your distro (apt, pacman, dnf, zypper, xbps, emerge).
+
+Players need **CS2 with the `csgo_legacy` beta** (Steam › CS2 › Properties › Betas) and join with `connect IP:PORT`.
+The app's **Play** button (or `csgo-legacy-server play local`) opens CS:GO Legacy already connecting to your server.
+
+## The app
+
+| Tab | |
 |---|---|
-| `modo_vampiro` / `modo_vampiro_max` | fracción del daño que te cura y vida máxima |
-| `modo_jefe` | vida del jefe (0 = sin jefe; se puede usar en cualquier modo) |
-| `modo_unabala`, `modo_aleatorio` | 1 = activa la regla en cualquier modo |
+| Server | status, connect address, Start (mode → map → options → network), change mode or map live, restart round, end warmup, add/remove bots, presets |
+| Players | kick, ban (minutes or permanent, with reason), bans list and unban, each player's saved skins |
+| Modes | make your own modes or duplicate a built-in one; import/export as `.toml` to share them |
+| Workshop | search maps without an API key, install by ID or link (collections too), generate bot navigation, import a local `.bsp` |
+| Console | live server log and rcon commands |
+| Join | join a friend's server over a VPN |
+| Settings | name, password, network profile, port, tickrate, GSLT, skins plugin, update the server |
 
-## Mapas del workshop
+The server runs as a `systemd --user` unit, so it keeps running when you close the app.
 
-1. Saca una clave de la Steam Web API en <https://steamcommunity.com/dev/apikey> y ponla en `config.env` como `WORKSHOP_AUTHKEY=`.
-2. Juega cualquier modo en un mapa del workshop con su ID, que es el número de la URL del mapa:
-   `./modo.sh awp alone -w 243702660`. El servidor lo descarga la primera vez.
-3. Los bots solo se mueven si el mapa tiene malla de navegación (`.nav`). Si no la trae, con el mapa cargado lanza `./nav.sh`. La genera, recarga el mapa y la deja guardada.
+## Network profiles
 
-Algunos mapas que funcionan bien con bots: **Aim Botz** (`243702660`, entrenar puntería), mapas `aim_*` / `fy_*` y versiones de los mapas oficiales.
-Los mapas de surf, bhop y KZ no sirven, porque los bots no saben jugarlos.
-
-## Comandos en el chat del juego
-
-| Comando | Qué hace |
+| Profile | Use it for |
 |---|---|
-| `!ws` | skin del arma que tienes en la mano, o de cualquier otra. Las más buscadas salen primero. |
-| `!knife` / `!cuchillo` | modelo de cuchillo (Karambit, Mariposa, M9…), y después su skin |
-| `!armas` / `!guns` | coger cualquier arma (solo en el modo `libre`) |
+| LAN | players on your local network (`sv_lan 1`) |
+| Friends over VPN | Tailscale, ZeroTier…: Steam drops clients that connect to a VPN IP, so the server stays in LAN mode and a UDP bridge on PORT+1 forwards your friends. Each friend opens the **Join** tab (or runs `csgo-legacy-server bridge 27030 <your VPN IP>:27031`) and connects to **their own** local IP |
+| Internet | open UDP port; shows your public IP, tells you the firewall command (ufw/firewalld) and can open the router port with UPnP (`miniupnpc`) |
+| Community | Internet + a [GSLT token](https://steamcommunity.com/dev/managegameservers) (app 730) so the server shows up in Steam's server browser |
 
-Las elecciones se guardan por SteamID en SQLite (`addons/sourcemod/data/sqlite/sourcemod-local.sq3`) y se aplican solas cada vez que entras.
-
-## Estructura
+## Command line
 
 ```
-setup.sh                       instalación completa
-arrancar.sh  modo.sh  lib.sh   CLI (opciones compartidas en lib.sh)
-nav.sh                         genera el .nav del mapa actual
-jugar.sh                       abre CS:GO Legacy o CS2 (cliente)
-config.example.env             valores por defecto
-cfg/                           server.cfg, modo_base.cfg y un cfg por modo
-plugin/modos.sp                modos, calentamiento, ajustes por equipo, retakes
-plugin/modos_zombies.sp        zombies por oleadas (incluido en modos.sp)
-plugin/modos_extras.sp         una bala, aleatorio, vampiro, jefe
-plugin/skins.sp                !ws, !knife, !armas + guardado
-plugin/nolobbyreservation/     parche para poder conectar por IP (firmas para Linux)
-tools/generar_skins.py         lista de skins desde items_game.txt
-desplegar.sh  rcon.py          compilar/copiar y control remoto (`python3 rcon.py "comando"`)
+csgo-legacy-server start [mode] [alone|N] [options]   start the server
+csgo-legacy-server mode  <mode> [alone|N] [options]   change mode/map while running
+csgo-legacy-server stop | status | players | maps | modes
+csgo-legacy-server kick <userid> | ban <userid> <minutes> [reason] | unban <STEAM_1:x:y>
+csgo-legacy-server bots +2 | bots -1 | round [--warmup]
+csgo-legacy-server workshop search|install|list|remove|import
+csgo-legacy-server mode-file export|import|delete     share custom modes
+csgo-legacy-server presets [--delete name]            saved start options
+csgo-legacy-server deploy [--force] [--watch]         compile plugins, copy configs
+csgo-legacy-server nav [--force]                      bot navigation for the current map
+csgo-legacy-server skins                              rebuild the skins list after a game update
+csgo-legacy-server rcon "command" | play [cs2|local|IP:PORT] | bridge | doctor | install [--update]
 ```
 
-## Notas y límites
+Start/mode options: `-m/--map`, `-t/--type competitive|casual|wingman`, `-d/--difficulty 0-3`, `-b/--bots`,
+`-r/--rounds`, `-s/--site a|b|random`, `-p/--precision` (no spread or recoil for everyone), `--anarchy`,
+`-w/--workshop ID`, `--set cvar=value` (repeatable), `--preset NAME`, `--save-preset NAME`.
 
-- **NoLobbyReservation:** CS:GO Legacy rechaza conexiones directas sin este parche. Las firmas para Linux de esta versión del `engine.so` las regeneré yo. Si Valve actualizara los binarios, habría que buscarlas de nuevo. El código original es de [vanz666/NoLobbyReservation](https://github.com/vanz666/NoLobbyReservation), que no declara licencia: pide permiso antes de publicar la versión modificada.
-- El servidor arranca con `-insecure` (sin VAC) y sin token GSLT. Es para jugar en privado, no para listarse en público.
-- Las skins son cosméticas y solo se ven en este servidor. Usar skin changers en servidores con GSLT público va contra las normas de Valve.
-- Licencia: todos los derechos reservados (ver `LICENSE`). No se permite usar, copiar ni distribuir este código sin permiso escrito del autor. `plugin/nolobbyreservation/` es de su autor original.
-- No hay guantes: necesitan crear entidades aparte y no están implementados.
+```bash
+csgo-legacy-server start awp alone
+csgo-legacy-server mode retake 2 -s b -d 2 -m de_inferno
+csgo-legacy-server mode zombies --set modo_z_oleadas=10 --set modo_z_vida=400
+```
+
+## Modes
+
+Humans play CT and bots T (5, expert) unless the mode says otherwise.
+
+| Mode | |
+|---|---|
+| `aleatorio` | **Random weapon** — Each round everyone gets the same random weapon |
+| `anarquia` | **Anarchy** — Free for all with friendly fire, buy anywhere and no automatic kicks or bans |
+| `armsrace` | **Arms Race** — Official Arms Race (ar_ maps) |
+| `autosniper` | **Auto-sniper** — SCAR-20 + Deagle |
+| `awp` | **AWP** — AWP + Deagle |
+| `awpdm` | **AWP deathmatch** — Deathmatch with AWP only |
+| `cheats` | **Random cheats** — Grab power-ups around the map for a random cheat for 30 s: wallhack, aimbot, god mode… |
+| `cuchillo` | **Knives** — Knife only |
+| `decoy` | **Decoy** — Decoy grenade and 1 HP, with respawn |
+| `defensa` | **Post-plant** — The bomb is planted; you (T) defend it against 5 bots |
+| `demolicion` | **Demolition** — Official Demolition, a new weapon each round |
+| `dm` | **Deathmatch** — Official deathmatch |
+| `dmcabeza` | **Headshot deathmatch** — Deathmatch where only headshots count |
+| `dmcuchillo` | **Knife deathmatch** — Deathmatch with knives only |
+| `escopetas` | **Shotguns** — XM1014 + P250 |
+| `flyingscout` | **Flying Scoutsman** — SSG 08, low gravity and perfect accuracy in the air |
+| `guardian` | **Guardian** — Official Guardian, defend the zone against waves of bots |
+| `headshot` | **Headshots only** — AK-47 + Deagle, only head damage counts |
+| `jefe` | **Boss** — Normal match, but one bot per round is a giant boss with 5000 HP |
+| `libre` | **Free play** — Any weapon with !guns, respawn, infinite money |
+| `luna` | **Moon** — AWP + Deagle with low gravity |
+| `negev` | **Negev** — Negev only |
+| `normal` | **Normal** — Normal match, free buys with 16000 |
+| `pistolas` | **Pistols** — Deagle only |
+| `rehenes` | **Hostages** — Rescue the hostages against 5 bots (cs_ maps) |
+| `retake` | **Retake** — The bomb is planted; you (CT) defuse it against 5 bots |
+| `rifles` | **Rifles** — AK-47 + Deagle |
+| `scout` | **Scout** — SSG 08 + P250 |
+| `unabala` | **One in the Chamber** — Deagle with one bullet, any hit kills, each kill gives a bullet |
+| `vampiro` | **Vampire** — AK + Deagle; damage you deal heals you (up to 200) |
+| `zeus` | **Zeus** — Zeus only, with respawn |
+| `zombies` | **Zombies** — Waves of ever tougher zombie bots |
+
+Per-team settings for your own modes or `--set` (`t` or `ct`): `modo_<team>_quitar`, `_arma`, `_pistola`,
+`_objeto`, `_vida`, `_velocidad`, `_color` (`R,G,B`).
+
+**Zombies:** each wave is a round. Zombie bots (T) only carry knives and respawn endlessly; you (CT) have infinite money and
+ammo. Survive the wave time to move on; lose and the wave repeats. Normal, runner (fast, weak) and tank (big, slow, triple
+health) zombies; bullets push them back and fire burns them; killed players come back as zombies; fog.
+Settings: `modo_z_oleadas` (5), `modo_z_base`/`modo_z_incremento` (6/2), `modo_z_vida`/`modo_z_vida_oleada` (250/75),
+`modo_z_velocidad` (1.2), `modo_z_retroceso` (1.0), `modo_z_infeccion` (1), `modo_z_niebla` (1), `mp_roundtime` (1.5).
+
+**Random cheats:** glowing power-ups appear around the map; grabbing one gives a random cheat for 30 s (wallhack, aimbot,
+infinite ammo, speed, low gravity, god mode, invisibility, one-shot kills, autobhop, super jump, regeneration).
+Settings: `modo_cheats_duracion`, `_cantidad`, `_reaparicion`, `_bots`, `_lista`.
+
+**Anarchy** (mode or `--anarchy` with any mode): no automatic kicks or bans (idle, team kills, vote kick, flood,
+reserved slots). Kicks and bans you make from the app still work.
+
+### Your own modes and plugins
+
+- Modes: `~/.config/csgo-legacy-server/modes/<id>.toml` + `<id>.cfg` (the Modes tab writes them for you).
+- Plugins: drop a `.sp` (or `name/name.sp`) into `~/.config/csgo-legacy-server/plugins/`.
+
+With the app open (or `deploy --watch`) new or changed files are compiled and reloaded in the running server; compile
+errors are shown with their line and the server keeps the previous version. Deleted plugins are unloaded.
+
+## Workshop maps
+
+Search in the Workshop tab or `csgo-legacy-server workshop search aim`. CS2 maps (Source 2) cannot run on CS:GO Legacy and are
+marked as incompatible. Installed maps live in `maps/csls/<id>/` and show up in the map step. Bots only move on maps with a
+navigation mesh: press **Generate .nav** (or `nav`) with the map loaded. Surf, bhop and KZ maps are no good for bots.
+
+## In-game chat commands
+
+| | |
+|---|---|
+| `!ws` | skin for the weapon in your hand (or any other); the most wanted ones come first |
+| `!knife` | knife model (Karambit, Butterfly, M9…) and its skin |
+| `!guns` / `!armas` | any weapon (free play mode only) |
+
+Choices are saved per SteamID and applied every time you join. Messages follow each player's game language (English/Spanish).
+
+## Files
+
+| | |
+|---|---|
+| `~/.config/csgo-legacy-server/config.toml` | settings (rcon password inside, mode 600) |
+| `~/.config/csgo-legacy-server/{modes,plugins,presets.toml}` | your modes, plugins and presets |
+| `~/.local/share/csgo-legacy-server/` | server (default location), SteamCMD, logs, workshop cache |
+| `crates/core`, `crates/cli`, `crates/gtk` | Rust: core library, command line, GTK app |
+| `plugin/`, `cfg/`, `modes/` | SourceMod plugins, mode configs, mode metadata |
+
+## Notes and limits
+
+- `plugin/csls_directconnect` patches the engine in memory so players can join by IP without a matchmaking lobby. Its Linux
+  signatures match the current `engine.so`; if Valve updates the server binaries it will log "signature not found" and they
+  must be found again. The idea comes from [NoLobbyReservation](https://github.com/vanz666/NoLobbyReservation).
+- The server runs with `-insecure` (no VAC). Skins are cosmetic and only visible on this server; skin changers break Valve's
+  rules for public GSLT servers, so the Settings tab lets you turn the skins plugin off.
+- No gloves. Not tested on musl distros or SteamOS (read-only system: use distrobox).
+
+## License
+
+GPL-3.0-or-later. See [LICENSE](LICENSE).

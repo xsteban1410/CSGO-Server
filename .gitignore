@@ -12,5 +12,8 @@ engine.dis
 appmanifest_*.bak
 __pycache__/
 
-# config.env lleva la contraseña rcon: se versiona config.example.env
+# config.env (proyecto antiguo) lleva la contraseña rcon; la config nueva está en ~/.config
 config.env
+
+# Rust
+target/

@@ -1,0 +1,4 @@
+# Metadata for cfg/modo_vampiro.cfg
+category = "fun"
+name = { en = "Vampire", es = "Vampiro" }
+description = { en = "AK + Deagle; damage you deal heals you (up to 200)", es = "AK + Deagle; el daño que haces te cura (hasta 200)" }

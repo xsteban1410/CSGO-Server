@@ -1,0 +1,62 @@
+# Maintainer: xsteban1410 <esteban1410dev at gmail dot com>
+pkgname=csgo-legacy-server-git
+pkgver=1.0.0.r0.g0000000
+pkgrel=1
+pkgdesc="Host a CS:GO Legacy dedicated server with bots: GTK app and command line (git)"
+arch=('x86_64')
+url="https://github.com/xsteban1410/CSGO-Server"
+license=('GPL-3.0-or-later')
+# srcds y steamcmd son de 32 bits; curl/tar para descargar SteamCMD, SourceMod y mapas
+depends=('gtk4' 'libadwaita' 'sqlite' 'curl' 'tar' 'lib32-glibc' 'lib32-gcc-libs')
+makedepends=('cargo')
+optdepends=('steamcmd: use the system SteamCMD instead of downloading it'
+            'steam: play on this PC (CS:GO Legacy is the csgo_legacy beta of CS2)'
+            'miniupnpc: open the server port on the router with UPnP'
+            'systemd: keep the server running after closing the app')
+options=('!lto')
+makedepends+=('git')
+provides=("csgo-legacy-server=${pkgver%%.r*}")
+conflicts=('csgo-legacy-server')
+source=("$pkgname::git+$url.git")
+sha256sums=('SKIP')
+_dir="$pkgname"
+
+pkgver() {
+  cd "$_dir"
+  git describe --long --tags --abbrev=7 2>/dev/null | sed 's/^v//;s/\([^-]*-g\)/r\1/;s/-/./g' ||
+    printf "1.0.0.r%s.g%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short=7 HEAD)"
+}
+
+prepare() {
+  cd "$_dir"
+  export RUSTUP_TOOLCHAIN=stable
+  cargo fetch --locked --target "$(rustc -vV | sed -n 's/host: //p')"
+}
+
+build() {
+  cd "$_dir"
+  export RUSTUP_TOOLCHAIN=stable
+  export CARGO_TARGET_DIR=target
+  cargo build --frozen --release
+}
+
+check() {
+  cd "$_dir"
+  export RUSTUP_TOOLCHAIN=stable
+  export CARGO_TARGET_DIR=target
+  cargo test --frozen --release
+}
+
+package() {
+  cd "$_dir"
+  install -Dm755 target/release/csgo-legacy-server target/release/csgo-legacy-server-gtk -t "$pkgdir/usr/bin/"
+  local share="$pkgdir/usr/share/csgo-legacy-server"
+  install -d "$share"
+  cp -r --no-preserve=ownership cfg modes plugin data "$share/"
+  find "$share" -type d -exec chmod 755 {} + && find "$share" -type f -exec chmod 644 {} +
+  local id=io.github.xsteban1410.CsgoLegacyServer
+  install -Dm644 "packaging/$id.desktop" -t "$pkgdir/usr/share/applications/"
+  install -Dm644 "packaging/$id.metainfo.xml" -t "$pkgdir/usr/share/metainfo/"
+  install -Dm644 "packaging/$id.svg" -t "$pkgdir/usr/share/icons/hicolor/scalable/apps/"
+  install -Dm644 README.md README.es.md -t "$pkgdir/usr/share/doc/$pkgname/"
+}

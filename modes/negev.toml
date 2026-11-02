@@ -1,0 +1,4 @@
+# Metadata for cfg/modo_negev.cfg
+category = "weapons"
+name = { en = "Negev", es = "Negev" }
+description = { en = "Negev only", es = "Solo Negev" }

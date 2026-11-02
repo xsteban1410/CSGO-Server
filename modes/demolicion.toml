@@ -1,0 +1,6 @@
+# Metadata for cfg/modo_demolicion.cfg
+category = "objective"
+name = { en = "Demolition", es = "Demolición" }
+description = { en = "Official Demolition, a new weapon each round", es = "Demolición oficial, arma nueva cada ronda" }
+game_type = 1
+game_mode = 1

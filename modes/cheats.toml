@@ -1,0 +1,4 @@
+# Metadata for cfg/modo_cheats.cfg
+category = "fun"
+name = { en = "Random cheats", es = "Cheats aleatorios" }
+description = { en = "Grab power-ups around the map for a random cheat for 30 s: wallhack, aimbot, god mode…", es = "Coge power-ups por el mapa y ten un cheat al azar 30 s: wallhack, aimbot, invencible…" }
