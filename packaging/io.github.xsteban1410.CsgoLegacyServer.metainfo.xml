@@ -52,6 +52,11 @@
     <display_length compare="ge">360</display_length>
   </requires>
   <releases>
+    <release version="1.0.1" date="2026-11-02">
+      <description>
+        <p>New app icon.</p>
+      </description>
+    </release>
     <release version="1.0.0" date="2026-11-01">
       <description>
         <p>First release: GTK app and command line, replacing the old shell scripts.</p>

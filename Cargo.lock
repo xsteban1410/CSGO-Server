@@ -188,7 +188,7 @@ dependencies = [
 
 [[package]]
 name = "csgo-legacy-server"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "anyhow",
  "clap",
@@ -197,7 +197,7 @@ dependencies = [
 
 [[package]]
 name = "csgo-legacy-server-gtk"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "anyhow",
  "csls-core",
@@ -207,7 +207,7 @@ dependencies = [
 
 [[package]]
 name = "csls-core"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "anyhow",
  "rusqlite",
