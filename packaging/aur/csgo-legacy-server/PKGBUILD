@@ -16,7 +16,7 @@ optdepends=('steamcmd: use the system SteamCMD instead of downloading it'
 options=('!lto')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
 # tras publicar el tag: updpkgsums
-sha256sums=('SKIP')
+sha256sums=('b4a9133f5642e23cf39f5f46d106f5558b357350a6ec8a5fe30eff2ac6d3913d')
 _dir="CSGO-Server-$pkgver"
 
 prepare() {
