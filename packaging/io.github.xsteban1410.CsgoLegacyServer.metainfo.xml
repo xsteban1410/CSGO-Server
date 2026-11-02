@@ -52,6 +52,11 @@
     <display_length compare="ge">360</display_length>
   </requires>
   <releases>
+    <release version="1.0.2" date="2026-11-02">
+      <description>
+        <p>Fix: the "Create a server" button did nothing on first launch.</p>
+      </description>
+    </release>
     <release version="1.0.1" date="2026-11-02">
       <description>
         <p>New app icon.</p>

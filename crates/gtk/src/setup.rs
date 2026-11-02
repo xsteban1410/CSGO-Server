@@ -66,7 +66,7 @@ pub fn page(a: &AppRc, root: &gtk::Stack, tabs: &adw::ViewStack) -> gtk::Widget 
     tv2.set_content(Some(&pp));
     let install_page = adw::NavigationPage::new(&tv2, &t("Create a server"));
 
-    create.connect_clicked(glib::clone!(#[weak] nav, #[weak] install_page, move |_| nav.push(&install_page)));
+    create.connect_clicked(glib::clone!(#[weak] nav, #[strong] install_page, move |_| nav.push(&install_page)));
 
     change.connect_clicked(glib::clone!(#[strong] a, #[weak] folder, move |_| {
         let fd = gtk::FileDialog::builder().title(t("Server folder")).modal(true).build();

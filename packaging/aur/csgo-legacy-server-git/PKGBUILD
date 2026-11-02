@@ -1,6 +1,6 @@
 # Maintainer: xsteban1410 <esteban1410dev at gmail dot com>
 pkgname=csgo-legacy-server-git
-pkgver=1.0.1.r0.g0000000
+pkgver=1.0.2.r0.g0000000
 pkgrel=1
 pkgdesc="Host a CS:GO Legacy dedicated server with bots: GTK app and command line (git)"
 arch=('x86_64')
@@ -24,7 +24,7 @@ _dir="$pkgname"
 pkgver() {
   cd "$_dir"
   git describe --long --tags --abbrev=7 2>/dev/null | sed 's/^v//;s/\([^-]*-g\)/r\1/;s/-/./g' ||
-    printf "1.0.1.r%s.g%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short=7 HEAD)"
+    printf "1.0.2.r%s.g%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short=7 HEAD)"
 }
 
 prepare() {
