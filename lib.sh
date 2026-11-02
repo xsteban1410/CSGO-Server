@@ -20,6 +20,7 @@ Uso: $(basename "$0") <modo> [alone|N] [opciones]
   -b, --bots N           cantidad de bots
   -r, --rondas N         rondas máximas
   -s, --sitio S          retake/defensa: a | b | random
+  -p, --precision        precisión infinita: sin dispersión al moverse/saltar y sin retroceso (para todos)
   -w, --workshop ID      mapa del workshop por su ID (necesita WORKSHOP_AUTHKEY en config.env)
       --set cvar=valor   cualquier otra variable del servidor (repetible)
 Modos: $(modos)
@@ -39,6 +40,7 @@ parse_args() {
   while [ $# -gt 0 ]; do
     case $1 in
       -h|--help) uso; exit 0 ;;
+      -p|--precision) EXTRA+="; weapon_accuracy_nospread 1; weapon_recoil_scale 0"; shift; continue ;;
     esac
     [ $# -ge 2 ] || fallo "falta el valor de $1"
     case $1 in

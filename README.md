@@ -30,7 +30,19 @@ Con la beta, Steam sigue abriendo CS2 al darle a Jugar, aunque CS:GO Legacy est�
 
 Para que alguien se conecte desde fuera de tu red, abre el puerto UDP (27030 por defecto) en el router o usad la VPN que prefiráis.
 
-## Uso
+## Jugar con amigos por VPN (sin abrir puertos)
+
+Si no puedes abrir puertos en el router, podéis entrar por una VPN como Tailscale. Hay un problema: Steam echa a
+quien se conecta a una IP de VPN (`STEAMAUTH: ... failure code 10`, "Client dropped by server"). La solución es esta:
+
+1. En `config.env`, pon `SV_LAN=1` y reinicia el servidor. En modo LAN no se hace esa verificación de Steam.
+2. En tu PC, deja corriendo el puente: `python3 -I puente.py`. Recibe a los amigos en el puerto `PUERTO+1` y se los
+   pasa al servidor como si fueran jugadores de tu red local.
+3. Cada amigo copia `puente.py` y lanza en su PC `python3 -I puente.py 27030 <tu IP de VPN>:27031`. Luego se conecta a su
+   **propia IP local**: `connect <su IP local>:27030`. Si se conectara directamente a la IP de VPN, Steam lo rechazaría.
+4. Tú entras por tu IP local: `./jugar.sh csgo local`.
+
+
 
 ```
 ./arrancar.sh [modo] [alone|N] [opciones]   # arrancar el servidor
@@ -48,6 +60,7 @@ Para que alguien se conecte desde fuera de tu red, abre el puerto UDP (27030 por
 | `-b, --bots` | cantidad de bots |
 | `-r, --rondas` | rondas máximas |
 | `-s, --sitio` | retake/defensa: `a`, `b` o `random` |
+| `-p, --precision` | precisión infinita: las balas van al centro aunque te muevas o saltes, y sin retroceso (también para los bots) |
 | `-w, --workshop` | mapa del workshop por su ID (ver abajo) |
 | `--set cvar=valor` | cualquier variable del servidor, repetible |
 

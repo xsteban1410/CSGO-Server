@@ -28,6 +28,6 @@ IP=$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src"
 echo "Modo $MODO en $MAPA_FINAL. Conectar con: connect ${IP:-IP_DE_ESTE_PC}:$PUERTO"
 export LD_LIBRARY_PATH=".:bin:$LD_LIBRARY_PATH"
 exec ./srcds_run -game csgo -console -insecure -condebug -usercon -port "$PUERTO" "${AUTH[@]}" \
-  -maxplayers_override "$MAX_JUGADORES" -tickrate "$TICKRATE" +sv_lan 0 \
+  -maxplayers_override "$MAX_JUGADORES" -tickrate "$TICKRATE" +sv_lan "${SV_LAN:-0}" \
   +game_type "$T" +game_mode "$G" +mapgroup mg_active "${MAPA_CMD[@]}" \
   +rcon_password "$RCON_PASSWORD" +exec server.cfg
