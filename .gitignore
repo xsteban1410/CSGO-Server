@@ -1,18 +1,18 @@
-# Servidor y herramientas descargadas (decenas de GB)
+# Server and tools downloaded
 server/
 steamcmd/
 stage/
 dl/
 nlr/
 
-# Generados / locales
+# generated / local
 *.smx
 *.log
 engine.dis
 appmanifest_*.bak
 __pycache__/
 
-# config.env (proyecto antiguo) lleva la contraseña rcon; la config nueva está en ~/.config
+# config.env (old version)
 config.env
 
 # Rust
