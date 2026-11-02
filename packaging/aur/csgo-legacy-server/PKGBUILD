@@ -50,5 +50,8 @@ package() {
   install -Dm644 "packaging/$id.desktop" -t "$pkgdir/usr/share/applications/"
   install -Dm644 "packaging/$id.metainfo.xml" -t "$pkgdir/usr/share/metainfo/"
   install -Dm644 "packaging/$id.svg" -t "$pkgdir/usr/share/icons/hicolor/scalable/apps/"
+  for s in 32 48 64 128 256 512; do
+    install -Dm644 "packaging/icons/$s.png" "$pkgdir/usr/share/icons/hicolor/${s}x${s}/apps/$id.png"
+  done
   install -Dm644 README.md README.es.md -t "$pkgdir/usr/share/doc/$pkgname/"
 }

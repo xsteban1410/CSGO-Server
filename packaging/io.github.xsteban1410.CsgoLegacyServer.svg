@@ -1,22 +1,37 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#3a4250"/>
-      <stop offset="1" stop-color="#1e232b"/>
-    </linearGradient>
-  </defs>
-  <rect x="8" y="8" width="112" height="112" rx="24" fill="url(#bg)"/>
-  <!-- servidor -->
-  <rect x="26" y="70" width="76" height="16" rx="4" fill="#59606c"/>
-  <rect x="26" y="90" width="76" height="16" rx="4" fill="#59606c"/>
-  <circle cx="36" cy="78" r="3" fill="#8ff0a4"/>
-  <circle cx="36" cy="98" r="3" fill="#8ff0a4"/>
-  <rect x="48" y="76" width="44" height="4" rx="2" fill="#3d434d"/>
-  <rect x="48" y="96" width="44" height="4" rx="2" fill="#3d434d"/>
-  <!-- mira -->
-  <g fill="none" stroke="#f6a623" stroke-width="5" stroke-linecap="round">
-    <circle cx="64" cy="40" r="20"/>
-    <path d="M64 12v12M64 56v6M36 40h12M80 40h12"/>
+  <!-- placa -->
+  <rect x="8" y="8" width="112" height="112" rx="22" fill="#23272b"/>
+  <rect x="8" y="8" width="112" height="112" rx="22" fill="none" stroke="#000" stroke-opacity="0.35" stroke-width="2"/>
+  <path d="M30 9.5 H98" stroke="#fff" stroke-opacity="0.07" stroke-width="1.5"/>
+
+  <!-- mira clásica: cuatro trazos con hueco -->
+  <g fill="#e8a33a">
+    <rect x="60" y="16" width="8" height="18" rx="1"/>
+    <rect x="60" y="94" width="8" height="18" rx="1"/>
+    <rect x="16" y="60" width="18" height="8" rx="1"/>
+    <rect x="94" y="60" width="18" height="8" rx="1"/>
   </g>
-  <circle cx="64" cy="40" r="3.5" fill="#f6a623"/>
+
+  <!-- rack: tres unidades en tono arena con cortes de plantilla -->
+  <g>
+    <rect x="38" y="40" width="52" height="14" rx="2" fill="#d8cdb2"/>
+    <rect x="38" y="57" width="52" height="14" rx="2" fill="#d8cdb2"/>
+    <rect x="38" y="74" width="52" height="14" rx="2" fill="#d8cdb2"/>
+    <g fill="#23272b">
+      <rect x="44" y="45.5" width="7" height="3" rx="0.5"/>
+      <rect x="53" y="45.5" width="7" height="3" rx="0.5"/>
+      <rect x="62" y="45.5" width="7" height="3" rx="0.5"/>
+      <rect x="44" y="62.5" width="7" height="3" rx="0.5"/>
+      <rect x="53" y="62.5" width="7" height="3" rx="0.5"/>
+      <rect x="62" y="62.5" width="7" height="3" rx="0.5"/>
+      <rect x="44" y="79.5" width="7" height="3" rx="0.5"/>
+      <rect x="53" y="79.5" width="7" height="3" rx="0.5"/>
+      <rect x="62" y="79.5" width="7" height="3" rx="0.5"/>
+    </g>
+    <g fill="#e8a33a">
+      <rect x="78" y="45" width="5" height="4" rx="0.8"/>
+      <rect x="78" y="62" width="5" height="4" rx="0.8"/>
+    </g>
+    <rect x="78" y="79" width="5" height="4" rx="0.8" fill="#6f7a3d"/>
+  </g>
 </svg>
