@@ -23,7 +23,18 @@ pub fn page(a: &AppRc) -> gtk::Widget {
     copy.add_css_class("flat");
     copy.set_tooltip_text(Some(&t("Copy")));
     addr.add_suffix(&copy);
-    for r in [&state, &mode, &map, &players, &addr] {
+    // perfil VPN: lo que hay que pasar a los amigos y si el puente está en marcha
+    let vpn_addr = adw::ActionRow::builder().title(t("Address for friends over VPN")).build();
+    let vpn_copy = gtk::Button::from_icon_name("edit-copy-symbolic");
+    vpn_copy.set_valign(gtk::Align::Center);
+    vpn_copy.add_css_class("flat");
+    vpn_copy.set_tooltip_text(Some(&t("Copy")));
+    vpn_addr.add_suffix(&vpn_copy);
+    let bridge = adw::ActionRow::builder().title(t("VPN bridge")).build();
+    let bridge_start = gtk::Button::with_label(&t("Start"));
+    bridge_start.set_valign(gtk::Align::Center);
+    bridge.add_suffix(&bridge_start);
+    for r in [&state, &mode, &map, &players, &addr, &vpn_addr, &bridge] {
         r.add_css_class("property");
         g.add(r);
     }
@@ -124,6 +135,19 @@ pub fn page(a: &AppRc) -> gtk::Widget {
         b.clipboard().set_text(&format!("connect {}", sub.split_whitespace().next().unwrap_or("")));
         a.toast(&t("Copied"));
     }));
+    vpn_copy.connect_clicked(glib::clone!(#[weak] vpn_addr, #[strong] a, move |b| {
+        b.clipboard().set_text(&vpn_addr.subtitle().unwrap_or_default());
+        a.toast(&t("Copied"));
+    }));
+    bridge_start.connect_clicked(glib::clone!(#[strong] a, move |_| {
+        let cfg = a.cfg.borrow().clone();
+        bg(move || Server::new(&cfg).start_bridge(), glib::clone!(#[strong] a, move |r: anyhow::Result<()>| {
+            if let Err(e) = r {
+                a.error(&e);
+            }
+            a.refresh();
+        }));
+    }));
     start.connect_clicked(glib::clone!(#[strong] a, move |_| wizard::open(&a, false)));
     change.connect_clicked(glib::clone!(#[strong] a, move |_| wizard::open(&a, true)));
     stop.connect_clicked(glib::clone!(#[strong] a, move |_| {
@@ -146,18 +170,27 @@ pub fn page(a: &AppRc) -> gtk::Widget {
         }));
         d.present(Some(&a.win));
     }));
-    play.connect_clicked(glib::clone!(#[strong] a, move |_| {
+    play.connect_clicked(glib::clone!(#[strong] a, move |play| {
         let c = Server::new(&a.cfg.borrow()).connect_address();
-        if let Err(e) = steam_client::launch_csgo(Some(&c)) {
-            a.error(&e);
+        match steam_client::launch_csgo(Some(&c)) {
+            Ok(_) => {
+                play.clipboard().set_text(&format!("connect {c}"));
+                a.toast(&t("Opening. If it does not join by itself, paste the copied command in the console"));
+            }
+            Err(e) => a.error(&e),
         }
     }));
 
     // dirección: la local y, con perfil de internet, también la pública (petición en segundo plano)
-    let set_addr = Rc::new(glib::clone!(#[strong] a, #[weak] addr, move || {
+    let set_addr = Rc::new(glib::clone!(#[strong] a, #[weak] addr, #[weak] vpn_addr, move || {
         let cfg = a.cfg.borrow().clone();
         let local = Server::new(&cfg).connect_address();
         addr.set_subtitle(&local);
+        let is_vpn = cfg.server.network == csls_core::config::Network::Vpn;
+        vpn_addr.set_visible(is_vpn);
+        if is_vpn {
+            vpn_addr.set_subtitle(&Server::new(&cfg).vpn_address().unwrap_or_else(|| t("No Tailscale address found: use this PC's VPN IP")));
+        }
         if Server::new(&cfg).public() {
             bg(move || Server::new(&cfg).public_address(), glib::clone!(#[weak] addr, move |p: Option<String>| {
                 if let Some(p) = p {
@@ -168,8 +201,13 @@ pub fn page(a: &AppRc) -> gtk::Widget {
     }));
     set_addr();
     let was_on = std::cell::Cell::new(None);
+    let on_live_a = a.clone();
     a.on_live(move |l| {
         let on = l.running;
+        let is_vpn = on_live_a.cfg.borrow().server.network == csls_core::config::Network::Vpn;
+        bridge.set_visible(is_vpn && on);
+        bridge.set_subtitle(&if l.bridge { t("Running") } else { t("Not running: friends cannot join") });
+        bridge_start.set_visible(!l.bridge);
         gl.set_visible(l.rcon_ok);
         if was_on.replace(Some(l.rcon_ok)) != Some(l.rcon_ok) {
             fill();

@@ -1,0 +1,39 @@
+name: Sensitive areas
+
+# Avisa en los PR que tocan zonas peligrosas. pull_request_target da permiso para comentar también en PR de forks:
+# por eso nunca debe hacer checkout ni ejecutar código del PR; solo lee la lista de archivos.
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      PR: ${{ github.event.pull_request.number }}
+    steps:
+      - name: Look for sensitive paths
+        run: |
+          set -euo pipefail
+          paths='^(LICENSE|cfg/modo_base\.cfg|cfg/modo_clasico\.cfg|plugin/modos\.sp|plugin/csls_directconnect/|crates/core/src/(bridge|server|steam_client|rcon|config|install|deploy|launch|modes)\.rs|\.github/|tools/version\.sh|packaging/)'
+          touched=$(gh api --paginate "repos/$GH_REPO/pulls/$PR/files" --jq '.[].filename' | grep -E "$paths" || true)
+          [ -n "$touched" ] || exit 0
+          gh api "repos/$GH_REPO/issues/$PR/labels" -f 'labels[]=sensitive' >/dev/null
+          marker='<!-- sensitive-areas -->'
+          gh pr view "$PR" --json comments --jq '.comments[].body' | grep -qF "$marker" && exit 0
+          {
+            echo "$marker"
+            echo "This pull request touches sensitive areas, so it needs a manual review:"
+            echo
+            echo "$touched" | sed 's/.*/- `&`/'
+            echo
+            echo "Please explain in the description why it is needed and how you tested it. See [Sensitive areas](https://github.com/$GH_REPO/blob/master/CONTRIBUTING.md#sensitive-areas)."
+          } > comment.md
+          gh pr comment "$PR" --body-file comment.md

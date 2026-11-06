@@ -17,7 +17,6 @@ for p in "${pkgs[@]}"; do
   cd "$work/$p"
   if [ "$p" = csgo-legacy-server ]; then
     updpkgsums                      # sustituye el SKIP por el sha256 real del tarball del tag
-    cp PKGBUILD "$here/$p/PKGBUILD" # deja el checksum también en el repo
   fi
   makepkg --printsrcinfo > .SRCINFO
   makepkg -f --noconfirm            # comprueba que compila antes de publicar

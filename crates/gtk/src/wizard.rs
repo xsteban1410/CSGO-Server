@@ -195,8 +195,11 @@ fn options_page(w: &Wr) -> adw::NavigationPage {
     let diff = adw::ComboRow::builder().title(t("Bot difficulty")).model(&gtk::StringList::new(&[&t("Easy"), &t("Normal"), &t("Hard"), &t("Expert")])).selected(o.difficulty as u32).build();
     let rounds = adw::SpinRow::with_range(0.0, 99.0, 1.0);
     rounds.set_title(&t("Max rounds (0 = default)"));
-    let kind = adw::ComboRow::builder().title(t("Match type")).model(&gtk::StringList::new(&[&t("Competitive"), &t("Casual"), &t("Wingman")])).build();
-    kind.set_selected(match o.kind { Kind::Competitive => 0, Kind::Casual => 1, Kind::Wingman => 2 });
+    // solo los tipos que encajan con el modo elegido
+    let kinds: Vec<Kind> = Kind::ALL.into_iter().filter(|k| mode.allows_kind(*k)).collect();
+    let kind_names: Vec<String> = kinds.iter().map(|k| t(k.label())).collect();
+    let kind = adw::ComboRow::builder().title(t("Match type")).subtitle(t("Arms Race, Guardian and Danger Zone use their own maps")).model(&gtk::StringList::new(&kind_names.iter().map(String::as_str).collect::<Vec<_>>())).build();
+    kind.set_selected(kinds.iter().position(|k| *k == o.kind).unwrap_or(0) as u32);
     kind.set_visible(mode.meta.game_type.is_none());
     let site = adw::ComboRow::builder().title(t("Bomb site")).model(&gtk::StringList::new(&[&t("Random"), "A", "B"])).build();
     site.set_visible(mode.has_option("site"));
@@ -210,6 +213,7 @@ fn options_page(w: &Wr) -> adw::NavigationPage {
     }
     page.add(&g);
 
+    let mode_game_type = mode.meta.game_type;
     let next = button(&if w.live { t("Apply") } else { t("Next") }, &["suggested-action", "pill"]);
     next.connect_clicked(glib::clone!(#[strong] w, move |_| {
         {
@@ -218,7 +222,13 @@ fn options_page(w: &Wr) -> adw::NavigationPage {
             o.bots = bots_on.is_active().then(|| bots.value() as u32);
             o.difficulty = diff.selected() as u8;
             o.rounds = (rounds.value() > 0.0).then(|| rounds.value() as u32);
-            o.kind = [Kind::Competitive, Kind::Casual, Kind::Wingman][kind.selected().min(2) as usize];
+            o.kind = kinds.get(kind.selected() as usize).copied().unwrap_or_default();
+            // el tipo se elige después del mapa: si el mapa no le sirve, se usa el suyo
+            if let (Some((prefix, _)), None) = (o.kind.own_maps(), mode_game_type) {
+                if o.map.as_deref().is_some_and(|m| !m.starts_with(prefix)) {
+                    o.map = None;
+                }
+            }
             o.site = site.is_visible().then(|| [Site::Random, Site::A, Site::B][site.selected().min(2) as usize]);
             o.precision = precision.is_active();
             o.anarchy = anarchy.is_active();

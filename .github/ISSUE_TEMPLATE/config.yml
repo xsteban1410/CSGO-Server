@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security problem
+    url: https://github.com/xsteban1410/CSGO-Server/security/policy
+    about: Please report vulnerabilities privately, not in an issue.
+  - name: How to get help
+    url: https://github.com/xsteban1410/CSGO-Server/blob/master/SUPPORT.md
+    about: Common problems and what to try first.
+  - name: Contributing guide
+    url: https://github.com/xsteban1410/CSGO-Server/blob/master/CONTRIBUTING.md
+    about: How to report and send code, what you must not change and which code is sensitive.

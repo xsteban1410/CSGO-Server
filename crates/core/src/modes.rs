@@ -1,6 +1,7 @@
 //! Modos de juego: metadatos en modes/<id>.toml + reglas en cfg/modo_<id>.cfg.
 //! Los del usuario viven en ~/.config/csgo-legacy-server/modes/<id>.toml + <id>.cfg y
 //! pisan a los oficiales con el mismo id. Un .cfg sin .toml también es un modo válido.
+use crate::config::Kind;
 use crate::paths;
 use anyhow::{bail, Context};
 use serde::{Deserialize, Serialize};
@@ -62,13 +63,25 @@ impl Mode {
         self.meta.options.iter().any(|x| x == o)
     }
 
+    /// ¿Tiene sentido este tipo de partida con este modo? Los modos que fijan su game_type lo ignoran.
+    pub fn allows_kind(&self, k: Kind) -> bool {
+        if self.meta.game_type.is_some() || !(k.is_deathmatch() || k.is_scripted()) {
+            return true;
+        }
+        let doc = CfgDoc::parse(&std::fs::read_to_string(&self.cfg).unwrap_or_default());
+        let on = |c: &str| doc.get(c).is_some_and(|v| v != "0");
+        let own_rules = !self.meta.map_prefixes.is_empty() || on("modo_retake") || on("modo_zombies");
+        // el modo reparte sus armas al aparecer, y eso pisa la progresión de Carrera y Demolición
+        !own_rules && !(k.is_scripted() && (on("modo_t_quitar") || on("modo_ct_quitar")))
+    }
+
     pub fn accepts_map(&self, map: &str) -> bool {
         self.meta.map_prefixes.is_empty() || self.meta.map_prefixes.iter().any(|p| map.starts_with(p.as_str()))
     }
 }
 
 pub fn valid_id(id: &str) -> bool {
-    !id.is_empty() && id.len() <= 31 && id != "base" && id != "inicio"
+    !id.is_empty() && id.len() <= 31 && id != "base" && id != "inicio" && id != "clasico" && !id.starts_with("tipo_")
         && id.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
 }
 
@@ -112,9 +125,14 @@ impl Modes {
         self.0.keys().cloned().collect()
     }
 
-    /// Prefijos que solo valen para su modo (ar_, gd_).
+    /// Prefijos que solo valen para su modo o tipo de partida (ar_, gd_, dz_).
     pub fn exclusive_prefixes(&self) -> Vec<String> {
-        self.0.values().filter(|m| m.meta.exclusive_maps).flat_map(|m| m.meta.map_prefixes.clone()).collect()
+        let modes = self.0.values().filter(|m| m.meta.exclusive_maps).flat_map(|m| m.meta.map_prefixes.clone());
+        let kinds = Kind::ALL.into_iter().filter_map(Kind::own_maps).map(|(p, _)| p.to_string());
+        let mut v: Vec<String> = modes.chain(kinds).collect();
+        v.sort();
+        v.dedup();
+        v
     }
 }
 

@@ -2,7 +2,12 @@ name: CI
 
 on:
   push:
+    branches: [master]
   pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
 
 jobs:
   rust:
@@ -10,8 +15,16 @@ jobs:
     container: archlinux:latest
     steps:
       - name: Dependencies
-        run: pacman -Syu --noconfirm --needed base-devel git rust gtk4 libadwaita sqlite curl appstream desktop-file-utils namcap
+        run: pacman -Syu --noconfirm --needed base-devel git rust gtk4 libadwaita sqlite curl appstream desktop-file-utils
       - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: rust-${{ hashFiles('Cargo.lock') }}
+          restore-keys: rust-
       - name: Build
         run: cargo build --locked --release
       - name: Test
@@ -22,8 +35,6 @@ jobs:
         run: |
           desktop-file-validate packaging/*.desktop
           appstreamcli validate --no-net packaging/*.metainfo.xml
-      - name: PKGBUILD lint
-        run: namcap packaging/aur/*/PKGBUILD
 
   plugins:
     runs-on: ubuntu-latest
@@ -41,3 +52,37 @@ jobs:
           for p in plugin/modos.sp plugin/modos_cheats.sp plugin/skins.sp plugin/csls_directconnect/csls_directconnect.sp; do
             addons/sourcemod/scripting/spcomp64 -i$inc -iplugin "$p" -o/tmp/out.smx
           done
+
+  scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Shell scripts
+        run: shellcheck tools/*.sh packaging/*.sh packaging/aur/*.sh
+      - name: Version is the same everywhere
+        run: tools/version.sh check
+
+  # El paquete de cada commit: pestaña Actions > la ejecución > Artifacts, o `gh run download -n package`.
+  package:
+    needs: [rust, plugins, scripts]
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Dependencies
+        run: pacman -Syu --noconfirm --needed base-devel git rust gtk4 libadwaita sqlite curl namcap
+      - uses: actions/checkout@v4
+      - name: Build package
+        # makepkg no se ejecuta como root; los tests ya han pasado en el job rust
+        run: |
+          useradd -m builder
+          chown -R builder .
+          sudo -u builder packaging/build-pkg.sh dist --nocheck
+      - name: Lint
+        run: |
+          namcap packaging/aur/*/PKGBUILD
+          namcap dist/*.pkg.tar.zst
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package
+          path: dist/*.pkg.tar.zst
+          if-no-files-found: error

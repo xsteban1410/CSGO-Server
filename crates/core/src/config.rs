@@ -30,25 +30,112 @@ impl Network {
 pub enum Kind {
     #[default]
     Competitive,
+    CompetitiveShort,
     Casual,
     Wingman,
+    Deathmatch,
+    FreeForAll,
+    TeamDeathmatch,
+    ArmsRace,
+    Demolition,
+    Guardian,
+    DangerZone,
 }
 
 impl Kind {
+    pub const ALL: [Kind; 11] = [
+        Kind::Competitive,
+        Kind::CompetitiveShort,
+        Kind::Casual,
+        Kind::Wingman,
+        Kind::Deathmatch,
+        Kind::FreeForAll,
+        Kind::TeamDeathmatch,
+        Kind::ArmsRace,
+        Kind::Demolition,
+        Kind::Guardian,
+        Kind::DangerZone,
+    ];
+
     pub fn game_type_mode(self) -> (u8, u8) {
         match self {
-            Kind::Competitive => (0, 1),
+            Kind::Competitive | Kind::CompetitiveShort => (0, 1),
             Kind::Casual => (0, 0),
             Kind::Wingman => (0, 2),
+            Kind::Deathmatch | Kind::FreeForAll | Kind::TeamDeathmatch => (1, 2),
+            Kind::ArmsRace => (1, 0),
+            Kind::Demolition => (1, 1),
+            Kind::Guardian => (4, 0),
+            Kind::DangerZone => (6, 0),
         }
     }
+
     pub fn parse(s: &str) -> Option<Kind> {
         match s {
             "competitive" | "competitivo" => Some(Kind::Competitive),
+            "short" | "competitiveshort" | "corto" => Some(Kind::CompetitiveShort),
             "casual" => Some(Kind::Casual),
             "wingman" => Some(Kind::Wingman),
+            "deathmatch" | "dm" => Some(Kind::Deathmatch),
+            "ffa" | "freeforall" => Some(Kind::FreeForAll),
+            "tdm" | "teamdeathmatch" => Some(Kind::TeamDeathmatch),
+            "armsrace" | "carrera" => Some(Kind::ArmsRace),
+            "demolition" | "demolicion" => Some(Kind::Demolition),
+            "guardian" => Some(Kind::Guardian),
+            "dangerzone" | "dz" => Some(Kind::DangerZone),
             _ => None,
         }
+    }
+
+    /// Nombre para la interfaz (se traduce con t()).
+    pub fn label(self) -> &'static str {
+        match self {
+            Kind::Competitive => "Competitive",
+            Kind::CompetitiveShort => "Short competitive",
+            Kind::Casual => "Casual",
+            Kind::Wingman => "Wingman",
+            Kind::Deathmatch => "Deathmatch",
+            Kind::FreeForAll => "Free-for-all deathmatch",
+            Kind::TeamDeathmatch => "Team deathmatch",
+            Kind::ArmsRace => "Arms Race",
+            Kind::Demolition => "Demolition",
+            Kind::Guardian => "Guardian",
+            Kind::DangerZone => "Danger Zone",
+        }
+    }
+
+    /// cfg/modo_tipo_<x>.cfg que se ejecuta antes del cfg del modo.
+    pub fn tipo_cfg(self) -> &'static str {
+        match self {
+            Kind::CompetitiveShort => "corto",
+            Kind::Deathmatch => "dm",
+            Kind::FreeForAll => "ffa",
+            Kind::TeamDeathmatch => "tdm",
+            Kind::ArmsRace => "carrera",
+            Kind::Demolition => "demolicion",
+            Kind::Guardian => "guardian",
+            Kind::DangerZone => "dz",
+            Kind::Competitive | Kind::Casual | Kind::Wingman => "",
+        }
+    }
+
+    /// (prefijo, mapa por defecto) de los tipos que solo funcionan en sus mapas.
+    pub fn own_maps(self) -> Option<(&'static str, &'static str)> {
+        match self {
+            Kind::ArmsRace => Some(("ar_", "ar_shoots")),
+            Kind::Guardian => Some(("gd_", "gd_cbble")),
+            Kind::DangerZone => Some(("dz_", "dz_blacksite")),
+            _ => None,
+        }
+    }
+
+    pub fn is_deathmatch(self) -> bool {
+        matches!(self, Kind::Deathmatch | Kind::FreeForAll | Kind::TeamDeathmatch)
+    }
+
+    /// El juego reparte las armas o los bots siguen su propio guion.
+    pub fn is_scripted(self) -> bool {
+        matches!(self, Kind::ArmsRace | Kind::Demolition | Kind::Guardian | Kind::DangerZone)
     }
 }
 

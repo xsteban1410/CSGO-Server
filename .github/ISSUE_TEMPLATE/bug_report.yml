@@ -1,0 +1,53 @@
+name: Bug report
+description: Something in the app, the command line or a game mode does not work
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Search [existing issues](https://github.com/xsteban1410/CSGO-Server/issues) first. **Remove passwords, GSLT tokens and API keys from anything you paste.** Friends cannot join? Use the connection form instead.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected and what you got instead.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `pacman -Q csgo-legacy-server`, or the release or commit you built.
+    validations:
+      required: true
+  - type: input
+    id: distro
+    attributes:
+      label: Distribution
+    validations:
+      required: true
+  - type: dropdown
+    id: network
+    attributes:
+      label: Network profile
+      options: [LAN, Friends over VPN, Internet, Community, Not relevant]
+    validations:
+      required: true
+  - type: input
+    id: mode
+    attributes:
+      label: Game mode, match type and map
+      placeholder: dm, de_dust2
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Output of `csgo-legacy-server doctor`
+      render: text
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: >
+        Server: `<server>/csgo/console.log`. Game: `<game>/csgo/console.log`. Bridge:
+        `journalctl --user -u csgo-legacy-server-bridge`. Remove any password, GSLT token or API key first.
+      render: text

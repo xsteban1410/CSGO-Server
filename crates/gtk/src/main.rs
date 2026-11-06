@@ -31,12 +31,15 @@ pub struct Live {
     pub rcon_ok: bool,
     pub status: Status,
     pub mode: String,
+    /// Perfil VPN: ¿está el puente en marcha?
+    pub bridge: bool,
 }
 
 fn fetch(cfg: &Config) -> Live {
     let srv = Server::new(cfg);
     let mut l = Live { running: srv.state() == State::Running, ..Default::default() };
     if l.running {
+        l.bridge = csls_core::server::bridge_running();
         if let Ok(mut r) = srv.rcon() {
             // srcds escribe la salida en console.log: marcas para que la consola la oculte
             let _ = r.exec(&format!("echo {POLL_BEGIN}"));

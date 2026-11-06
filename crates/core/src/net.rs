@@ -1,5 +1,6 @@
 //! Red sin herramientas externas (sin ip/ss/hostname -I).
-use std::net::{IpAddr, Ipv4Addr, ToSocketAddrs, UdpSocket};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr, ToSocketAddrs, UdpSocket};
+use std::time::{Duration, Instant};
 
 /// IP local con la que se sale a internet (truco del socket UDP: no envía nada).
 pub fn local_ip() -> Option<IpAddr> {
@@ -7,6 +8,58 @@ pub fn local_ip() -> Option<IpAddr> {
     s.connect("1.1.1.1:80").ok()?;
     let ip = s.local_addr().ok()?.ip();
     (!ip.is_unspecified()).then_some(ip)
+}
+
+/// ¿Es una IP de VPN tipo Tailscale (100.64.0.0/10)? Steam echa a quien conecta a una de estas.
+pub fn is_vpn_ip(ip: &str) -> bool {
+    ip.parse::<Ipv4Addr>().is_ok_and(|i| i.octets()[0] == 100 && (64..128).contains(&i.octets()[1]))
+}
+
+/// IPs locales de /proc/net/fib_trie: cada "|-- IP" seguida de "/32 host LOCAL".
+fn parse_local_ips(fib: &str) -> Vec<String> {
+    let lines: Vec<&str> = fib.lines().collect();
+    let mut v = Vec::new();
+    for w in lines.windows(2) {
+        if let Some(ip) = w[0].trim_start().strip_prefix("|-- ") {
+            if w[1].contains("/32 host LOCAL") && !v.iter().any(|x| x == ip) {
+                v.push(ip.to_string());
+            }
+        }
+    }
+    v
+}
+
+/// IP de este PC en la VPN. shortcut: solo reconoce 100.64.0.0/10 (Tailscale, ZeroTier con esa red); otras VPN no se detectan.
+pub fn vpn_ip() -> Option<String> {
+    parse_local_ips(&std::fs::read_to_string("/proc/net/fib_trie").ok()?).into_iter().find(|i| is_vpn_ip(i))
+}
+
+/// Pregunta a un servidor Source su nombre (A2S_INFO). None si no contesta.
+pub fn a2s_info(addr: SocketAddr, timeout: Duration) -> Option<String> {
+    let s = UdpSocket::bind("0.0.0.0:0").ok()?;
+    s.set_read_timeout(Some(Duration::from_millis(800))).ok()?;
+    let mut query = b"\xFF\xFF\xFF\xFFTSource Engine Query\0".to_vec();
+    let base = query.len();
+    let t = Instant::now();
+    let mut buf = [0u8; 1500];
+    while t.elapsed() < timeout {
+        s.send_to(&query, addr).ok();
+        let Ok((n, _)) = s.recv_from(&mut buf) else { continue };
+        match buf[..n] {
+            // reto: repetir la consulta con él al final
+            [0xFF, 0xFF, 0xFF, 0xFF, 0x41, a, b, c, d] => {
+                query.truncate(base);
+                query.extend([a, b, c, d]);
+            }
+            // cabecera + 'I' + protocolo + nombre terminado en 0
+            [0xFF, 0xFF, 0xFF, 0xFF, 0x49, _, ref rest @ ..] => {
+                let name = rest.split(|b| *b == 0).next()?;
+                return Some(String::from_utf8_lossy(name).into_owned());
+            }
+            _ => {}
+        }
+    }
+    None
 }
 
 /// ¿Está libre el puerto UDP? (en Linux falla si alguien lo tiene en cualquier IP)
@@ -100,6 +153,31 @@ mod tests {
         let v = rcon_candidates("127.0.0.1");
         assert_eq!(v[0], IpAddr::V4(Ipv4Addr::LOCALHOST));
         assert_eq!(v.iter().filter(|i| **i == v[0]).count(), 1);
+    }
+    #[test]
+    fn deteccion_de_vpn() {
+        assert!(is_vpn_ip("100.107.0.27"));
+        assert!(is_vpn_ip("100.64.0.1"));
+        assert!(!is_vpn_ip("100.128.0.1"));
+        assert!(!is_vpn_ip("192.168.1.12"));
+        assert!(!is_vpn_ip("amigo.local"));
+        let fib = "Local:\n  +-- 0.0.0.0/0 3 0 5\n     |-- 0.0.0.0\n        /0 universe UNICAST\n     |-- 100.107.0.27\n        /32 host LOCAL\n     |-- 192.168.1.1\n        /32 link UNICAST\n     |-- 192.168.1.12\n        /32 host LOCAL\n";
+        assert_eq!(parse_local_ips(fib), ["100.107.0.27", "192.168.1.12"]);
+    }
+    #[test]
+    fn consulta_a2s_con_reto() {
+        let srv = UdpSocket::bind("127.0.0.1:0").unwrap();
+        let addr = srv.local_addr().unwrap();
+        std::thread::spawn(move || {
+            let mut b = [0u8; 64];
+            let (n, from) = srv.recv_from(&mut b).unwrap();
+            assert_eq!(n, 25);
+            srv.send_to(b"\xFF\xFF\xFF\xFF\x41ABCD", from).unwrap();
+            let (n, from) = srv.recv_from(&mut b).unwrap();
+            assert_eq!(&b[n - 4..n], b"ABCD");
+            srv.send_to(b"\xFF\xFF\xFF\xFF\x49\x11CS:GO Legacy\0de_dust2\0", from).unwrap();
+        });
+        assert_eq!(a2s_info(addr, Duration::from_secs(5)).as_deref(), Some("CS:GO Legacy"));
     }
     #[test]
     fn puerto() {

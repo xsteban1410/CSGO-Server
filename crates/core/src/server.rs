@@ -241,6 +241,8 @@ impl<'a> Server<'a> {
         }
         opts.validate(modes, self.cfg)?;
         let port = self.cfg.server.port;
+        // un puente de la pestaña Unirse puede tener el puerto ocupado
+        kill_bg(BRIDGE_UNIT);
         if !net::udp_port_free(port) {
             bail!("el puerto {port} está ocupado (¿otro servidor o el juego usando ese puerto?)");
         }
@@ -257,7 +259,7 @@ impl<'a> Server<'a> {
         // modo inicial: el plugin lo ejecuta una vez al cargar
         std::fs::write(
             self.csgo_dir().join("cfg/modo_inicio.cfg"),
-            format!("modo_nombre \"{}\"\nmodo_humanos {}\nmodo_extra \"{}\"\n", opts.mode, opts.humans, opts.extra()),
+            format!("modo_nombre \"{}\"\nmodo_tipo \"{}\"\nmodo_humanos {}\nmodo_extra \"{}\"\n", opts.mode, opts.tipo_cfg(mode), opts.humans, opts.extra()),
         )?;
 
         // shortcut: console.log solo se rota al arrancar (crece ~1 MB/h con la app abierta); si molesta, rotar por tamaño
@@ -275,11 +277,33 @@ impl<'a> Server<'a> {
                 warnings.push(format!("{e:#}"));
             }
         }
-        if self.cfg.server.network == Network::Vpn && !running(BRIDGE_UNIT) {
-            let exe = cli_exe().to_string_lossy().into_owned();
-            spawn_bg(BRIDGE_UNIT, &paths::data_dir(), &[], &[exe, "bridge".into()], &paths::data_dir().join("bridge.log"))?;
+        if self.cfg.server.network == Network::Vpn {
+            if let Err(e) = self.start_bridge() {
+                warnings.push(format!("{e:#}"));
+            }
+            if let Some(h) = net::firewall_hint(port + 1) {
+                warnings.push(format!("Cortafuegos activo: si no lo has hecho, abre el puerto del puente con {h}"));
+            }
         }
         Ok(Started { map, connect: self.connect_address(), deploy: report, warnings })
+    }
+
+    /// Puente del lado del servidor (perfil VPN): recibe a los amigos en PUERTO+1.
+    pub fn start_bridge(&self) -> crate::Result<()> {
+        kill_bg(BRIDGE_UNIT);
+        let exe = cli_exe().to_string_lossy().into_owned();
+        spawn_bg(BRIDGE_UNIT, &paths::data_dir(), &[], &[exe, "bridge".into()], &paths::data_dir().join("bridge.log"))?;
+        // si falla (puerto ocupado, sin CLI) se muere al instante
+        std::thread::sleep(Duration::from_millis(800));
+        if !running(BRIDGE_UNIT) {
+            bail!("el puente no arrancó: ¿está ocupado el puerto UDP {}? Mira `journalctl --user -u {BRIDGE_UNIT}`", self.cfg.server.port + 1);
+        }
+        Ok(())
+    }
+
+    /// Dirección que hay que pasar a los amigos por VPN.
+    pub fn vpn_address(&self) -> Option<String> {
+        net::vpn_ip().map(|ip| format!("{ip}:{}", self.cfg.server.port))
     }
 
     /// Espera a que rcon responda (el arranque tarda unos segundos).
@@ -345,45 +369,61 @@ impl<'a> Server<'a> {
     /// Cambia modo/mapa en caliente (antes modo.sh). Devuelve el mapa.
     pub fn change(&self, modes: &Modes, opts: &LaunchOptions) -> crate::Result<String> {
         opts.validate(modes, self.cfg)?;
-        let mut r = self.rcon()?;
-        let current = Self::current_map(&mut r);
+        let current = Self::current_map(&mut self.rcon()?);
         let map = opts.pick_map(modes, self.cfg, current.as_deref(), &self.maps_dir())?;
-        let (t, g) = opts.game_type_mode(modes.get(&opts.mode)?);
+        let mode = modes.get(&opts.mode)?;
+        let (t, g) = opts.game_type_mode(mode);
         let report = deploy::deploy(self.cfg, false, true)?;
         if let Some(e) = report.error_text() {
             bail!("hay plugins que no compilan:\n{e}");
         }
+        // después del despliegue: recargar plugins puede dejar sin respuesta una conexión ya abierta
+        let mut r = self.rcon()?;
         // el plugin aplica modo_base + modo_<modo> + modo_extra al cargar el mapa
+        let load = match opts.workshop {
+            Some(id) => format!("host_workshop_map {id}"),
+            None => format!("changelevel {map}"),
+        };
         for c in [
             format!("modo_nombre {}", opts.mode),
+            format!("modo_tipo \"{}\"", opts.tipo_cfg(mode)),
             format!("modo_humanos {}", opts.humans),
             format!("modo_extra \"{}\"", opts.extra()),
             format!("game_type {t}"),
             format!("game_mode {g}"),
-            match opts.workshop {
-                Some(id) => format!("host_workshop_map {id}"),
-                None => format!("changelevel {map}"),
-            },
         ] {
             r.exec(&c)?;
         }
+        // con el cambio de mapa la respuesta puede no llegar a tiempo, aunque el mapa se cargue
+        let _ = r.exec(&load);
         Ok(map)
     }
 }
 
-/// Puente del amigo: escucha en `listen` (su PC) y reenvía a `remote` (puente del servidor, IP_VPN:PUERTO+1).
 /// Valor de la respuesta a una cvar: `"bot_quota" = "5" ( def. "0" )` -> `5`.
 pub fn cvar_value(out: &str) -> Option<&str> {
     out.split('"').nth(3)
 }
 
+/// Puente del amigo: escucha en `listen` (su PC) y reenvía a `remote` (puente del servidor, IP_VPN:PUERTO+1).
 pub fn start_friend_bridge(listen: u16, remote: &str) -> crate::Result<()> {
     let _: std::net::SocketAddr = remote.parse().context("dirección del servidor: IP_VPN:PUERTO")?;
-    if running(BRIDGE_UNIT) {
-        kill_bg(BRIDGE_UNIT);
-    }
+    kill_bg(BRIDGE_UNIT);
     let exe = cli_exe().to_string_lossy().into_owned();
     spawn_bg(BRIDGE_UNIT, &paths::data_dir(), &[], &[exe, "bridge".into(), listen.to_string(), remote.into()], &paths::data_dir().join("bridge.log"))
+}
+
+/// Levanta el puente hacia `target` (IP_VPN:PUERTO del servidor) y devuelve la dirección local a la que conectar.
+/// Steam rechaza conectar a la IP de la VPN: se conecta a la IP local propia.
+pub fn join_through_bridge(target: &str) -> crate::Result<String> {
+    let (ip, p) = target.rsplit_once(':').context("dirección: IP_VPN:PUERTO")?;
+    let port: u16 = p.parse().context("puerto inválido")?;
+    // el puente anterior se libera antes de buscar puerto
+    kill_bg(BRIDGE_UNIT);
+    let listen = [27030u16, 27040, 27050].into_iter().find(|p| net::udp_port_free(*p)).context("sin puerto UDP libre para el puente")?;
+    start_friend_bridge(listen, &format!("{ip}:{}", port + 1))?;
+    let local = net::local_ip().context("sin IP local")?;
+    Ok(format!("{local}:{listen}"))
 }
 
 pub fn bridge_running() -> bool {

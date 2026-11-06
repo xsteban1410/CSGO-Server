@@ -52,6 +52,11 @@
     <display_length compare="ge">360</display_length>
   </requires>
   <releases>
+    <release version="1.1.0" date="2026-11-06">
+      <description>
+        <p>Play and Join now enter the server by themselves, deathmatch bots move and respawn, the VPN bridge is easier to use and can be tested, and there are eight more match types.</p>
+      </description>
+    </release>
     <release version="1.0.2" date="2026-11-02">
       <description>
         <p>Fix: the "Create a server" button did nothing on first launch.</p>

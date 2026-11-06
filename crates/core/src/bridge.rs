@@ -8,6 +8,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 const IDLE: Duration = Duration::from_secs(120);
+const NO_ANSWER: Duration = Duration::from_secs(5);
 
 type Clients = Arc<Mutex<HashMap<SocketAddr, (Arc<UdpSocket>, Instant)>>>;
 
@@ -29,20 +30,45 @@ pub fn run(listen_port: u16, target: SocketAddr, source_ip: IpAddr, log: impl Fn
                 s.clone()
             }
             None => {
-                let s = Arc::new(UdpSocket::bind((source_ip, 0))?);
-                s.set_read_timeout(Some(IDLE))?;
+                let s = match UdpSocket::bind((source_ip, 0)) {
+                    Ok(s) => Arc::new(s),
+                    Err(e) => {
+                        log(format!("Puente: no puedo abrir un socket desde {source_ip}: {e}"));
+                        continue;
+                    }
+                };
+                s.set_read_timeout(Some(NO_ANSWER))?;
                 map.insert(from, (s.clone(), Instant::now()));
                 log(format!("Puente: nuevo jugador {from}"));
                 // respuestas del servidor -> al amigo
                 let (back, l, cl, lg) = (s.clone(), listen.clone(), clients.clone(), log.clone());
                 std::thread::spawn(move || {
                     let mut b = vec![0u8; 65535];
-                    while let Ok((m, src)) = back.recv_from(&mut b) {
-                        if src == target {
-                            let _ = l.send_to(&b[..m], from);
-                            if let Some(e) = cl.lock().unwrap().get_mut(&from) {
-                                e.1 = Instant::now();
+                    let (mut answered, mut warned, mut last) = (false, false, Instant::now());
+                    loop {
+                        match back.recv_from(&mut b) {
+                            Ok((m, src)) if src == target => {
+                                if !answered {
+                                    lg(format!("Puente: {target} responde a {from}"));
+                                }
+                                answered = true;
+                                last = Instant::now();
+                                let _ = l.send_to(&b[..m], from);
+                                if let Some(e) = cl.lock().unwrap().get_mut(&from) {
+                                    e.1 = Instant::now();
+                                }
                             }
+                            Ok(_) => {}
+                            Err(e) if matches!(e.kind(), std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut) => {
+                                if !answered && !warned {
+                                    warned = true;
+                                    lg(format!("Puente: {target} no responde a {from} (¿servidor apagado, VPN caída o sin perfil VPN?)"));
+                                }
+                                if last.elapsed() >= IDLE {
+                                    break;
+                                }
+                            }
+                            Err(_) => break,
                         }
                     }
                     cl.lock().unwrap().remove(&from);
@@ -52,7 +78,10 @@ pub fn run(listen_port: u16, target: SocketAddr, source_ip: IpAddr, log: impl Fn
             }
         };
         drop(map);
-        sock.send_to(&buf[..n], target)?;
+        // un error puntual (VPN caída un momento) no debe tumbar el puente de todos
+        if let Err(e) = sock.send_to(&buf[..n], target) {
+            log(format!("Puente: no puedo enviar a {target}: {e}"));
+        }
     }
 }
 

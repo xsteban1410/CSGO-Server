@@ -71,7 +71,10 @@ impl LaunchOptions {
     }
 
     pub fn validate(&self, modes: &Modes, cfg: &Config) -> crate::Result<()> {
-        modes.get(&self.mode)?;
+        let mode = modes.get(&self.mode)?;
+        if !mode.allows_kind(self.kind) {
+            bail!("el modo {} no admite el tipo de partida {}", mode.id, self.kind.label());
+        }
         if self.humans == 0 {
             bail!("hace falta al menos 1 humano");
         }
@@ -116,6 +119,11 @@ impl LaunchOptions {
         e
     }
 
+    /// Valor de modo_tipo. Los modos que fijan su game_type no usan el tipo elegido.
+    pub fn tipo_cfg(&self, mode: &Mode) -> &'static str {
+        if mode.meta.game_type.is_some() { "" } else { self.kind.tipo_cfg() }
+    }
+
     pub fn game_type_mode(&self, mode: &Mode) -> (u8, u8) {
         match (mode.meta.game_type, mode.meta.game_mode) {
             (Some(t), Some(g)) => (t, g),
@@ -130,8 +138,14 @@ impl LaunchOptions {
         }
         let mode = modes.get(&self.mode)?;
         let fallback = &cfg.defaults.map;
+        let kind_maps = if mode.meta.game_type.is_none() { self.kind.own_maps() } else { None };
         let m = if let Some(m) = &self.map {
             m.clone()
+        } else if let Some((prefix, default)) = kind_maps {
+            match current {
+                Some(c) if c.starts_with(prefix) => c.to_string(),
+                _ => default.to_string(),
+            }
         } else if !mode.meta.map_prefixes.is_empty() {
             match current {
                 Some(c) if mode.accepts_map(c) => c.to_string(),
@@ -146,6 +160,11 @@ impl LaunchOptions {
         };
         if !mode.accepts_map(&m) {
             bail!("el modo {} necesita un mapa {}", mode.id, mode.meta.map_prefixes.join(" o "));
+        }
+        if let Some((prefix, _)) = kind_maps {
+            if !m.starts_with(prefix) {
+                bail!("el tipo de partida {} necesita un mapa {prefix}", self.kind.label());
+            }
         }
         if !maps_dir.join(format!("{m}.bsp")).is_file() {
             bail!("no existe el mapa '{m}' en {}", maps_dir.display());
@@ -229,6 +248,40 @@ mod tests {
         assert!(o.pick_map(&m, &c, None, &maps).is_err());
         o.map = Some("de_mirage".into());
         assert!(o.pick_map(&m, &c, None, &maps).is_err(), "no instalado");
+        std::fs::remove_dir_all(maps).ok();
+    }
+
+    #[test]
+    fn tipos_de_partida() {
+        use crate::config::Kind;
+        let (m, c, maps) = setup();
+        let mut o = LaunchOptions::from_config(&c);
+        o.mode = "normal".into();
+        o.kind = Kind::ArmsRace;
+        assert_eq!(o.game_type_mode(m.get("normal").unwrap()), (1, 0));
+        assert_eq!(o.pick_map(&m, &c, Some("de_nuke"), &maps).unwrap(), "ar_shoots");
+        o.map = Some("de_nuke".into());
+        assert!(o.pick_map(&m, &c, None, &maps).is_err());
+        o.map = None;
+        o.kind = Kind::FreeForAll;
+        assert_eq!(o.tipo_cfg(m.get("normal").unwrap()), "ffa");
+        assert_eq!(o.tipo_cfg(m.get("dm").unwrap()), "", "dm fija su game_type");
+        // de un mapa de Danger Zone a un tipo normal: vuelve al de la config
+        o.kind = Kind::Competitive;
+        std::fs::write(maps.join("dz_blacksite.bsp"), "").unwrap();
+        assert_eq!(o.pick_map(&m, &c, Some("dz_blacksite"), &maps).unwrap(), "de_dust2");
+        // armas fijas o reglas propias: no todos los tipos encajan
+        assert!(m.get("awp").unwrap().allows_kind(Kind::Deathmatch));
+        assert!(!m.get("awp").unwrap().allows_kind(Kind::ArmsRace));
+        assert!(!m.get("zombies").unwrap().allows_kind(Kind::Deathmatch));
+        assert!(!m.get("retake").unwrap().allows_kind(Kind::Deathmatch));
+        assert!(m.get("retake").unwrap().allows_kind(Kind::Wingman));
+        assert!(m.get("dm").unwrap().allows_kind(Kind::ArmsRace), "dm ignora el tipo");
+        for k in Kind::ALL {
+            assert_eq!(Kind::parse(&format!("{k:?}").to_lowercase()), Some(k));
+            let cfg = k.tipo_cfg();
+            assert!(cfg.is_empty() || Path::new(env!("CARGO_MANIFEST_DIR")).join(format!("../../cfg/modo_tipo_{cfg}.cfg")).is_file(), "{cfg}");
+        }
         std::fs::remove_dir_all(maps).ok();
     }
 

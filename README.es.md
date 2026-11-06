@@ -1,6 +1,8 @@
 # CS:GO Legacy Server
 
-[English](README.md)
+[English](README.md) · [Changelog](CHANGELOG.md) (en inglés) · [Contribuir](CONTRIBUTING.md) (en inglés)
+
+[![CI](https://github.com/xsteban1410/CSGO-Server/actions/workflows/ci.yml/badge.svg)](https://github.com/xsteban1410/CSGO-Server/actions/workflows/ci.yml)
 
 Monta un servidor dedicado de **CS:GO Legacy** (app 740) y juega con amigos contra bots, desde una app GTK o desde la terminal.
 Trae más de 30 modos (francotiradores, zombis por oleadas, retakes, Guardián, cheats aleatorios, anarquía…), guarda las skins
@@ -12,11 +14,8 @@ Funciona en cualquier distro de 64 bits con glibc y librerías de 32 bits. Proba
 
 ## Instalación
 
-**Arch Linux (AUR):**
-
-```bash
-yay -S csgo-legacy-server        # o csgo-legacy-server-git
-```
+**Arch Linux:** abre la [última versión](https://github.com/xsteban1410/CSGO-Server/releases/latest) y ejecuta el comando
+`sudo pacman -U …` de sus notas. El paquete del AUR todavía no está publicado.
 
 **Desde el código** (cualquier distro; necesita Rust, GTK 4 ≥ 4.14 y libadwaita ≥ 1.6 con sus archivos de desarrollo):
 
@@ -53,7 +52,7 @@ El botón **Jugar** de la app (o `csgo-legacy-server play local`) abre CS:GO Leg
 | Modos | crea tus modos o duplica uno de serie; importa/exporta en `.toml` para compartirlos |
 | Workshop | busca mapas sin clave de API, instala por ID o enlace (también colecciones), genera la navegación de bots, importa un `.bsp` local |
 | Consola | log del servidor en vivo y comandos rcon |
-| Unirse | entrar al servidor de un amigo por VPN |
+| Unirse | entrar al servidor de un amigo; con una IP 100.x activa solo el puente VPN, prueba la conexión y da el `connect` exacto |
 | Ajustes | nombre, contraseña, perfil de red, puerto, tickrate, GSLT, plugin de skins, actualizar el servidor |
 
 El servidor corre como unidad `systemd --user`: sigue encendido aunque cierres la app.
@@ -84,7 +83,7 @@ csgo-legacy-server skins                               rehacer la lista de skins
 csgo-legacy-server rcon "comando" | play [cs2|local|IP:PUERTO] | bridge | doctor | install [--update]
 ```
 
-Opciones de start/mode: `-m/--map`, `-t/--type competitive|casual|wingman`, `-d/--difficulty 0-3`, `-b/--bots`,
+Opciones de start/mode: `-m/--map`, `-t/--type competitive|short|casual|wingman|dm|ffa|tdm|armsrace|demolition|guardian|dz`, `-d/--difficulty 0-3`, `-b/--bots`,
 `-r/--rounds`, `-s/--site a|b|random`, `-p/--precision` (sin dispersión ni retroceso para todos), `--anarchy`,
 `-w/--workshop ID`, `--set cvar=valor` (repetible), `--preset NOMBRE`, `--save-preset NOMBRE`.
 

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Modos de juego contra bots para CS:GO Legacy.
-// Al cargar el mapa ejecuta: modo_base.cfg -> modo_<modo_nombre>.cfg -> modo_extra
+// Al cargar el mapa ejecuta: modo_base.cfg -> modo_clasico.cfg (rondas clásicas) -> modo_tipo_<modo_tipo>.cfg -> modo_<modo_nombre>.cfg -> modo_extra
 #pragma semicolon 1
 #include <sourcemod>
 #include <sdktools>
@@ -13,7 +13,7 @@ public Plugin myinfo = { name = "Modos", author = "xsteban1410", version = "4.0"
 #define T_IDX 0
 #define CT_IDX 1
 
-ConVar g_Nombre, g_Humanos, g_Extra, g_Retake, g_Sitio, g_Pausa, g_HumanTeam;
+ConVar g_Nombre, g_Tipo, g_GameType, g_Humanos, g_Extra, g_Retake, g_Sitio, g_Pausa, g_HumanTeam;
 ConVar g_Quitar[2], g_Arma[2], g_Pistola[2], g_Objeto[2], g_Vida[2], g_Velocidad[2], g_Color[2];
 
 int g_Site;                 // 0 = A, 1 = B en la ronda actual
@@ -26,6 +26,8 @@ public void OnPluginStart()
 {
 	LoadTranslations("csls.phrases");
 	g_Nombre  = CreateConVar("modo_nombre", "awp", "Modo activo (cfg/modo_<nombre>.cfg)");
+	g_Tipo    = CreateConVar("modo_tipo", "", "Ajustes del tipo de partida (cfg/modo_tipo_<nombre>.cfg; vacio = ninguno)");
+	g_GameType = FindConVar("game_type");
 	g_Humanos = CreateConVar("modo_humanos", "2", "Humanos en equipo para acabar el calentamiento (0 = no controlar)");
 	g_Extra   = CreateConVar("modo_extra", "", "Comandos que se ejecutan despues del cfg del modo (separados por ;)");
 	g_Retake  = CreateConVar("modo_retake", "0", "1 = bomba plantada al empezar la ronda y T apareciendo en el sitio");
@@ -88,10 +90,21 @@ public Action OnTakeDamage(int victim, int &attacker, int &inflictor, float &dam
 
 public void OnConfigsExecuted()
 {
-	char n[32], extra[512];
+	char n[32], tipo[32], extra[512], cmd[128] = "exec modo_base";
 	g_Nombre.GetString(n, sizeof(n));
+	g_Tipo.GetString(tipo, sizeof(tipo));
 	g_Extra.GetString(extra, sizeof(extra));
-	ServerCommand("exec modo_base; exec modo_%s; %s", n, extra);
+	if (g_GameType.IntValue == 0)  // los demás (DM, Carrera, Guardián, Danger Zone...) traen sus propias reglas
+		StrCat(cmd, sizeof(cmd), "; exec modo_clasico");
+	else if (g_GameType.IntValue == 4)  // las reglas de Guardián van por mapa
+	{
+		char map[64];
+		GetCurrentMap(map, sizeof(map));
+		Format(cmd, sizeof(cmd), "%s; exec guardian_%s", cmd, map);
+	}
+	if (tipo[0])
+		Format(cmd, sizeof(cmd), "%s; exec modo_tipo_%s", cmd, tipo);
+	ServerCommand("%s; exec modo_%s; %s", cmd, n, extra);
 	// Sin ServerExecute: se ejecuta en cola, despues del gamemode_*.cfg de Valve (que pisaria bot_quota etc.).
 	// Con el servidor vacio e hibernando, la cola se procesa cuando entra alguien.
 }

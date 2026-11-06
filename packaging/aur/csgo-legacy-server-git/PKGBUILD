@@ -1,6 +1,6 @@
 # Maintainer: xsteban1410 <esteban1410dev at gmail dot com>
 pkgname=csgo-legacy-server-git
-pkgver=1.0.2.r0.g0000000
+pkgver=1.1.0.r0.g0000000
 pkgrel=1
 pkgdesc="Host a CS:GO Legacy dedicated server with bots: GTK app and command line (git)"
 arch=('x86_64')
@@ -13,7 +13,7 @@ optdepends=('steamcmd: use the system SteamCMD instead of downloading it'
             'steam: play on this PC (CS:GO Legacy is the csgo_legacy beta of CS2)'
             'miniupnpc: open the server port on the router with UPnP'
             'systemd: keep the server running after closing the app')
-options=('!lto')
+options=('!lto' '!debug')
 makedepends+=('git')
 provides=("csgo-legacy-server=${pkgver%%.r*}")
 conflicts=('csgo-legacy-server')
@@ -61,5 +61,5 @@ package() {
   for s in 32 48 64 128 256 512; do
     install -Dm644 "packaging/icons/$s.png" "$pkgdir/usr/share/icons/hicolor/${s}x${s}/apps/$id.png"
   done
-  install -Dm644 README.md README.es.md -t "$pkgdir/usr/share/doc/$pkgname/"
+  install -Dm644 README.md README.es.md CHANGELOG.md -t "$pkgdir/usr/share/doc/$pkgname/"
 }

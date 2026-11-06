@@ -1,6 +1,8 @@
 # CS:GO Legacy Server
 
-[Español](README.es.md)
+[Español](README.es.md) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md)
+
+[![CI](https://github.com/xsteban1410/CSGO-Server/actions/workflows/ci.yml/badge.svg)](https://github.com/xsteban1410/CSGO-Server/actions/workflows/ci.yml)
 
 Host a **CS:GO Legacy** dedicated server (app 740) and play with friends against bots, from a GTK app or the command line.
 It ships more than 30 game modes (snipers, zombie waves, retakes, Guardian, random cheats, anarchy…), remembers every
@@ -12,11 +14,8 @@ Works on any 64-bit glibc distro with 32-bit libraries. Tested on Arch/CachyOS.
 
 ## Install
 
-**Arch Linux (AUR):**
-
-```bash
-yay -S csgo-legacy-server        # or csgo-legacy-server-git
-```
+**Arch Linux:** open the [latest release](https://github.com/xsteban1410/CSGO-Server/releases/latest) and run the
+`sudo pacman -U …` command from its notes. The AUR package is not published yet.
 
 **From source** (any distro; needs Rust, GTK 4 ≥ 4.14 and libadwaita ≥ 1.6 development files):
 
@@ -53,7 +52,7 @@ The app's **Play** button (or `csgo-legacy-server play local`) opens CS:GO Legac
 | Modes | make your own modes or duplicate a built-in one; import/export as `.toml` to share them |
 | Workshop | search maps without an API key, install by ID or link (collections too), generate bot navigation, import a local `.bsp` |
 | Console | live server log and rcon commands |
-| Join | join a friend's server over a VPN |
+| Join | join a friend's server; with a 100.x IP it turns the VPN bridge on, tests the connection and gives the exact `connect` |
 | Settings | name, password, network profile, port, tickrate, GSLT, skins plugin, update the server |
 
 The server runs as a `systemd --user` unit, so it keeps running when you close the app.
@@ -84,7 +83,7 @@ csgo-legacy-server skins                              rebuild the skins list aft
 csgo-legacy-server rcon "command" | play [cs2|local|IP:PORT] | bridge | doctor | install [--update]
 ```
 
-Start/mode options: `-m/--map`, `-t/--type competitive|casual|wingman`, `-d/--difficulty 0-3`, `-b/--bots`,
+Start/mode options: `-m/--map`, `-t/--type competitive|short|casual|wingman|dm|ffa|tdm|armsrace|demolition|guardian|dz`, `-d/--difficulty 0-3`, `-b/--bots`,
 `-r/--rounds`, `-s/--site a|b|random`, `-p/--precision` (no spread or recoil for everyone), `--anarchy`,
 `-w/--workshop ID`, `--set cvar=value` (repeatable), `--preset NAME`, `--save-preset NAME`.
 
@@ -182,6 +181,7 @@ Choices are saved per SteamID and applied every time you join. Messages follow e
 | `~/.local/share/csgo-legacy-server/` | server (default location), SteamCMD, logs, workshop cache |
 | `crates/core`, `crates/cli`, `crates/gtk` | Rust: core library, command line, GTK app |
 | `plugin/`, `cfg/`, `modes/` | SourceMod plugins, mode configs, mode metadata |
+| `docs/ARCHITECTURE.md` | How the pieces fit together |
 
 ## Notes and limits
 

@@ -206,14 +206,23 @@ pub fn deploy(cfg: &Config, force: bool, reload: bool) -> crate::Result<Report> 
 
     copy_glob(&res.join("cfg"), ".cfg", &csgo.join("cfg"), str::to_string)?;
     copy_glob(&paths::user_modes_dir(), ".cfg", &csgo.join("cfg"), |n| format!("modo_{n}"))?;
+    // las reglas de Guardián de Valve están en maps/cfg, donde exec no llega; el plugin las ejecuta desde cfg/
+    for e in std::fs::read_dir(csgo.join("maps/cfg")).into_iter().flatten().flatten() {
+        let n = e.file_name().to_string_lossy().into_owned();
+        if n.starts_with("guardian_") && n.ends_with(".cfg") {
+            copy_writable(&e.path(), &csgo.join("cfg").join(&n))?;
+        }
+    }
 
     if reload && !(r.compiled.is_empty() && r.removed.is_empty()) {
         if let Ok(mut rc) = crate::rcon::Rcon::from_config(cfg) {
-            for n in r.compiled.iter().chain(&r.removed) {
-                rc.exec(&format!("sm plugins unload {n}"))?;
-            }
-            for n in &r.compiled {
-                rc.exec(&format!("sm plugins load {n}"))?;
+            let unload = r.compiled.iter().chain(&r.removed).map(|n| format!("sm plugins unload {n}"));
+            let load = r.compiled.iter().map(|n| format!("sm plugins load {n}"));
+            for c in unload.chain(load).collect::<Vec<_>>() {
+                // cargar un plugin puede tardar más que el tiempo de espera de rcon, y el comando se aplica igual
+                if rc.exec(&c).is_err() {
+                    rc = crate::rcon::Rcon::from_config(cfg)?;
+                }
             }
             r.reloaded = true;
         }

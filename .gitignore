@@ -17,3 +17,6 @@ config.env
 
 # Rust
 target/
+
+# paquetes de packaging/build-pkg.sh
+dist/

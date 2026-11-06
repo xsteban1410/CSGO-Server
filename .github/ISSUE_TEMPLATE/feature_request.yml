@@ -1,0 +1,23 @@
+name: Feature request
+description: An idea for the app or the command line
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        One idea per issue, please. Anything meant to get around VAC, bans or Steam's rules will be closed.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What do you want to do?
+      description: The situation or game mode you have in mind.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: How should it work?
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What do you do today instead?

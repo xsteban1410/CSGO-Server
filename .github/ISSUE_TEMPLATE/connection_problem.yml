@@ -1,0 +1,53 @@
+name: Connection problem
+description: You or a friend cannot join the server
+labels: [connection]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before reporting, run `csgo-legacy-server doctor`. Over a VPN, the friend must use the **Join** tab with your VPN address, not type it in the game. **Remove passwords and tokens from anything you paste.**
+  - type: dropdown
+    id: network
+    attributes:
+      label: Network profile of the server
+      options: [LAN, Friends over VPN, Internet, Community]
+    validations:
+      required: true
+  - type: input
+    id: vpn
+    attributes:
+      label: Which VPN?
+      placeholder: Tailscale, ZeroTier, none…
+  - type: textarea
+    id: steps
+    attributes:
+      label: What did each person do?
+      description: Who hosts, who joins, the address each one used, and what the game showed.
+    validations:
+      required: true
+  - type: dropdown
+    id: test
+    attributes:
+      label: Result of "Test connection" in the Join tab
+      options: [The server answers, No answer, Did not try]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version on each PC
+      description: "`pacman -Q csgo-legacy-server`, or the release you installed."
+    validations:
+      required: true
+  - type: textarea
+    id: bridge
+    attributes:
+      label: Bridge log on each PC
+      description: "`journalctl --user -u csgo-legacy-server-bridge -n 30`"
+      render: text
+  - type: textarea
+    id: console
+    attributes:
+      label: Server log
+      description: The last lines of `<server>/csgo/console.log` while the friend tries to join.
+      render: text

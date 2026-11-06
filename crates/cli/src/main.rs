@@ -24,7 +24,7 @@ struct Game {
     humans: Option<String>,
     #[arg(short, long)]
     map: Option<String>,
-    /// competitive | casual | wingman
+    /// competitive | short | casual | wingman | dm | ffa | tdm | armsrace | demolition | guardian | dz
     #[arg(short = 't', long = "type")]
     kind: Option<String>,
     /// Bot difficulty 0-3
@@ -111,6 +111,9 @@ enum Cmd {
         listen: Option<u16>,
         /// Friend side: server bridge address (VPN_IP:PORT+1)
         to: Option<String>,
+        /// Check that a server answers at IP:PORT (through a bridge too) and exit
+        #[arg(long, value_name = "IP:PORT")]
+        test: Option<String>,
     },
     /// Generate the bot navigation mesh of the current map (workshop maps without .nav)
     Nav {
@@ -191,7 +194,7 @@ fn options(g: &Game, cfg: &Config) -> Result<LaunchOptions> {
         o.map = g.map.clone();
     }
     if let Some(k) = &g.kind {
-        o.kind = Kind::parse(k).context("--type is competitive, casual or wingman")?;
+        o.kind = Kind::parse(k).context("--type is competitive, short, casual, wingman, dm, ffa, tdm, armsrace, demolition, guardian or dz")?;
     }
     if let Some(d) = g.difficulty {
         o.difficulty = d;
@@ -268,14 +271,27 @@ fn main() -> Result<()> {
         }
         Cmd::Play { target } => {
             let t: Vec<&str> = target.iter().map(String::as_str).collect();
-            match t.as_slice() {
-                ["cs2"] => steam_client::launch_cs2()?,
-                [] | ["csgo"] => steam_client::launch_csgo(None)?,
-                ["local"] | ["csgo", "local"] => steam_client::launch_csgo(Some(&srv.connect_address()))?,
-                [a] | ["csgo", a] => steam_client::launch_csgo(Some(a))?,
+            let addr = match t.as_slice() {
+                ["cs2"] => {
+                    steam_client::launch_cs2()?;
+                    println!("Opening...");
+                    return Ok(());
+                }
+                [] | ["csgo"] => None,
+                ["local"] | ["csgo", "local"] => Some(srv.connect_address()),
+                [a] | ["csgo", a] => Some(a.to_string()),
                 _ => bail!("usage: play [cs2 | csgo] [IP:PORT | local]"),
-            }
+            };
+            let connecting = steam_client::launch_csgo(addr.as_deref())?;
             println!("Opening...");
+            if let (Some(h), Some(a)) = (connecting, &addr) {
+                println!("It joins {a} once the menu loads.");
+                if h.join().unwrap_or(false) {
+                    println!("Connecting.");
+                } else {
+                    bail!("the game did not join; if it is still open, type in its console: connect {a}");
+                }
+            }
         }
         Cmd::Start(g) => {
             let modes = Modes::load()?;
@@ -360,7 +376,14 @@ fn main() -> Result<()> {
             }
             println!("{}", if r.reloaded { "Deployed and reloaded." } else { "Deployed." });
         }
-        Cmd::Bridge { listen, to } => {
+        Cmd::Bridge { test: Some(addr), .. } => {
+            let a = addr.parse().context("expected IP:PORT")?;
+            match net::a2s_info(a, std::time::Duration::from_secs(8)) {
+                Some(name) => println!("The server answers: {name}"),
+                None => bail!("no answer from {addr}"),
+            }
+        }
+        Cmd::Bridge { listen, to, .. } => {
             let log = |m: String| println!("{m}");
             match (listen, to) {
                 (Some(p), Some(t)) => {
