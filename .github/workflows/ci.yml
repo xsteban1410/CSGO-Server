@@ -31,7 +31,7 @@ jobs:
       - name: Test
         run: cargo test --locked --release
       - name: Clippy
-        run: cargo clippy --locked --all-targets
+        run: cargo clippy --locked --all-targets -- -D warnings
       - name: Desktop files
         run: |
           desktop-file-validate packaging/*.desktop
