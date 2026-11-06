@@ -99,6 +99,24 @@ pub fn rcon_candidates(configured: &str) -> Vec<IpAddr> {
     out
 }
 
+/// IPs listening on a TCP port, from the text of /proc/net/tcp (little-endian hex).
+fn parse_tcp_listeners(table: &str, port: u16) -> Vec<Ipv4Addr> {
+    let listening = |line: &str| -> Option<Ipv4Addr> {
+        let mut f = line.split_whitespace();
+        let (ip, p) = f.nth(1)?.split_once(':')?;
+        // state 0A = LISTEN
+        (u16::from_str_radix(p, 16).ok()? == port && f.nth(1)? == "0A").then_some(())?;
+        Some(Ipv4Addr::from(u32::from_str_radix(ip, 16).ok()?.to_le_bytes()))
+    };
+    table.lines().skip(1).filter_map(listening).collect()
+}
+
+/// IPs a local TCP port listens on that other machines can reach. shortcut: IPv4 only, srcds does not use IPv6.
+pub fn tcp_exposed(port: u16) -> Vec<Ipv4Addr> {
+    let table = std::fs::read_to_string("/proc/net/tcp").unwrap_or_default();
+    parse_tcp_listeners(&table, port).into_iter().filter(|ip| !ip.is_loopback()).collect()
+}
+
 /// Public IP (for internet players). Asks api.ipify.org with curl; None without network.
 pub fn public_ip() -> Option<IpAddr> {
     let o = std::process::Command::new("curl").args(["-fsS", "--max-time", "5", "https://api.ipify.org"]).output().ok()?;
@@ -147,6 +165,12 @@ pub fn firewall_hint(port: u16) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn finds_tcp_listeners() {
+        let table = "  sl  local_address rem_address   st\n   0: 0101007F:6996 00000000:0000 0A 0:0\n   1: 0C01A8C0:6996 00000000:0000 0A 0:0\n   2: 0C01A8C0:0050 00000000:0000 0A 0:0\n   3: 0C01A8C0:6996 01010101:0050 01 0:0\n";
+        let ips = super::parse_tcp_listeners(table, 27030);
+        assert_eq!(ips, vec![std::net::Ipv4Addr::new(127, 0, 1, 1), std::net::Ipv4Addr::new(192, 168, 1, 12)]);
+    }
     use super::*;
     #[test]
     fn candidates_without_repeats() {

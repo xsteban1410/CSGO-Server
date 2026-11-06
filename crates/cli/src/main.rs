@@ -266,6 +266,11 @@ fn main() -> Result<()> {
             println!("{}local IP: {}", ok(net::local_ip().is_some()), net::local_ip().map(|i| i.to_string()).unwrap_or("none".into()));
             let port_ok = srv.state() == State::Running || net::udp_port_free(cfg.server.port);
             println!("{}UDP port {} {}", ok(port_ok), cfg.server.port, if port_ok { "free" } else { "busy" });
+            if srv.state() == State::Running {
+                let exposed = net::tcp_exposed(cfg.server.port);
+                let ips: Vec<String> = exposed.iter().map(ToString::to_string).collect();
+                println!("{}rcon only on this PC{}", ok(exposed.is_empty()), if exposed.is_empty() { String::new() } else { format!(": other machines can reach it on {}", ips.join(", ")) });
+            }
             if let Some(h) = net::firewall_hint(cfg.server.port) {
                 println!("-- firewall active; for internet players: {h}");
             }
