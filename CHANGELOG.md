@@ -25,6 +25,7 @@ The section of each version becomes the notes of its GitHub release, so keep the
 - **Language** in Settings (`language` in `config.toml`): English by default, Spanish if you choose it. It no longer depends on the
   system locale, and it covers the app, the command line, skin names and in-game messages for every player. Install progress and
   common errors are translated too.
+- Backups: `backup create|list|restore [--dry-run]` and **Settings → Backups** save your config, modes, plugins, presets and skins. `install --update` makes one first.
 - Changing only one README translates the changed lines into the other, with Google Translate.
 - `.claude/` holds rules for contributors who use Claude Code.
 - Competitive category with normal matches instead of custom rules: `competitivo` (MR15), `premier` (MR12 with map bans), `wingman`
@@ -32,6 +33,12 @@ The section of each version becomes the notes of its GitHub release, so keep the
 - `--teams together|versus|free` and **Teams** in the wizard, `!ready`/`!listo` to end the warmup, and map bans in `premier`.
 - New modes: `aim`, `hardcore`, `pesados`, `ffa`, `tdm`, `dangerzone`, `trigger`, `stabzap`, `clutch` and `ninjas`.
 - `modo_<team>_color` accepts `R,G,B,alpha` for see-through players.
+
+### Changed (install)
+
+- SourceMod and Metamod are pinned to the tested builds and checked with SHA-256 before unpacking, instead of taking the latest.
+- An interrupted install or update is detected: the server will not start until `install` resumes it. Two installs cannot run at
+  once, the server must be stopped first, and downloads retry with growing waits.
 
 ### Security
 
