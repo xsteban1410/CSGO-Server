@@ -220,7 +220,7 @@ pub fn installed(maps_dir: &Path) -> Vec<Installed> {
             });
         }
     }
-    v.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
+    v.sort_by_key(|a| a.title.to_lowercase());
     v
 }
 

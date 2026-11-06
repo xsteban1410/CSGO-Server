@@ -145,7 +145,7 @@ pub fn page(a: &AppRc) -> gtk::Widget {
     let installed_ids: Rc<RefCell<Vec<u64>>> = Rc::default();
 
     // fill the library
-    let fill_lib: Rc<RefCell<Option<Rc<dyn Fn()>>>> = Rc::default();
+    let fill_lib: crate::LateFn = Rc::default();
     let fl = fill_lib.clone();
     let refill: Rc<dyn Fn()> = Rc::new(glib::clone!(#[strong] a, #[weak] lib_list, #[strong] installed_ids, move || {
         let me = fl.borrow().clone().unwrap();

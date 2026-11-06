@@ -60,13 +60,17 @@ fn fetch(cfg: &Config) -> Live {
     l
 }
 
+type LiveListener = Box<dyn Fn(&Live)>;
+/// A callback set after the widgets that call it are built.
+pub type LateFn = Rc<RefCell<Option<Rc<dyn Fn()>>>>;
+
 pub struct App {
     pub win: adw::ApplicationWindow,
     pub toasts: adw::ToastOverlay,
     pub cfg: RefCell<Config>,
     pub modes: RefCell<Modes>,
     pub live: RefCell<Live>,
-    listeners: RefCell<Vec<Box<dyn Fn(&Live)>>>,
+    listeners: RefCell<Vec<LiveListener>>,
     modes_listeners: RefCell<Vec<Box<dyn Fn()>>>,
     polling: Cell<bool>,
     /// The user asked to stop, so the next stop is no surprise.

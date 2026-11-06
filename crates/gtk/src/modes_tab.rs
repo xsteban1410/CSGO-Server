@@ -336,7 +336,7 @@ pub fn page(a: &AppRc) -> gtk::Widget {
     off.add(&off_list);
     page.add(&off);
 
-    let reload: Rc<RefCell<Option<Rc<dyn Fn()>>>> = Rc::default();
+    let reload: crate::LateFn = Rc::default();
     let rl = reload.clone();
     let fill: Rc<dyn Fn()> = Rc::new(glib::clone!(#[strong] a, #[weak] mine_list, #[weak] off_list, move || {
         a.reload_modes();

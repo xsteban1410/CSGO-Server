@@ -58,7 +58,7 @@ fn read_text(p: &Path) -> Option<String> {
     let raw = std::fs::read(p).ok()?;
     if raw.len() >= 2 && (raw[..2] == [0xff, 0xfe] || raw[..2] == [0xfe, 0xff]) {
         let le = raw[0] == 0xff;
-        let u: Vec<u16> = raw[2..].chunks_exact(2).map(|c| if le { u16::from_le_bytes([c[0], c[1]]) } else { u16::from_be_bytes([c[0], c[1]]) }).collect();
+        let u: Vec<u16> = raw[2..].as_chunks::<2>().0.iter().map(|c| if le { u16::from_le_bytes(*c) } else { u16::from_be_bytes(*c) }).collect();
         return Some(String::from_utf16_lossy(&u));
     }
     Some(String::from_utf8_lossy(&raw).into_owned())
