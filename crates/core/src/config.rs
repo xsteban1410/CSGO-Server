@@ -155,7 +155,7 @@ pub struct Server {
     pub region: u8,
     pub tags: String,
     pub network: Network,
-    /// Game Server Login Token (perfil comunitario): https://steamcommunity.com/dev/managegameservers
+    /// Game Server Login Token (community profile): https://steamcommunity.com/dev/managegameservers
     pub gslt: String,
     /// Steam Web API key for workshop maps: https://steamcommunity.com/dev/apikey
     pub workshop_authkey: String,
@@ -203,15 +203,39 @@ impl Default for Defaults {
     }
 }
 
+/// Language of the app, the CLI and in-game messages. English unless chosen in Settings.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Language {
+    #[default]
+    En,
+    Es,
+}
+
+impl Language {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Language::En => "en",
+            Language::Es => "es",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct Config {
+    pub language: Language,
     pub server: Server,
     pub defaults: Defaults,
 }
 
 pub fn config_path() -> PathBuf {
     paths::config_dir().join("config.toml")
+}
+
+/// The saved language, without creating the config if it is missing. A broken config means English.
+pub fn saved_language() -> Language {
+    std::fs::read_to_string(config_path()).ok().and_then(|t| toml::from_str::<Config>(&t).ok()).map(|c| c.language).unwrap_or_default()
 }
 
 fn random_password() -> String {
@@ -246,7 +270,7 @@ impl Config {
             c.save_to(path)?;
             return Ok(c);
         }
-        let txt = std::fs::read_to_string(path).with_context(|| format!("leyendo {}", path.display()))?;
+        let txt = std::fs::read_to_string(path).with_context(|| format!("reading {}", path.display()))?;
         let mut c: Config = toml::from_str(&txt).with_context(|| format!("invalid config in {}", path.display()))?;
         if c.server.install_dir.as_os_str().is_empty() {
             c.server.install_dir = paths::data_dir().join("server");
@@ -384,6 +408,17 @@ mod tests {
         let mut c = Config::default();
         c.server.hostname = "a\";quit".into();
         assert!(c.validate().is_err());
+    }
+
+    #[test]
+    fn language_is_english_unless_chosen() {
+        assert_eq!(Config::default().language, Language::En);
+        assert_eq!(toml::from_str::<Config>("[server]\nport = 1").unwrap().language, Language::En);
+        assert_eq!(toml::from_str::<Config>("language = \"es\"").unwrap().language, Language::Es);
+        assert!(toml::from_str::<Config>("language = \"fr\"").is_err());
+        // a saved config keeps it
+        let txt = toml::to_string(&Config { language: Language::Es, ..Default::default() }).unwrap();
+        assert_eq!(toml::from_str::<Config>(&txt).unwrap().language, Language::Es);
     }
 
     #[test]

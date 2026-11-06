@@ -463,11 +463,8 @@ fn main() -> Result<()> {
             }
         },
         Cmd::Skins => {
-            let (txt, (w, k, n)) = csls_core::skins_gen::generate(&srv.csgo_dir(), lang)?;
-            let out = csls_core::paths::data_dir().join("skins.cfg");
-            std::fs::create_dir_all(csls_core::paths::data_dir())?;
-            std::fs::write(&out, txt)?;
-            println!("{w} weapons, {k} knives, {n} skins -> {}", out.display());
+            let (w, k, n) = csls_core::skins_gen::write_catalogs(&srv.csgo_dir())?;
+            println!("{w} weapons, {k} knives, {n} skins -> {}", csls_core::paths::data_dir().display());
             deploy::deploy(&cfg, false, true)?;
         }
         Cmd::Config => println!("{}", csls_core::config::config_path().display()),

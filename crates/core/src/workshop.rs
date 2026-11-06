@@ -60,7 +60,7 @@ impl Item {
 }
 
 fn curl(args: &[String]) -> crate::Result<String> {
-    let o = Command::new("curl").args(["-fsSL", "--max-time", "30"]).args(args).output().context("ejecutando curl")?;
+    let o = Command::new("curl").args(["-fsSL", "--max-time", "30"]).args(args).output().context("running curl")?;
     if !o.status.success() {
         bail!("network error: {}", String::from_utf8_lossy(&o.stderr).trim());
     }
@@ -247,7 +247,7 @@ pub fn install(maps_dir: &Path, it: &Item) -> crate::Result<String> {
             .arg(&root)
             .args(["+login", "anonymous", "+workshop_download_item", "730", &it.id.to_string(), "+quit"])
             .status()
-            .context("ejecutando SteamCMD")?;
+            .context("running SteamCMD")?;
         let got = root.join(format!("steamapps/workshop/content/730/{}", it.id));
         let bsp = std::fs::read_dir(&got).into_iter().flatten().flatten().map(|e| e.path()).find(|p| p.extension().is_some_and(|x| x == "bsp"));
         match bsp {

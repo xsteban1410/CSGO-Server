@@ -78,7 +78,7 @@ pub fn spawn_bg(unit: &str, cwd: &Path, env: &[(&str, String)], cmd: &[String], 
         for (k, v) in env {
             c.arg(format!("--setenv={k}={v}"));
         }
-        let st = c.arg("--").args(cmd).status().context("ejecutando systemd-run")?;
+        let st = c.arg("--").args(cmd).status().context("running systemd-run")?;
         if !st.success() {
             bail!("systemd-run could not start {unit}");
         }
@@ -189,7 +189,7 @@ impl<'a> Server<'a> {
     fn write_mode_start(&self, mode: &crate::modes::Mode, opts: &LaunchOptions) -> crate::Result<()> {
         std::fs::write(
             self.csgo_dir().join("cfg/modo_inicio.cfg"),
-            format!("modo_nombre \"{}\"\nmodo_tipo \"{}\"\nmodo_humanos {}\nmodo_extra \"{}\"\n", opts.mode, opts.tipo_cfg(mode), opts.humans, opts.extra(mode)),
+            format!("csls_language \"{}\"\nmodo_nombre \"{}\"\nmodo_tipo \"{}\"\nmodo_humanos {}\nmodo_extra \"{}\"\n", self.cfg.language.as_str(), opts.mode, opts.tipo_cfg(mode), opts.humans, opts.extra(mode)),
         )?;
         Ok(())
     }

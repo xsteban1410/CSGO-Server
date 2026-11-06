@@ -19,14 +19,9 @@ pub mod workshop;
 
 pub use anyhow::{Error, Result};
 
-/// UI language: "es" if LANG/LC_ALL starts with es, otherwise "en".
+/// UI language, from Settings ("en" unless chosen). The system locale does not count.
+/// Read once: changing it applies on the next start.
 pub fn lang() -> &'static str {
-    for v in ["LC_ALL", "LC_MESSAGES", "LANG"] {
-        if let Ok(l) = std::env::var(v) {
-            if !l.is_empty() {
-                return if l.starts_with("es") { "es" } else { "en" };
-            }
-        }
-    }
-    "en"
+    static LANG: std::sync::OnceLock<&'static str> = std::sync::OnceLock::new();
+    LANG.get_or_init(|| config::saved_language().as_str())
 }

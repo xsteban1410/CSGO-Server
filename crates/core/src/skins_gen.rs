@@ -87,11 +87,28 @@ fn esc(s: &str) -> String {
     s.replace('"', "'")
 }
 
+/// File name of the skin list in a language, in the data folder and in the package's `data/`.
+pub fn catalog_name(lang: &str) -> String {
+    format!("skins.{lang}.cfg")
+}
+
+/// Writes the skin list in both languages to the data folder, so changing language needs no game files.
+pub fn write_catalogs(csgo: &Path) -> crate::Result<(usize, usize, usize)> {
+    std::fs::create_dir_all(crate::paths::data_dir())?;
+    let mut counts = (0, 0, 0);
+    for lang in ["en", "es"] {
+        let (txt, n) = generate(csgo, lang)?;
+        std::fs::write(crate::paths::data_dir().join(catalog_name(lang)), txt)?;
+        counts = n;
+    }
+    Ok(counts)
+}
+
 /// Returns the skins.cfg text and (weapons, knives, skins). `lang` = "es" (name + original) or "en".
 pub fn generate(csgo: &Path, lang: &str) -> crate::Result<(String, (usize, usize, usize))> {
     let items_txt = std::fs::read_to_string(csgo.join("scripts/items/items_game.txt"))
         .or_else(|_| read_text(&csgo.join("scripts/items/items_game.txt")).context("no text"))
-        .with_context(|| format!("leyendo {}/scripts/items/items_game.txt", csgo.display()))?;
+        .with_context(|| format!("reading {}/scripts/items/items_game.txt", csgo.display()))?;
     let items = kv::parse(&items_txt);
     let en = tokens(&csgo.join("resource/csgo_english.txt"));
     let local = if lang == "es" {

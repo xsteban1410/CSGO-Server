@@ -102,7 +102,7 @@ fn run_logged(cmd: &mut Command, cancel: &AtomicBool, mut line: impl FnMut(&str)
         if cancel.load(Ordering::Relaxed) {
             let _ = child.kill();
             let _ = child.wait();
-            bail!("cancelado");
+            bail!("cancelled");
         }
     }
     let st = child.wait()?;
@@ -250,16 +250,13 @@ pub fn install(cfg: &Config, update: bool, cancel: &AtomicBool, cb: &mut dyn FnM
     std::fs::write(csgo.join("addons/metamod.vdf"), "\"Plugin\"\n{\n\t\"file\"\t\"addons/metamod/bin/server\"\n}\n")?;
 
     // skin list up to date with the installed game (on failure the package one stays)
-    if update || !paths::data_dir().join("skins.cfg").is_file() {
+    if update || !paths::data_dir().join(crate::skins_gen::catalog_name("en")).is_file() {
         cb(Progress { step: "skins", fraction: None, message: "Generating the skin list".into() });
-        if let Ok((txt, _)) = crate::skins_gen::generate(&csgo, crate::lang()) {
-            std::fs::create_dir_all(paths::data_dir())?;
-            std::fs::write(paths::data_dir().join("skins.cfg"), txt)?;
-        }
+        let _ = crate::skins_gen::write_catalogs(&csgo);
     }
 
     cb(Progress { step: "deploy", fraction: None, message: "Compiling plugins and copying configs".into() });
-    let r = deploy::deploy(cfg, update, false).context("desplegando")?;
+    let r = deploy::deploy(cfg, update, false).context("deploying")?;
     if let Some(e) = r.error_text() {
         bail!("some plugins do not compile:\n{e}");
     }

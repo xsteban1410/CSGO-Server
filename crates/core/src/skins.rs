@@ -13,7 +13,7 @@ pub struct Catalog {
 
 impl Catalog {
     pub fn load(skins_cfg: &Path) -> crate::Result<Catalog> {
-        let k = kv::parse(&std::fs::read_to_string(skins_cfg).with_context(|| format!("leyendo {}", skins_cfg.display()))?);
+        let k = kv::parse(&std::fs::read_to_string(skins_cfg).with_context(|| format!("reading {}", skins_cfg.display()))?);
         let root = k.get("skins").cloned().unwrap_or(Kv::Obj(vec![]));
         let mut c = Catalog::default();
         if let Some(a) = root.get("armas") {
@@ -43,7 +43,7 @@ impl Catalog {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Entry {
-    /// Weapon (or "Cuchillo" for the chosen model).
+    /// Weapon (or "Knife" for the chosen model).
     pub weapon: String,
     /// Skin or model.
     pub value: String,
@@ -74,7 +74,7 @@ pub fn player_skins(db: &Path, cat: &Catalog, steamid64: &str) -> crate::Result<
     for row in rows {
         let (k, val) = row?;
         if k == "cuchillo" {
-            v.push(Entry { weapon: "Cuchillo / Knife".into(), value: cat.weapon_name(&val).to_string() });
+            v.push(Entry { weapon: "Knife".into(), value: cat.weapon_name(&val).to_string() });
         } else {
             let paint = cat.weapons.get(&k).and_then(|w| w.1.get(&val)).cloned().unwrap_or_else(|| format!("#{val}"));
             v.push(Entry { weapon: cat.weapon_name(&k).to_string(), value: paint });
@@ -88,7 +88,7 @@ mod tests {
     use super::*;
     #[test]
     fn catalog_and_database() {
-        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/skins.cfg");
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/skins.en.cfg");
         let cat = Catalog::load(&root).unwrap();
         assert_eq!(cat.weapon_name("weapon_ak47"), "AK-47");
         assert_eq!(cat.weapons["weapon_ak47"].1["801"], "Asiimov");

@@ -23,7 +23,7 @@ impl Presets {
 
     pub fn load_from(p: &Path) -> crate::Result<Presets> {
         match std::fs::read_to_string(p) {
-            Ok(t) => toml::from_str(&t).with_context(|| format!("leyendo {}", p.display())),
+            Ok(t) => toml::from_str(&t).with_context(|| format!("reading {}", p.display())),
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(Presets::default()),
             Err(e) => Err(e.into()),
         }
