@@ -4,6 +4,9 @@ use std::collections::HashMap;
 use std::sync::OnceLock;
 
 static ES: &[(&str, &str)] = &[
+    ("Warning", "Aviso"),
+    ("This server is reachable from the internet, has no VAC (-insecure) and anyone can join without a password. UDP port", "Este servidor es accesible desde internet, no tiene VAC (-insecure) y cualquiera puede entrar sin contraseña. Puerto UDP"),
+    ("This server is reachable from the internet and has no VAC (-insecure). Players need its password. UDP port", "Este servidor es accesible desde internet y no tiene VAC (-insecure). Los jugadores necesitan su contraseña. Puerto UDP"),
     ("Language", "Idioma"),
     ("App, command line and in-game messages", "App, línea de comandos y mensajes dentro del juego"),
     ("Restart the app to apply the language", "Reinicia la app para aplicar el idioma"),
@@ -272,7 +275,7 @@ static ES: &[(&str, &str)] = &[
     ("Save one from the last step of “Start server”", "Guarda uno desde el último paso de «Iniciar servidor»"),
     ("Warmup ended", "Calentamiento terminado"),
     ("Open the port with UPnP", "Abrir el puerto por UPnP"),
-    ("Internet and community profiles; needs upnpc (miniupnpc)", "Perfiles Internet y comunitario; necesita upnpc (miniupnpc)"),
+    ("Asks the router to open one UDP port while the server runs. Internet and community profiles; needs upnpc (miniupnpc)", "Pide al router abrir un puerto UDP mientras el servidor está en marcha. Perfiles Internet y comunitario; necesita upnpc (miniupnpc)"),
 ];
 
 fn table() -> &'static HashMap<&'static str, &'static str> {

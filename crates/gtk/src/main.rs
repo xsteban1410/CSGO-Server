@@ -76,6 +76,12 @@ impl App {
         self.toasts.add_toast(adw::Toast::new(msg));
     }
 
+    pub fn warn(&self, msg: &str) {
+        let d = adw::AlertDialog::new(Some(&t("Warning")), Some(&msg.lines().map(t_msg).collect::<Vec<_>>().join("\n")));
+        d.add_response("ok", "OK");
+        d.present(Some(&self.win));
+    }
+
     pub fn error(&self, e: &anyhow::Error) {
         let d = adw::AlertDialog::new(Some(&t("Error")), Some(&t_msg(&format!("{e:#}"))));
         d.add_response("ok", "OK");

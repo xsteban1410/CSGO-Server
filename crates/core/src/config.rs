@@ -302,7 +302,7 @@ impl Config {
 
     pub fn validate(&self) -> crate::Result<()> {
         let s = &self.server;
-        for (name, v) in [("hostname", &s.hostname), ("password", &s.password), ("tags", &s.tags), ("rcon_password", &s.rcon_password)] {
+        for (name, v) in [("hostname", &s.hostname), ("password", &s.password), ("tags", &s.tags), ("rcon_password", &s.rcon_password), ("gslt", &s.gslt)] {
             if v.contains(['"', ';', '\n', '\r']) {
                 bail!("{name} cannot contain quotes, ; or line breaks");
             }

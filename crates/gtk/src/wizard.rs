@@ -335,7 +335,7 @@ fn apply(w: &Wr) {
                 Ok((map, warnings)) => {
                     a.toast(&format!("{} · {} · {map}", if live { t("Mode changed") } else { t("Server started") }, mode_id));
                     if !warnings.is_empty() {
-                        a.error(&anyhow::anyhow!(warnings.join("\n")));
+                        a.warn(&warnings.join("\n"));
                     }
                 }
                 Err(e) => a.error(&e),

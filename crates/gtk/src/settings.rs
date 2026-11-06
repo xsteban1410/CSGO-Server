@@ -32,7 +32,7 @@ pub fn page(a: &AppRc) -> gtk::Widget {
     let tick = adw::ComboRow::builder().title(t("Tickrate")).model(&gtk::StringList::new(&["64", "128"])).selected(if c.tickrate >= 128 { 1 } else { 0 }).build();
     let gslt = adw::PasswordEntryRow::builder().title(t("GSLT token (community)")).text(&c.gslt).build();
     let wkey = adw::PasswordEntryRow::builder().title(t("Workshop Web API key")).text(&c.workshop_authkey).build();
-    let upnp = adw::SwitchRow::builder().title(t("Open the port with UPnP")).subtitle(t("Internet and community profiles; needs upnpc (miniupnpc)")).active(c.upnp).build();
+    let upnp = adw::SwitchRow::builder().title(t("Open the port with UPnP")).subtitle(t("Asks the router to open one UDP port while the server runs. Internet and community profiles; needs upnpc (miniupnpc)")).active(c.upnp).build();
     net_row.bind_property("selected", &upnp, "visible").transform_to(|_, s: u32| Some(s >= 2)).sync_create().build();
     let skins = adw::SwitchRow::builder().title(t("Skins plugin")).subtitle(t("Can cost the GSLT on public servers")).active(c.skins).build();
     let folder = adw::ActionRow::builder().title(t("Server folder")).subtitle(c.install_dir.display().to_string()).build();
