@@ -204,7 +204,7 @@ Choices are saved per SteamID and applied every time you join. The language chos
 | `~/.local/share/csgo-legacy-server/` | server (default location), SteamCMD, logs, workshop cache |
 | `crates/core`, `crates/cli`, `crates/gtk` | Rust: core library, command line, GTK app |
 | `plugin/`, `cfg/`, `modes/` | SourceMod plugins, mode configs, mode metadata |
-| `docs/ARCHITECTURE.md` | How the pieces fit together |
+| `docs/ARCHITECTURE.md`, `docs/TROUBLESHOOTING.md`, `docs/PRIVACY.md` | How the pieces fit together, fixing problems, and what data is kept |
 
 ## Notes and limits
 
@@ -216,7 +216,7 @@ Choices are saved per SteamID and applied every time you join. The language chos
   must be found again. The idea comes from [NoLobbyReservation](https://github.com/vanz666/NoLobbyReservation).
 - The server runs with `-insecure` (no VAC). Skins are cosmetic and only visible on this server; skin changers break Valve's
   rules for public GSLT servers, so the Settings tab lets you turn the skins plugin off.
-- No gloves. Not tested on musl distros or SteamOS (read-only system: use distrobox).
+- Tested on Arch Linux and CachyOS. CI builds the core and CLI on Debian and Fedora, but nothing else has been tried there. Not tested on musl distros or SteamOS (read-only system: use distrobox). No gloves.
 
 ## Branches
 
