@@ -228,7 +228,7 @@ public Action CmdEstado(int args)
 		{
 			float p[3];
 			GetClientAbsOrigin(i, p);
-			PrintToServer("%N team=%d health=%d armor=%d speed=%.2f scale=%.2f type=%d pos=%.0f,%.0f,%.0f", i, GetClientTeam(i), GetClientHealth(i), GetEntProp(i, Prop_Send, "m_ArmorValue"),
+			PrintToServer("%N lang=%d team=%d health=%d armor=%d speed=%.2f scale=%.2f type=%d pos=%.0f,%.0f,%.0f", i, GetClientLanguage(i), GetClientTeam(i), GetClientHealth(i), GetEntProp(i, Prop_Send, "m_ArmorValue"),
 				GetEntPropFloat(i, Prop_Send, "m_flLaggedMovementValue"), GetEntPropFloat(i, Prop_Send, "m_flModelScale"), g_ZTipo[i], p[0], p[1], p[2]);
 		}
 	return Plugin_Handled;

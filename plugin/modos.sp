@@ -13,7 +13,7 @@ public Plugin myinfo = { name = "Modes", author = "xsteban1410", version = "4.0"
 #define T_IDX 0
 #define CT_IDX 1
 
-ConVar g_Nombre, g_Tipo, g_GameType, g_Humanos, g_Extra, g_Retake, g_Sitio, g_Pausa, g_HumanTeam;
+ConVar g_Idioma, g_Nombre, g_Tipo, g_GameType, g_Humanos, g_Extra, g_Retake, g_Sitio, g_Pausa, g_HumanTeam;
 ConVar g_Quitar[2], g_Arma[2], g_Pistola[2], g_Objeto[2], g_Vida[2], g_Velocidad[2], g_Color[2];
 
 int g_Site;                 // 0 = A, 1 = B in the current round
@@ -31,6 +31,8 @@ public void OnPluginStart()
 	g_GameType = FindConVar("game_type");
 	g_Humanos = CreateConVar("modo_humanos", "2", "Humans on a team needed to end warmup (0 = no control)");
 	g_Extra   = CreateConVar("modo_extra", "", "Commands run after the mode cfg (separated by ;)");
+	g_Idioma  = CreateConVar("csls_language", "", "Language of in-game messages for everyone: en or es (empty = each player's game language)");
+	g_Idioma.AddChangeHook(OnLanguageChanged);
 	g_Retake  = CreateConVar("modo_retake", "0", "1 = bomb planted at round start and Ts spawning on the site");
 	g_Sitio   = CreateConVar("modo_sitio", "random", "Retake site: a, b or random");
 
@@ -84,8 +86,33 @@ public void OnClientDisconnect(int c)
 	Comp_ClientGone(c);
 }
 
+// With csls_language set, everyone gets messages in that language instead of their game's.
+void ApplyLanguage(int c)
+{
+	char code[8];
+	g_Idioma.GetString(code, sizeof(code));
+	int id = code[0] ? GetLanguageByCode(code) : -1;
+	if (id != -1)
+		SetClientLanguage(c, id);
+}
+
+public void OnLanguageChanged(ConVar cv, const char[] oldValue, const char[] newValue)
+{
+	for (int i = 1; i <= MaxClients; i++)
+		if (IsClientInGame(i))
+			ApplyLanguage(i);
+}
+
+// SourceMod sets the language from the client's cl_language when its settings change
+public void OnClientSettingsChanged(int c)
+{
+	if (IsClientInGame(c))
+		ApplyLanguage(c);
+}
+
 public void OnClientPutInServer(int c)
 {
+	ApplyLanguage(c);
 	SDKHook(c, SDKHook_OnTakeDamage, OnTakeDamage);
 	SDKHook(c, SDKHook_OnTakeDamagePost, Zombies_TakeDamagePost);
 }

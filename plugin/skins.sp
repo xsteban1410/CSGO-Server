@@ -28,10 +28,10 @@ public void OnPluginStart()
 {
 	LoadTranslations("csls.phrases");
 	g_ArmasLibres = CreateConVar("skins_armas_libres", "0", "1 = allows !armas to take any weapon");
-	RegConsoleCmd("sm_ws", CmdWs, "Elegir skin");
-	RegConsoleCmd("sm_skins", CmdWs, "Elegir skin");
-	RegConsoleCmd("sm_knife", CmdKnife, "Elegir cuchillo");
-	RegConsoleCmd("sm_cuchillo", CmdKnife, "Elegir cuchillo");
+	RegConsoleCmd("sm_ws", CmdWs, "Choose a skin");
+	RegConsoleCmd("sm_skins", CmdWs, "Choose a skin");
+	RegConsoleCmd("sm_knife", CmdKnife, "Choose a knife");
+	RegConsoleCmd("sm_cuchillo", CmdKnife, "Choose a knife");
 	RegConsoleCmd("sm_armas", CmdArmas, "Choose any weapon");
 	RegConsoleCmd("sm_guns", CmdArmas, "Choose any weapon");
 	RegServerCmd("skins_estado", CmdEstado, "Shows the SteamID and loaded skins of each player");
