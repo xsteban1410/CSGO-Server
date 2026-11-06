@@ -85,6 +85,7 @@ public void OnPluginStart()
 
 public void OnMapStart()
 {
+	PrecacheSound("ui/item_drop3_rare.wav", true);
 	g_Modelo[0] = '\0';
 	for (int i = 0; i < sizeof(g_Modelos); i++)
 	{
