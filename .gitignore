@@ -20,3 +20,4 @@ target/
 
 # paquetes de packaging/build-pkg.sh
 dist/
+.claude/settings.local.json

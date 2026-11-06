@@ -1,0 +1,36 @@
+name: README sync
+
+# When a push changes only one README, translates the changed lines into the other one and commits them.
+on:
+  push:
+    branches: [master, pre-releases]
+    paths: [README.md, README.es.md]
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Translate
+        run: |
+          base=${{ github.event.before }}
+          git cat-file -e "$base^{commit}" 2>/dev/null || base=HEAD~1
+          tools/sync_readme.py "$base"
+      - name: Commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git diff --quiet && exit 0
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -qam 'Translate the README change'
+          git pull -q --rebase origin "$GITHUB_REF_NAME"
+          git push -q origin "HEAD:$GITHUB_REF_NAME"
+          # a push made with GITHUB_TOKEN starts no workflows, and promotion needs CI on this commit
+          gh workflow run ci.yml --ref "$GITHUB_REF_NAME"

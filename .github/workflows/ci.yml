@@ -64,6 +64,8 @@ jobs:
         run: tools/version.sh check
       - name: Promotion rules
         run: tools/test-promote.sh
+      - name: README translation
+        run: python3 tools/test_sync_readme.py
 
   # Each commit's package: Actions tab > the run > Artifacts, or `gh run download -n package`.
   package:
