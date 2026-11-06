@@ -1,4 +1,6 @@
 # Metadata for cfg/modo_unabala.cfg
-category = "fun"
+category = "deathmatch"
 name = { en = "One in the Chamber", es = "Una bala" }
-description = { en = "Deagle with one bullet, any hit kills, each kill gives a bullet", es = "Deagle con una bala, cualquier impacto mata, cada baja da otra" }
+description = { en = "Deathmatch with a Deagle and one bullet. Any hit kills, and each kill gives you a bullet", es = "Deathmatch con Deagle y una bala. Cualquier impacto mata y cada baja te da otra bala" }
+game_type = 1
+game_mode = 2

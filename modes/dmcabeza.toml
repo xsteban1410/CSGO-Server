@@ -1,6 +1,6 @@
 # Metadata for cfg/modo_dmcabeza.cfg
 category = "deathmatch"
 name = { en = "Headshot deathmatch", es = "Deathmatch cabeza" }
-description = { en = "Deathmatch where only headshots count", es = "Deathmatch solo con tiros a la cabeza" }
+description = { en = "Deathmatch where only shots to the head do damage", es = "Deathmatch donde solo hacen daño los tiros a la cabeza" }
 game_type = 1
 game_mode = 2

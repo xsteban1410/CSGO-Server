@@ -1,4 +1,4 @@
 # Metadata for cfg/modo_awp.cfg
 category = "weapons"
 name = { en = "AWP", es = "AWP" }
-description = { en = "AWP + Deagle", es = "AWP + Deagle" }
+description = { en = "Everyone gets an AWP and a Deagle. Short rounds, no buying", es = "Todos con AWP y Deagle. Rondas cortas, sin comprar" }

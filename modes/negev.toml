@@ -1,4 +1,4 @@
 # Metadata for cfg/modo_negev.cfg
 category = "weapons"
 name = { en = "Negev", es = "Negev" }
-description = { en = "Negev only", es = "Solo Negev" }
+description = { en = "Everyone gets a Negev and nothing else. Short rounds, no buying", es = "Todos con Negev y nada más. Rondas cortas, sin comprar" }

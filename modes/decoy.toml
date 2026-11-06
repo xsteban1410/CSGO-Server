@@ -1,4 +1,6 @@
 # Metadata for cfg/modo_decoy.cfg
-category = "fun"
+category = "deathmatch"
 name = { en = "Decoy", es = "Señuelo" }
-description = { en = "Decoy grenade and 1 HP, with respawn", es = "Granada señuelo y 1 de vida, con reaparición" }
+description = { en = "Deathmatch with 1 HP and endless decoys: a direct hit kills", es = "Deathmatch con 1 de vida y señuelos sin fin: un impacto directo mata" }
+game_type = 1
+game_mode = 2

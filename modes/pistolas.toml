@@ -1,4 +1,4 @@
 # Metadata for cfg/modo_pistolas.cfg
 category = "weapons"
-name = { en = "Pistols", es = "Pistolas" }
-description = { en = "Deagle only", es = "Solo Deagle" }
+name = { en = "Deagle", es = "Deagle" }
+description = { en = "Everyone gets only a Deagle. Short rounds, no buying", es = "Todos solo con Deagle. Rondas cortas, sin comprar" }

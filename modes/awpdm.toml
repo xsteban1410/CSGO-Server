@@ -1,6 +1,6 @@
 # Metadata for cfg/modo_awpdm.cfg
 category = "deathmatch"
 name = { en = "AWP deathmatch", es = "Deathmatch AWP" }
-description = { en = "Deathmatch with AWP only", es = "Deathmatch solo AWP" }
+description = { en = "Deathmatch with only AWP and Deagle", es = "Deathmatch solo con AWP y Deagle" }
 game_type = 1
 game_mode = 2

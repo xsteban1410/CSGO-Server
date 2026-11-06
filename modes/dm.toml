@@ -1,6 +1,6 @@
 # Metadata for cfg/modo_dm.cfg
 category = "deathmatch"
 name = { en = "Deathmatch", es = "Deathmatch" }
-description = { en = "Official deathmatch", es = "Deathmatch oficial" }
+description = { en = "Official deathmatch: buy from the menu, respawn at once, 10 minutes", es = "Deathmatch oficial: compras en el menú, reapareces al momento, 10 minutos" }
 game_type = 1
 game_mode = 2

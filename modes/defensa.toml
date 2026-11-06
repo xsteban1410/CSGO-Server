@@ -1,6 +1,6 @@
 # Metadata for cfg/modo_defensa.cfg
 category = "objective"
 name = { en = "Post-plant", es = "Defensa" }
-description = { en = "The bomb is planted; you (T) defend it against 5 bots", es = "La bomba ya está plantada; vosotros (T) la defendéis contra 5 bots" }
+description = { en = "The opposite of Retake: the bomb is planted and you (T) defend it from 5 bots coming to defuse", es = "Al revés que Retake: la bomba está plantada y tú (T) la defiendes de 5 bots que vienen a desactivarla" }
 map_prefixes = ["de_"]
 options = ["site"]

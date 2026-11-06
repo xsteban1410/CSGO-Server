@@ -1,4 +1,4 @@
 # Metadata for cfg/modo_aleatorio.cfg
 category = "fun"
 name = { en = "Random weapon", es = "Arma aleatoria" }
-description = { en = "Each round everyone gets the same random weapon", es = "Cada ronda se sortea un arma igual para todos" }
+description = { en = "Each round everyone gets the same random weapon, from AWP to Zeus", es = "Cada ronda todos reciben la misma arma al azar, de la AWP al Zeus" }

@@ -1,4 +1,4 @@
 # Metadata for cfg/modo_anarquia.cfg
 category = "fun"
 name = { en = "Anarchy", es = "Anarquía" }
-description = { en = "Free for all with friendly fire, buy anywhere and no automatic kicks or bans", es = "Todos contra todos con fuego amigo, compras en cualquier sitio y sin expulsiones ni baneos automáticos" }
+description = { en = "Chaos: everyone against everyone with friendly fire, respawn, buy anywhere, and nobody gets kicked", es = "Caos: todos contra todos con fuego amigo, reaparición, compras en cualquier sitio y sin expulsiones" }

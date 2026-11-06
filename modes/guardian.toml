@@ -1,7 +1,7 @@
 # Metadata for cfg/modo_guardian.cfg
 category = "pve"
 name = { en = "Guardian", es = "Guardián" }
-description = { en = "Official Guardian, defend the zone against waves of bots", es = "Guardián oficial, defendéis la zona contra oleadas de bots" }
+description = { en = "Official co-op: defend the zone against waves of bots, on gd_ maps", es = "Cooperativo oficial: defiende la zona contra oleadas de bots, en mapas gd_" }
 game_type = 4
 game_mode = 0
 map_prefixes = ["gd_"]

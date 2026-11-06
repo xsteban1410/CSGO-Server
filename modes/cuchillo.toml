@@ -1,4 +1,4 @@
 # Metadata for cfg/modo_cuchillo.cfg
 category = "weapons"
 name = { en = "Knives", es = "Cuchillo" }
-description = { en = "Knife only", es = "Solo cuchillo" }
+description = { en = "Knife only. Short rounds", es = "Solo cuchillo. Rondas cortas" }
