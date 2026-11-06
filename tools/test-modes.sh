@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Runs modes and match types on the real server without humans and checks over rcon
 # that game_type is the expected one, that bots move and that they respawn (or the round goes on).
+# Modes with bots that stand still (aim) or without bots (duelo) only check the game type.
 # Usage: tools/test-modes.sh [mode[:type] ...]   (the server must be running: csgo-legacy-server start ...)
 set -u
 B="${CSLS:-./target/debug/csgo-legacy-server}"
@@ -29,9 +30,9 @@ check_case() {
     sleep 12
     local alive; alive=$(r modo_estado | grep -c 'pos=')
     local state=ok
-    [[ $n -le 1 && -z $a ]] && state=NO_BOTS
-    # in Guardian the bots wait still until a human is nearby
-    [[ $n -gt 1 && $moved -eq 0 && $gt != 4/0 ]] && state=NOT_MOVING
+    [[ $n -le 1 && -z $a && $mode != duelo ]] && state=NO_BOTS
+    # in Guardian the bots wait still until a human is nearby; aim bots never move; retake bots hold the planted bomb
+    [[ $n -gt 1 && $moved -eq 0 && $gt != 4/0 && $mode != aim && $mode != retake ]] && state=NOT_MOVING
     [[ $rt == 1 && $alive -eq 0 ]] && state=NO_RESPAWN
     [[ $state == ok ]] || failures=$((failures + 1))
     printf '%-24s %-14s gt=%s bots=%-2s moved=%-2s respawn=%s alive_after_kill=%-2s map=%s\n' "$case_name" "$state" "$gt" "$n" "$moved" "$rt" "$alive" "$(val host_map)"
