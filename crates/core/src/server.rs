@@ -170,7 +170,7 @@ impl<'a> Server<'a> {
     }
 
     pub fn connect_address(&self) -> String {
-        let ip = net::local_ip().map(|i| i.to_string()).unwrap_or_else(|| "IP_DE_ESTE_PC".into());
+        let ip = net::local_ip().map(|i| i.to_string()).unwrap_or_else(|| "THIS_PC_IP".into());
         format!("{ip}:{}", self.cfg.server.port)
     }
 
