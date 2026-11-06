@@ -84,13 +84,14 @@ csgo-legacy-server rcon "comando" | play [cs2|local|IP:PUERTO] | bridge | doctor
 ```
 
 Opciones de start/mode: `-m/--map`, `-t/--type competitive|short|casual|wingman|dm|ffa|tdm|armsrace|demolition|guardian|dz`, `-d/--difficulty 0-3`, `-b/--bots`,
-`-r/--rounds`, `-s/--site a|b|random`, `-p/--precision` (sin dispersión ni retroceso para todos), `--anarchy`,
+`-r/--rounds`, `-s/--site a|b|random`, `--teams together|versus|free` (modos competitivos), `-p/--precision` (sin propagación ni retroceso para todos), `--anarchy`,
 `-w/--workshop ID`, `--set cvar=valor` (repetible), `--preset NOMBRE`, `--save-preset NOMBRE`.
 
 ```bash
 csgo-legacy-server start awp alone
 csgo-legacy-server mode retake 2 -s b -d 2 -m de_inferno
 csgo-legacy-server mode zombies --set modo_z_oleadas=10 --set modo_z_vida=400
+csgo-legacy-server start premier 2 --teams versus
 ```
 
 ## Modos
@@ -99,38 +100,54 @@ Los humanos van en CT y los bots en T (5, expertos) salvo que el modo diga otra 
 
 | Modo | |
 |---|---|
-| `aleatorio` | **Arma aleatoria** — Cada ronda se sortea un arma igual para todos |
-| `anarquia` | **Anarquía** — Todos contra todos con fuego amigo, compras en cualquier sitio y sin expulsiones ni baneos automáticos |
-| `armsrace` | **Carrera de armas** — Carrera de armas oficial (mapas ar_) |
-| `autosniper` | **Autosniper** — SCAR-20 + Deagle |
-| `awp` | **AWP** — AWP + Deagle |
-| `awpdm` | **Deathmatch AWP** — Deathmatch solo AWP |
-| `cheats` | **Cheats aleatorios** — Coge power-ups por el mapa y ten un cheat al azar 30 s: wallhack, aimbot, invencible… |
-| `cuchillo` | **Cuchillo** — Solo cuchillo |
-| `decoy` | **Señuelo** — Granada señuelo y 1 de vida, con reaparición |
-| `defensa` | **Defensa** — La bomba ya está plantada; vosotros (T) la defendéis contra 5 bots |
-| `demolicion` | **Demolición** — Demolición oficial, arma nueva cada ronda |
-| `dm` | **Deathmatch** — Deathmatch oficial |
-| `dmcabeza` | **Deathmatch cabeza** — Deathmatch solo con tiros a la cabeza |
+| `aim` | **Práctica de puntería**: los robots se quedan quietos y no disparan, tienes munición y armas infinitas. Calienta tu puntería |
+| `aleatorio` | **Arma aleatoria**: en cada ronda, todos obtienen la misma arma aleatoria, desde AWP hasta Zeus. |
+| `anarquia` | **Anarquía** — Caos: todos contra todos con fuego amigo, reaparece, compra en cualquier lugar y nadie es expulsado |
+| `armsrace` | **Carrera armamentista** — Oficial: cada muerte te otorga la siguiente arma, el primero en conseguir el cuchillo dorado gana. Sus propios mapas ar_ |
+| `autosniper` | **Auto-francotirador**: todos obtienen un SCAR-20 y un Deagle. Rondas cortas, sin compras |
+| `awp` | **AWP**: todos obtienen un AWP y un Deagle. Rondas cortas, sin compras |
+| `awpdm` | **AWP deathmatch** — Deathmatch solo con AWP y Deagle |
+| `cheats` | **Trucos aleatorios**: toma potenciadores brillantes para realizar un truco aleatorio durante 30 s: wallhack, aimbot, modo dios... |
+| `clutch` | **Clutch**: cada ronda que ganas agrega un bot, cada ronda que pierdes elimina uno. ¿A cuántos puedes vencer? |
+| `competitivo` | **Competitivo** — Lo real: 5 contra 5 con economía, primero a 16, los lados se intercambian en el medio tiempo y en la prórroga. Los bots llenan los asientos vacíos |
+| `cuchillo` | **Cuchillos**: solo cuchillo. Rondas cortas |
+| `dangerzone` | **Zona de peligro** — Batalla real oficial en mapas dz_: encuentra equipo, evita la tormenta, sé el último en pie |
+| `decoy` | **Decoy** — Combate a muerte con 1 HP y señuelos infinitos: un golpe directo mata |
+| `defensa` | **Post-plantación** — Lo opuesto a Retomar: la bomba se coloca y tú (T) la defiendes de 5 robots que vienen a desactivarla. |
+| `demolicion` | **Demolición** — Oficial: rondas de bombas donde obtienes una nueva arma en cada ronda por tus muertes. Pequeños mapas |
+| `dm` | **Deathmatch** — Deathmatch oficial: compra desde el menú, reaparece de inmediato, 10 minutos |
+| `dmcabeza` | **Combate a muerte con disparos en la cabeza**: combate a muerte donde solo los disparos en la cabeza causan daño |
 | `dmcuchillo` | **Deathmatch cuchillo** — Deathmatch solo cuchillo |
-| `escopetas` | **Escopetas** — XM1014 + P250 |
-| `flyingscout` | **Flying Scoutsman** — SSG 08, gravedad baja y precisión total en el aire |
-| `guardian` | **Guardián** — Guardián oficial, defendéis la zona contra oleadas de bots |
-| `headshot` | **Solo cabeza** — AK-47 + Deagle, solo daño a la cabeza |
-| `jefe` | **Jefe** — Partida normal, pero un bot por ronda es un jefe gigante con 5000 de vida |
-| `libre` | **Libre** — Cualquier arma con !armas, reaparición, dinero infinito |
-| `luna` | **Luna** — AWP + Deagle con gravedad baja |
-| `negev` | **Negev** — Solo Negev |
-| `normal` | **Normal** — Partida normal, compras libres con 16000 |
-| `pistolas` | **Pistolas** — Solo Deagle |
-| `rehenes` | **Rehenes** — Rescatad a los rehenes contra 5 bots (mapas cs_) |
-| `retake` | **Retake** — La bomba ya está plantada; vosotros (CT) la desactiváis contra 5 bots |
-| `rifles` | **Rifles** — AK-47 + Deagle |
-| `scout` | **Scout** — SSG 08 + P250 |
-| `unabala` | **Una bala** — Deagle con una bala, cualquier impacto mata, cada baja da otra |
-| `vampiro` | **Vampiro** — AK + Deagle; el daño que haces te cura (hasta 200) |
-| `zeus` | **Zeus** — Solo Zeus, con reaparición |
-| `zombies` | **Zombis** — Oleadas de zombis cada vez más duros |
+| `duelo` | **Duelo**: tú contra tu amigo, sin robots. La misma arma aleatoria en cada ronda, el primero en llegar a 10 victorias. |
+| `escopetas` | **Escopetas**: todos obtienen una XM1014 y una P250. Rondas cortas, sin compras |
+| `ffa` | **Todos contra todos**: combate a muerte donde todos son tus enemigos y tus amigos también |
+| `flyingscout` | **Flying Scoutsman** — Juego de guerra oficial: SSG 08, gravedad muy baja, saltos de conejo y precisión perfecta en el aire |
+| `guardian` | **Guardian** — Cooperativo oficial: defiende la zona contra oleadas de robots, en mapas gd_ |
+| `hardcore` | **Hardcore** — Reglas competitivas sin radar: las balas impactan un 60 % más fuerte y el fuego amigo causa todo el daño |
+| `headshot` | **Solo disparos a la cabeza** — AK-47 y Deagle, y solo los disparos a la cabeza causan daño |
+| `jefe` | **Jefe**: Rondas normales, pero un robot en cada ronda es un gigante rojo lento con 5000 HP. |
+| `libre` | **Juego libre** - Sin reglas: reaparece, compra en cualquier lugar y cualquier arma con !guns. Bueno para probar cosas. |
+| `luna` | **Moon** — AWP y Deagle con gravedad muy baja, como en la Luna |
+| `negev` | **Negev** — Todo el mundo recibe un Néguev y nada más. Rondas cortas, sin compras |
+| `ninjas` | **Ninjas**: Bots rápidos, casi invisibles y con cuchillos te cazan. Compra lo que quieras y escúchalos. |
+| `normal` | **Normal** — Rondas contra 5 bots con $16000 cada ronda, para que siempre puedas comprar cualquier cosa |
+| `pesados` | **Armadura pesada** — Todos con un traje de asalto pesado y un M249: resistente y lento |
+| `pistolas` | **Deagle**: todos reciben solo un Deagle. Rondas cortas, sin compras |
+| `premier` | **Premier** — Reglas de Premier: 5 contra 5, primero en llegar al 13, tiempo extra y prohibiciones de mapas en el calentamiento. Sin clasificación CS, necesita los servidores de Valve |
+| `rehenes` | **Rehenes** — Tú (CT) rescatas a los rehenes de 5 bots, en cs_maps |
+| `retake` | **Retomar** — La bomba ya está colocada y tú (CT) debes desactivarla contra 5 robots que la custodian. |
+| `rifles` | **Rifles**: todos reciben un AK-47 y un Deagle. Rondas cortas, sin compras |
+| `scout` | **Scout**: todos obtienen un SSG 08 y un P250. Rondas cortas, sin compras |
+| `stabzap` | **Stab Stab Zap** — Juego de guerra oficial: solo un cuchillo y un Zeus que se recarga en 30 s |
+| `tdm` | **Combate a muerte en equipo**: combate a muerte donde las muertes puntúan para tu equipo y el mejor equipo gana |
+| `trigger` | **Disciplina de disparo** — Juego de guerra oficial: cada disparo fallido te lastima, pero nunca te mata |
+| `unabala` | **Uno en la Cámara** — Combate a muerte con un Deagle y una bala. Cualquier golpe mata, y cada muerte te da una bala. |
+| `vampiro` | **Vampiro** — AK-47 y Deagle, y la mitad del daño que infliges te cura (hasta 200 HP) |
+| `wingman` | **Wingman**: 2 contra 2 oficial en un sitio de bomba, dieciséis rondas. Los mapas pequeños funcionan mejor |
+| `zeus` | **Zeus** — Combate a muerte con un Zeus que nunca se agota |
+| `zombies` | **Zombies**: sobrevive a cinco oleadas de robots zombies con todas las armas y munición infinita. Si mueres, te vuelves |
+
+**Partidos competitivos** (`competitivo`, `premier`, `wingman`, `duelo`) son partidos normales, no reglas personalizadas: economía, intercambio de bandos en el entretiempo y tiempo extra. Los humanos juegan juntos o entre sí (`--teams` o **Equipos** en el asistente) y los robots llenan los asientos vacíos. En `competitivo`, `premier` y `wingman` el partido comienza cuando todos escriben `!ready` o cuando termina el calentamiento; `duelo` comienza tan pronto como ambos están dentro. En `premier`, los humanos se turnan para prohibir mapas durante el calentamiento a menos que elijas un mapa cuando comienzas. No tiene clasificación CS ni emparejamiento, que necesitan los servidores de Valve.
 
 Ajustes por equipo para tus modos o `--set` (`t` o `ct`): `modo_<eq>_quitar`, `_arma`, `_pistola`, `_objeto`,
 `_vida`, `_velocidad`, `_color` (`R,G,B`).
@@ -168,7 +185,8 @@ surf, bhop y KZ no sirven para bots.
 | | |
 |---|---|
 | `!ws` | skin del arma que llevas en la mano (o de cualquier otra); las más buscadas salen primero |
-| `!knife` / `!cuchillo` | modelo de cuchillo (Karambit, Mariposa, M9…) y su skin |
+| `!guns` / `!armas` | cualquier arma (solo en los modos de juego libre y práctica de puntería) |
+| `!ready` / `!listo` | comenzar el partido sin esperar a que termine el calentamiento (modos competitivos) |
 | `!armas` / `!guns` | cualquier arma (solo en el modo libre) |
 
 Se guarda por SteamID y se aplica cada vez que entras. Los mensajes salen en el idioma del juego de cada jugador (inglés/español).
