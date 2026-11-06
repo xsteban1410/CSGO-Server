@@ -1,0 +1,6 @@
+# Metadata for cfg/modo_stabzap.cfg
+category = "fun"
+name = { en = "Stab Stab Zap", es = "Stab Stab Zap" }
+description = { en = "Official War Game: only a knife and a Zeus that recharges in 30 s", es = "War Game oficial: solo cuchillo y un Zeus que se recarga en 30 s" }
+game_type = 0
+game_mode = 0

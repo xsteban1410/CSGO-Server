@@ -1,0 +1,6 @@
+# Metadata for cfg/modo_trigger.cfg
+category = "fun"
+name = { en = "Trigger Discipline", es = "Gatillo fácil" }
+description = { en = "Official War Game: every shot that misses hurts you, but it never kills you", es = "War Game oficial: cada disparo fallado te hace daño, aunque nunca te mata" }
+game_type = 0
+game_mode = 0

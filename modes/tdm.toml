@@ -1,0 +1,6 @@
+# Metadata for cfg/modo_tdm.cfg
+category = "deathmatch"
+name = { en = "Team deathmatch", es = "Deathmatch por equipos" }
+description = { en = "Deathmatch where kills score for your team and the best team wins", es = "Deathmatch donde las bajas suman para tu equipo y gana el mejor equipo" }
+game_type = 1
+game_mode = 2

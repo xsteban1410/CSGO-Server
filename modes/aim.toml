@@ -1,0 +1,6 @@
+# Metadata for cfg/modo_aim.cfg
+category = "classic"
+name = { en = "Aim practice", es = "Puntería" }
+description = { en = "Bots stand still and do not shoot, you have infinite ammo and !guns. Warm up your aim", es = "Los bots están quietos y no disparan, tienes munición infinita y !armas. Para calentar la puntería" }
+game_type = 1
+game_mode = 2

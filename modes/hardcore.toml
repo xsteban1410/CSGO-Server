@@ -1,0 +1,6 @@
+# Metadata for cfg/modo_hardcore.cfg
+category = "classic"
+name = { en = "Hardcore", es = "Hardcore" }
+description = { en = "Competitive rules without radar: bullets hit 60% harder and friendly fire does full damage", es = "Reglas competitivas sin radar: las balas hacen un 60% más de daño y el fuego amigo hace daño completo" }
+game_type = 0
+game_mode = 1

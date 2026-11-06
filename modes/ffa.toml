@@ -1,0 +1,6 @@
+# Metadata for cfg/modo_ffa.cfg
+category = "deathmatch"
+name = { en = "Free-for-all", es = "Todos contra todos" }
+description = { en = "Deathmatch where everyone is your enemy, your friend too", es = "Deathmatch donde todos son enemigos, también tu amigo" }
+game_type = 1
+game_mode = 2

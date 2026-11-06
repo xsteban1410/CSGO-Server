@@ -1,0 +1,9 @@
+# Metadata for cfg/modo_dangerzone.cfg
+category = "objective"
+name = { en = "Danger Zone", es = "Zona de peligro" }
+description = { en = "Official battle royale on dz_ maps: find gear, avoid the storm, be the last one standing", es = "Battle royale oficial en mapas dz_: busca equipo, evita la tormenta, sé el último en pie" }
+game_type = 6
+game_mode = 0
+map_prefixes = ["dz_"]
+default_map = "dz_blacksite"
+exclusive_maps = true

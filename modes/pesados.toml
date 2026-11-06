@@ -1,0 +1,6 @@
+# Metadata for cfg/modo_pesados.cfg
+category = "weapons"
+name = { en = "Heavy armor", es = "Pesados" }
+description = { en = "Everyone in a Heavy Assault Suit with an M249: tough and slow", es = "Todos con traje pesado y M249: resistentes y lentos" }
+game_type = 0
+game_mode = 0
