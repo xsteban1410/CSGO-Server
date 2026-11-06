@@ -204,7 +204,7 @@ Se guarda por SteamID y se aplica cada vez que entras. Los mensajes salen en el 
 | `~/.config/csgo-legacy-server/{modes,plugins,presets.toml}` | tus modos, plugins y presets |
 | `~/.local/share/csgo-legacy-server/` | servidor (ubicación por defecto), SteamCMD, logs, caché del workshop |
 | `crates/core`, `crates/cli`, `crates/gtk` | Rust: núcleo, terminal y app GTK |
-| `plugin/`, `cfg/`, `modes/` | plugins de SourceMod, configs y metadatos de los modos |
+| `docs/ARCHITECTURE.md`, `docs/TROUBLESHOOTING.md`, `docs/PRIVACY.md` | Cómo encajan las piezas, cómo solucionar problemas y qué datos se conservan |
 
 ## Notas y límites
 
@@ -216,7 +216,7 @@ Se guarda por SteamID y se aplica cada vez que entras. Los mensajes salen en el 
   found" y habrá que volver a sacarlas. La idea viene de [NoLobbyReservation](https://github.com/vanz666/NoLobbyReservation).
 - El servidor arranca con `-insecure` (sin VAC). Las skins son cosméticas y solo se ven en este servidor; los skin changers van
   contra las normas de Valve en servidores públicos con GSLT, por eso en Ajustes se puede desactivar el plugin de skins.
-- No hay guantes. No probado en distros musl ni en SteamOS (sistema de solo lectura: usa distrobox).
+- Probado en Arch Linux y CachyOS. CI construye el núcleo y la CLI en Debian y Fedora, pero no se ha probado nada más allí. No probado en distribuciones musl o SteamOS (sistema de solo lectura: use distrobox). Sin guantes.
 
 ## Ramas
 
