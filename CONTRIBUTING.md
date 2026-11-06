@@ -92,7 +92,7 @@ Do not add Valve's convars to `cfg/modo_base.cfg` unless you checked that no `ga
 ## Pull request rules
 
 - Fix bugs at their cause, and add a small test for new logic that is not trivial.
-- Everything in the repository is written in English: commit messages, code, comments, logs and documentation. Only translations are in Spanish: `README.es.md`, `crates/gtk/src/i18n.rs`, the `es` entries of `plugin/translations/csls.phrases.txt` and of `modes/*.toml`.
+- Everything in the repository is written in English: commit messages, code, comments, logs and documentation. Only translations are in Spanish: `README.es.md`, `crates/gtk/src/i18n.rs`, the `es` entries of `plugin/translations/csls.phrases.txt` and of `modes/*.toml`, and `data/skins.es.cfg`. English is the default language everywhere: Spanish only shows when chosen in Settings. CI fails if accented text appears anywhere else.
 - One commit per change, with the message `type(scope): what changed`, for example `fix(skins): recompile plugins when sources change`. Types: `feat`, `fix`, `i18n`, `refactor`, `test`, `docs`, `ci`, `chore`. The scope is the area touched: `skins`, `modes`, `deploy`, `gtk`...
 - Contributions are licensed under [GPL-3.0-or-later](LICENSE).
 

@@ -13,7 +13,6 @@ The section of each version becomes the notes of its GitHub release, so keep the
 - All code comments, messages, logs, tests and documentation are now in English. The app, plugin messages and `README.es.md`
   are still translated into Spanish, but errors coming from the core now always appear in English.
 - `tools/probar-modos.sh` is now `tools/test-modes.sh`, and `modo_estado` prints `team=`, `health=`, `speed=`, `scale=` and `type=`.
-- The in-game skin menus follow each player's language.
 - Dependabot Rust updates go to `pre-releases`.
 - Every mode description was rewritten so it says what you actually play, and the wizard groups modes by category with rarely used options under **Advanced**.
 - Weapon and round modes have a short freeze time, no friendly fire and no money rewards, since there is nothing to buy.
@@ -23,6 +22,9 @@ The section of each version becomes the notes of its GitHub release, so keep the
 
 ### Added
 
+- **Language** in Settings (`language` in `config.toml`): English by default, Spanish if you choose it. It no longer depends on the
+  system locale, and it covers the app, the command line, skin names and in-game messages for every player. Install progress and
+  common errors are translated too.
 - Changing only one README translates the changed lines into the other, with Google Translate.
 - `.claude/` holds rules for contributors who use Claude Code.
 - Competitive category with normal matches instead of custom rules: `competitivo` (MR15), `premier` (MR12 with map bans), `wingman`

@@ -40,6 +40,11 @@ moves bots to keep the teams even; `modo_veto` runs the map bans in warmup and `
 is in `plugin/modos_competitivo.sp`. `competitivo` and `premier` are `game_type 0`, `game_mode 1`; a mode's own `.cfg` still
 runs last, so a mode can change any of it.
 
+## Language
+
+`language` in `config.toml` is the only source: `csls_core::lang()` reads it once, and the system locale does not count. `deploy`
+copies `data/skins.<lang>.cfg` (or the copy generated from the game files in the data folder), and `modo_inicio.cfg` sets `csls_language`, which `modos.sp` applies to each client with `SetClientLanguage` so every plugin's phrases follow it.
+
 ## Deploying plugins
 
 `deploy` compiles a plugin when the hash of its sources differs from the `<name>.smx.src` stamp written next to the `.smx`, not

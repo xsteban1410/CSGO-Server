@@ -188,7 +188,7 @@ navigation mesh: press **Generate .nav** (or `nav`) with the map loaded. Surf, b
 | `!guns` / `!armas` | any weapon (free play and aim practice modes only) |
 | `!ready` / `!listo` | start the match without waiting for the warmup to end (competitive modes) |
 
-Choices are saved per SteamID and applied every time you join. Messages follow each player's game language (English/Spanish).
+Choices are saved per SteamID and applied every time you join. The language chosen in Settings (English by default, or Spanish) applies to the app, the command line, skin names and in-game messages for every player.
 
 ## Files
 
