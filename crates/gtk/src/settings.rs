@@ -4,7 +4,7 @@ use crate::{bg, button, AppRc};
 use adw::prelude::*;
 use csls_core::config::{Language, Network};
 use csls_core::server::{self, Server};
-use csls_core::{deploy, install, net};
+use csls_core::{backup, deploy, install, net};
 use gtk::glib;
 
 pub fn page(a: &AppRc) -> gtk::Widget {
@@ -83,6 +83,7 @@ pub fn page(a: &AppRc) -> gtk::Widget {
     m.add(&redeploy);
     m.add(&update);
     page.add(&m);
+    page.add(&backups_group(a));
     redeploy.connect_activated(glib::clone!(#[strong] a, move |_| {
         let cfg = a.cfg.borrow().clone();
         bg(move || deploy::deploy(&cfg, true, true), glib::clone!(#[strong] a, move |r: anyhow::Result<deploy::Report>| match r {
@@ -129,4 +130,54 @@ pub fn page(a: &AppRc) -> gtk::Widget {
     d.add(&inst);
     page.add(&d);
     page.upcast()
+}
+
+/// Backups: make one, or restore one after seeing how many files it changes.
+fn backups_group(a: &AppRc) -> adw::PreferencesGroup {
+    let g = adw::PreferencesGroup::new();
+    g.set_title(&t("Backups"));
+    g.set_description(Some(&t("Your config, modes, plugins, presets and skins. They hold your passwords: do not share them")));
+    let create = adw::ButtonRow::builder().title(t("Create backup")).build();
+    g.add(&create);
+    create.connect_activated(glib::clone!(#[strong] a, move |_| {
+        let cfg = a.cfg.borrow().clone();
+        bg(move || backup::create(&cfg), glib::clone!(#[strong] a, move |r: anyhow::Result<std::path::PathBuf>| match r {
+            Ok(p) => a.toast(&format!("{}: {}", t("Backup saved"), p.file_name().unwrap_or_default().to_string_lossy())),
+            Err(e) => a.error(&e),
+        }));
+    }));
+    let restore = adw::ButtonRow::builder().title(t("Restore the latest backup")).build();
+    g.add(&restore);
+    restore.connect_activated(glib::clone!(#[strong] a, move |_| {
+        let Some(file) = backup::list().ok().and_then(|l| l.into_iter().next()) else {
+            a.toast(&t("There are no backups"));
+            return;
+        };
+        let cfg = a.cfg.borrow().clone();
+        let name = file.file_name().unwrap_or_default().to_string_lossy().into_owned();
+        let f = file.clone();
+        bg(move || backup::preview(&cfg, &f), glib::clone!(#[strong] a, move |r: anyhow::Result<Vec<backup::Change>>| match r {
+            Ok(c) if c.is_empty() => a.toast(&t("Nothing to restore: the files are the same")),
+            Ok(c) => {
+                let d = adw::AlertDialog::new(Some(&t("Restore the latest backup")), Some(&format!("{name}\n{}: {}", t("Files that will change"), c.len())));
+                d.add_response("cancel", &t("Cancel"));
+                d.add_response("ok", &t("Restore"));
+                d.set_response_appearance("ok", adw::ResponseAppearance::Destructive);
+                d.connect_response(None, glib::clone!(#[strong] a, #[strong] file, move |_, resp| {
+                    if resp != "ok" {
+                        return;
+                    }
+                    let cfg = a.cfg.borrow().clone();
+                    let f = file.clone();
+                    bg(move || backup::restore(&cfg, &f), glib::clone!(#[strong] a, move |r: anyhow::Result<Vec<backup::Change>>| match r {
+                        Ok(_) => a.toast(&t("Backup restored; restart the app")),
+                        Err(e) => a.error(&e),
+                    }));
+                }));
+                d.present(Some(&a.win));
+            }
+            Err(e) => a.error(&e),
+        }));
+    }));
+    g
 }

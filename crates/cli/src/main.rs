@@ -5,7 +5,8 @@ use csls_core::config::{Config, Kind};
 use csls_core::launch::{parse_cvar, LaunchOptions, Site, Teams};
 use csls_core::modes::Modes;
 use csls_core::server::{Server, State};
-use csls_core::{bridge, deploy, install, modes, net, players, steam_client, workshop};
+use csls_core::{backup, bridge, deploy, install, modes, net, players, steam_client, workshop};
+use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
 use std::time::Duration;
 
@@ -105,6 +106,9 @@ enum Cmd {
     /// Workshop maps (CS:GO only; CS2 maps cannot run on CS:GO Legacy)
     #[command(subcommand)]
     Workshop(Ws),
+    /// Save or restore your config, modes, plugins, presets and skins (never the server)
+    #[command(subcommand)]
+    Backup(Backup),
     /// Share custom modes: export <mode> > file.toml, import file.toml, delete <mode>
     #[command(subcommand)]
     ModeFile(ModeFile),
@@ -154,6 +158,21 @@ enum Ws {
     Remove { dir: String },
     /// Import a local .bsp file
     Import { file: std::path::PathBuf },
+}
+
+#[derive(Subcommand)]
+enum Backup {
+    /// Make a backup now
+    Create,
+    /// List backups, newest first
+    List,
+    /// Put back the files of a backup; it saves the current ones first
+    Restore {
+        file: PathBuf,
+        /// Only show what would change
+        #[arg(long)]
+        dry_run: bool,
+    },
 }
 
 #[derive(Subcommand)]
@@ -438,6 +457,21 @@ fn main() -> Result<()> {
                 Ws::Import { file } => println!("Imported as {}", workshop::import_local(&maps, &file)?),
             }
         }
+        Cmd::Backup(b) => match b {
+            Backup::Create => println!("{}", backup::create(&cfg)?.display()),
+            Backup::List => {
+                for p in backup::list()? {
+                    println!("{}", p.display());
+                }
+            }
+            Backup::Restore { file, dry_run } => {
+                let changes = if dry_run { backup::preview(&cfg, &file)? } else { backup::restore(&cfg, &file)? };
+                for c in &changes {
+                    println!("{} {}", if c.new { "new    " } else { "replace" }, c.path.display());
+                }
+                println!("{} file(s) {}", changes.len(), if dry_run { "would change" } else { "restored" });
+            }
+        },
         Cmd::ModeFile(m) => {
             let dir = csls_core::paths::user_modes_dir();
             match m {

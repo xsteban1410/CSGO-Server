@@ -77,6 +77,7 @@ csgo-legacy-server bots +2 | bots -1 | round [--warmup]
 csgo-legacy-server workshop search|install|list|remove|import
 csgo-legacy-server mode-file export|import|delete     share custom modes
 csgo-legacy-server presets [--delete name]            saved start options
+csgo-legacy-server backup create | list | restore <file> [--dry-run]   your config, modes, plugins, presets and skins
 csgo-legacy-server deploy [--force] [--watch]         compile plugins, copy configs
 csgo-legacy-server nav [--force]                      bot navigation for the current map
 csgo-legacy-server skins                              rebuild the skins list after a game update
@@ -172,6 +173,10 @@ reserved slots). Kicks and bans you make from the app still work.
 
 With the app open (or `deploy --watch`) new or changed files are compiled and reloaded in the running server; compile
 errors are shown with their line and the server keeps the previous version. Deleted plugins are unloaded.
+
+### Backups
+
+`backup create` (or **Settings → Backups**) saves your config, modes, plugins, presets and skins in `~/.local/share/csgo-legacy-server/backups/`, never the server. `install --update` makes one first and keeps the last five automatic ones. `restore --dry-run` shows what would change, and a restore saves the current files first and leaves files the backup does not have. Backups hold your passwords, so do not share them.
 
 ## Workshop maps
 
