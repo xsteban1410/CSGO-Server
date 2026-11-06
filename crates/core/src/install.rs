@@ -142,6 +142,17 @@ pub fn steamcmd_progress(l: &str) -> Option<(f64, String)> {
     Some((pct / 100.0, state))
 }
 
+/// " ... progress: 12.34 (123 / 456)" -> (123, 456) bytes
+fn steamcmd_bytes(l: &str) -> Option<(u64, u64)> {
+    let (done, total) = l.rsplit_once('(')?.1.trim_end_matches(')').split_once(" / ")?;
+    Some((done.trim().parse().ok()?, total.trim().parse().ok()?))
+}
+
+/// Download speed between two progress lines.
+fn speed_text(bytes: u64, secs: f64) -> String {
+    format!("{:.1} MB/s", bytes as f64 / secs.max(0.001) / 1_000_000.0)
+}
+
 fn steamcmd_path() -> crate::Result<PathBuf> {
     if let Some(p) = which("steamcmd") {
         return Ok(p);
@@ -189,8 +200,24 @@ fn app_update(steamcmd: &Path, dir: &Path, validate: bool, cancel: &AtomicBool, 
         }
         c.arg("+quit");
         let mut last = String::new();
+        // bytes and time of the last speed sample, and the speed it gave
+        let mut sample: Option<(u64, std::time::Instant)> = None;
+        let mut speed = String::new();
         let ok = run_logged(&mut c, cancel, |l| {
-            if let Some((f, state)) = steamcmd_progress(l) {
+            if let Some((f, mut state)) = steamcmd_progress(l) {
+                if let Some((done, _)) = steamcmd_bytes(l) {
+                    match sample {
+                        Some((before, at)) if at.elapsed().as_secs_f64() >= 2.0 => {
+                            speed = speed_text(done.saturating_sub(before), at.elapsed().as_secs_f64());
+                            sample = Some((done, std::time::Instant::now()));
+                        }
+                        None => sample = Some((done, std::time::Instant::now())),
+                        _ => {}
+                    }
+                }
+                if !speed.is_empty() && state == "downloading" {
+                    state = format!("{state} · {speed}");
+                }
                 cb(Progress { step: "server", fraction: Some(f), message: format!("CS:GO server (app 740, ~33 GB): {state}") });
             } else if !l.trim().is_empty() {
                 last = l.trim().to_string();
@@ -384,10 +411,12 @@ mod tests {
     fn only_one_install_at_a_time() {
         let d = tmp("lock");
         let p = d.join("install.lock");
-        let first = try_lock(&p).unwrap();
+        // another test starting a process holds a copy of the file for an instant, until its exec
+        let lock_soon = || (0..50).find_map(|_| try_lock(&p).ok().or_else(|| { std::thread::sleep(std::time::Duration::from_millis(10)); None }));
+        let first = lock_soon().unwrap();
         assert!(try_lock(&p).is_err());
         drop(first);
-        assert!(try_lock(&p).is_ok());
+        assert!(lock_soon().is_some());
         std::fs::remove_dir_all(d).unwrap();
     }
 
@@ -401,6 +430,13 @@ mod tests {
         std::fs::write(d.join(INCOMPLETE_MARKER), "").unwrap();
         assert!(!crate::server::Server::new(&cfg).is_installed());
         std::fs::remove_dir_all(d).unwrap();
+    }
+
+    #[test]
+    fn reads_download_speed() {
+        assert_eq!(steamcmd_bytes(" Update state (0x61) downloading, progress: 12.34 (123 / 456)"), Some((123, 456)));
+        assert_eq!(steamcmd_bytes("Loading Steam API...OK"), None);
+        assert_eq!(speed_text(5_000_000, 2.0), "2.5 MB/s");
     }
 
     #[test]
