@@ -17,7 +17,7 @@ jobs:
       - name: Dependencies
         run: pacman -Syu --noconfirm --needed base-devel git rust gtk4 libadwaita sqlite curl appstream desktop-file-utils
       - uses: actions/checkout@v4
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry
