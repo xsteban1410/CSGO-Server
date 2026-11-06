@@ -230,9 +230,9 @@ mod tests {
 
     #[test]
     fn redact_keeps_the_rest() {
-        let t = "CS:GO 1.38.8.1 version 1.12.0 port 27030 de_dust2 sm_1.2.3.4 ñandú";
+        let t = "CS:GO 1.38.8.1 version 1.12.0 port 27030 de_dust2 sm_1.2.3.4 ☃";
         // a four-part version looks like an IP: better hidden than the other way round
-        assert_eq!(redact(t, &[]), "CS:GO [hidden] version 1.12.0 port 27030 de_dust2 sm_[hidden] ñandú");
+        assert_eq!(redact(t, &[]), "CS:GO [hidden] version 1.12.0 port 27030 de_dust2 sm_[hidden] ☃");
     }
 
     #[test]
