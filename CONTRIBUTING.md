@@ -36,6 +36,10 @@ If the merge conflicts, or the changes touch `.github/workflows` (the workflow t
 `blocks-release` issue with the commands to merge by hand. Close it afterwards, or promotion stays on hold. Changes pushed
 straight to `master` reach `pre-releases` at the next daily run, unless it holds unpromoted commits or the push is rejected.
 
+## Using Claude Code
+
+The repository includes rules for [Claude Code](https://claude.com/claude-code) in `.claude/`: how to code, test and stay safe here. They load by themselves. You remain responsible for what you submit.
+
 ## Set up
 
 You need Rust and the GTK ≥ 4.14 and libadwaita ≥ 1.6 development files. To run a server you also need 32-bit libraries and
@@ -83,13 +87,13 @@ Do not add Valve's convars to `cfg/modo_base.cfg` unless you checked that no `ga
 
 - App: write English in `t("…")` and add the Spanish to `crates/gtk/src/i18n.rs`. A test fails if one is missing.
 - Plugins: `plugin/translations/csls.phrases.txt`.
-- Keep `README.md` and `README.es.md` in sync.
+- READMEs: edit one, and a workflow translates the changed lines into the other after the push. Both must keep the same lines in the same order. If you edit both, nothing is translated.
 
 ## Pull request rules
 
 - Fix bugs at their cause, and add a small test for new logic that is not trivial.
 - Everything in the repository is written in English: commit messages, code, comments, logs and documentation. Only translations are in Spanish: `README.es.md`, `crates/gtk/src/i18n.rs`, the `es` entries of `plugin/translations/csls.phrases.txt` and of `modes/*.toml`.
-- Commit messages say what changes and why.
+- One commit per change, with the message `type(scope): what changed`, for example `fix(skins): recompile plugins when sources change`. Types: `feat`, `fix`, `i18n`, `refactor`, `test`, `docs`, `ci`, `chore`. The scope is the area touched: `skins`, `modes`, `deploy`, `gtk`...
 - Contributions are licensed under [GPL-3.0-or-later](LICENSE).
 
 ## What you must not change
@@ -117,7 +121,7 @@ say exactly how you tested it. CI labels these pull requests `sensitive` and the
 | `check_cvar`, `valid_map_name`, `valid_address`, `valid_id`, `CfgDoc::validate` | They stop values from injecting console commands. They are a security boundary | Never loosen them without tests that try to break them |
 | `crates/core/src/rcon.rs`, `config.rs` | The rcon password gives full control of the server, and the config must stay at mode 600 | Never log secrets or print them |
 | `crates/core/src/install.rs`, `deploy.rs` | They download and run code, and write into the user's install, which is 33 GB to download again | Test on a copy, and never delete a folder you did not create |
-| `.github/`, `tools/version.sh`, `tools/promote.sh`, `packaging/` | They publish what users install | Only the maintainer merges these. Do not add secrets or third-party actions without a good reason |
+| `.github/`, `.claude/`, `tools/version.sh`, `tools/promote.sh`, `tools/sync_readme.py`, `packaging/` | They publish what users install | Only the maintainer merges these. Do not add secrets or third-party actions without a good reason |
 
 ## Releasing (maintainers)
 

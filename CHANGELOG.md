@@ -15,9 +15,34 @@ The section of each version becomes the notes of its GitHub release, so keep the
 - `tools/probar-modos.sh` is now `tools/test-modes.sh`, and `modo_estado` prints `team=`, `health=`, `speed=`, `scale=` and `type=`.
 - The in-game skin menus follow each player's language.
 - Dependabot Rust updates go to `pre-releases`.
+- Every mode description was rewritten so it says what you actually play, and the wizard groups modes by category with rarely used options under **Advanced**.
+- Weapon and round modes have a short freeze time, no friendly fire and no money rewards, since there is nothing to buy.
+- `zeus`, `decoy` and `unabala` are now deathmatch modes, with real scoring; Zeus and decoys never run out.
+- `pistolas` is now called Deagle, which is what it gives you.
+- `guardian` no longer uses `exec`, so it can be duplicated in the Modes tab.
 
 ### Added
 
+- Changing only one README translates the changed lines into the other, with Google Translate.
+- `.claude/` holds rules for contributors who use Claude Code.
+- Competitive category with normal matches instead of custom rules: `competitivo` (MR15), `premier` (MR12 with map bans), `wingman`
+  (2v2) and `duelo` (1v1 without bots). They have economy, half time and overtime, and bots fill the empty seats.
+- `--teams together|versus|free` and **Teams** in the wizard, `!ready`/`!listo` to end the warmup, and map bans in `premier`.
+- New modes: `aim`, `hardcore`, `pesados`, `ffa`, `tdm`, `dangerzone`, `trigger`, `stabzap`, `clutch` and `ninjas`.
+- `modo_<team>_color` accepts `R,G,B,alpha` for see-through players.
+
+### Fixed
+
+- Skins and knives did nothing when the installed package and the repo were mixed: `deploy` compared file dates, kept an old
+  `.smx` with newer phrases, and the menus failed with `Language phrase not found`. It now compares a hash of the sources and
+  reloads changed phrases in the running server.
+- The skin menus no longer stop opening after an error, and changing a skin keeps your ammo and the weapon in your hand.
+- Paints now show right after choosing them: each one gets a new item id.
+- Changing mode on a running server no longer returns to the first mode after a hot reload.
+- Half time no longer breaks the match in modes that force the humans' team.
+- Bots a previous mode left on the humans' team move to the correct side when the round starts.
+- The sound of a cheat power-up is precached, so it plays when you grab one.
+- Modes no longer inherit `sv_maxspeed`, `sv_friction`, `sv_enablebunnyhopping`, damage scale, overtime and similar settings from the previous one.
 - `pre-releases` branch: contributor pull requests are moved to it automatically, and it reaches `master` after three quiet
   days (see [CONTRIBUTING.md](CONTRIBUTING.md#branches)).
 

@@ -84,13 +84,14 @@ csgo-legacy-server rcon "command" | play [cs2|local|IP:PORT] | bridge | doctor |
 ```
 
 Start/mode options: `-m/--map`, `-t/--type competitive|short|casual|wingman|dm|ffa|tdm|armsrace|demolition|guardian|dz`, `-d/--difficulty 0-3`, `-b/--bots`,
-`-r/--rounds`, `-s/--site a|b|random`, `-p/--precision` (no spread or recoil for everyone), `--anarchy`,
+`-r/--rounds`, `-s/--site a|b|random`, `--teams together|versus|free` (competitive modes), `-p/--precision` (no spread or recoil for everyone), `--anarchy`,
 `-w/--workshop ID`, `--set cvar=value` (repeatable), `--preset NAME`, `--save-preset NAME`.
 
 ```bash
 csgo-legacy-server start awp alone
 csgo-legacy-server mode retake 2 -s b -d 2 -m de_inferno
 csgo-legacy-server mode zombies --set modo_z_oleadas=10 --set modo_z_vida=400
+csgo-legacy-server start premier 2 --teams versus
 ```
 
 ## Modes
@@ -99,38 +100,54 @@ Humans play CT and bots T (5, expert) unless the mode says otherwise.
 
 | Mode | |
 |---|---|
-| `aleatorio` | **Random weapon** — Each round everyone gets the same random weapon |
-| `anarquia` | **Anarchy** — Free for all with friendly fire, buy anywhere and no automatic kicks or bans |
-| `armsrace` | **Arms Race** — Official Arms Race (ar_ maps) |
-| `autosniper` | **Auto-sniper** — SCAR-20 + Deagle |
-| `awp` | **AWP** — AWP + Deagle |
-| `awpdm` | **AWP deathmatch** — Deathmatch with AWP only |
-| `cheats` | **Random cheats** — Grab power-ups around the map for a random cheat for 30 s: wallhack, aimbot, god mode… |
-| `cuchillo` | **Knives** — Knife only |
-| `decoy` | **Decoy** — Decoy grenade and 1 HP, with respawn |
-| `defensa` | **Post-plant** — The bomb is planted; you (T) defend it against 5 bots |
-| `demolicion` | **Demolition** — Official Demolition, a new weapon each round |
-| `dm` | **Deathmatch** — Official deathmatch |
-| `dmcabeza` | **Headshot deathmatch** — Deathmatch where only headshots count |
+| `aim` | **Aim practice** — Bots stand still and do not shoot, you have infinite ammo and !guns. Warm up your aim |
+| `aleatorio` | **Random weapon** — Each round everyone gets the same random weapon, from AWP to Zeus |
+| `anarquia` | **Anarchy** — Chaos: everyone against everyone with friendly fire, respawn, buy anywhere, and nobody gets kicked |
+| `armsrace` | **Arms Race** — Official: each kill gives you the next weapon, the first to the golden knife wins. Its own ar_ maps |
+| `autosniper` | **Auto-sniper** — Everyone gets a SCAR-20 and a Deagle. Short rounds, no buying |
+| `awp` | **AWP** — Everyone gets an AWP and a Deagle. Short rounds, no buying |
+| `awpdm` | **AWP deathmatch** — Deathmatch with only AWP and Deagle |
+| `cheats` | **Random cheats** — Grab glowing power-ups for a random cheat for 30 s: wallhack, aimbot, god mode… |
+| `clutch` | **Clutch** — Each round you win adds a bot, each round you lose removes one. How many can you beat? |
+| `competitivo` | **Competitive** — The real thing: 5v5 with economy, first to 16, sides swap at half time and overtime. Bots fill the empty seats |
+| `cuchillo` | **Knives** — Knife only. Short rounds |
+| `dangerzone` | **Danger Zone** — Official battle royale on dz_ maps: find gear, avoid the storm, be the last one standing |
+| `decoy` | **Decoy** — Deathmatch with 1 HP and endless decoys: a direct hit kills |
+| `defensa` | **Post-plant** — The opposite of Retake: the bomb is planted and you (T) defend it from 5 bots coming to defuse |
+| `demolicion` | **Demolition** — Official: bomb rounds where you get a new weapon each round for your kills. Small maps |
+| `dm` | **Deathmatch** — Official deathmatch: buy from the menu, respawn at once, 10 minutes |
+| `dmcabeza` | **Headshot deathmatch** — Deathmatch where only shots to the head do damage |
 | `dmcuchillo` | **Knife deathmatch** — Deathmatch with knives only |
-| `escopetas` | **Shotguns** — XM1014 + P250 |
-| `flyingscout` | **Flying Scoutsman** — SSG 08, low gravity and perfect accuracy in the air |
-| `guardian` | **Guardian** — Official Guardian, defend the zone against waves of bots |
-| `headshot` | **Headshots only** — AK-47 + Deagle, only head damage counts |
-| `jefe` | **Boss** — Normal match, but one bot per round is a giant boss with 5000 HP |
-| `libre` | **Free play** — Any weapon with !guns, respawn, infinite money |
-| `luna` | **Moon** — AWP + Deagle with low gravity |
-| `negev` | **Negev** — Negev only |
-| `normal` | **Normal** — Normal match, free buys with 16000 |
-| `pistolas` | **Pistols** — Deagle only |
-| `rehenes` | **Hostages** — Rescue the hostages against 5 bots (cs_ maps) |
-| `retake` | **Retake** — The bomb is planted; you (CT) defuse it against 5 bots |
-| `rifles` | **Rifles** — AK-47 + Deagle |
-| `scout` | **Scout** — SSG 08 + P250 |
-| `unabala` | **One in the Chamber** — Deagle with one bullet, any hit kills, each kill gives a bullet |
-| `vampiro` | **Vampire** — AK + Deagle; damage you deal heals you (up to 200) |
-| `zeus` | **Zeus** — Zeus only, with respawn |
-| `zombies` | **Zombies** — Waves of ever tougher zombie bots |
+| `duelo` | **Duel** — You against your friend, no bots. Same random weapon each round, first to 10 wins |
+| `escopetas` | **Shotguns** — Everyone gets an XM1014 and a P250. Short rounds, no buying |
+| `ffa` | **Free-for-all** — Deathmatch where everyone is your enemy, your friend too |
+| `flyingscout` | **Flying Scoutsman** — Official War Game: SSG 08, very low gravity, bunny hops and perfect accuracy in the air |
+| `guardian` | **Guardian** — Official co-op: defend the zone against waves of bots, on gd_ maps |
+| `hardcore` | **Hardcore** — Competitive rules without radar: bullets hit 60% harder and friendly fire does full damage |
+| `headshot` | **Headshots only** — AK-47 and Deagle, and only shots to the head do damage |
+| `jefe` | **Boss** — Normal rounds, but one bot each round is a slow red giant with 5000 HP |
+| `libre` | **Free play** — No rules: respawn, buy anywhere, and any weapon with !guns. Good for trying things |
+| `luna` | **Moon** — AWP and Deagle with very low gravity, as if on the Moon |
+| `negev` | **Negev** — Everyone gets a Negev and nothing else. Short rounds, no buying |
+| `ninjas` | **Ninjas** — Fast, almost invisible bots with knives hunt you. Buy what you want and listen for them |
+| `normal` | **Normal** — Rounds against 5 bots with $16000 every round, so you can always buy anything |
+| `pesados` | **Heavy armor** — Everyone in a Heavy Assault Suit with an M249: tough and slow |
+| `pistolas` | **Deagle** — Everyone gets only a Deagle. Short rounds, no buying |
+| `premier` | **Premier** — Premier rules: 5v5, first to 13, overtime and map bans in warmup. No CS Rating, that needs Valve's servers |
+| `rehenes` | **Hostages** — You (CT) rescue the hostages from 5 bots, on cs_ maps |
+| `retake` | **Retake** — The bomb is already planted and you (CT) must defuse it against 5 bots guarding it |
+| `rifles` | **Rifles** — Everyone gets an AK-47 and a Deagle. Short rounds, no buying |
+| `scout` | **Scout** — Everyone gets an SSG 08 and a P250. Short rounds, no buying |
+| `stabzap` | **Stab Stab Zap** — Official War Game: only a knife and a Zeus that recharges in 30 s |
+| `tdm` | **Team deathmatch** — Deathmatch where kills score for your team and the best team wins |
+| `trigger` | **Trigger Discipline** — Official War Game: every shot that misses hurts you, but it never kills you |
+| `unabala` | **One in the Chamber** — Deathmatch with a Deagle and one bullet. Any hit kills, and each kill gives you a bullet |
+| `vampiro` | **Vampire** — AK-47 and Deagle, and half the damage you deal heals you (up to 200 HP) |
+| `wingman` | **Wingman** — Official 2v2 on one bomb site, sixteen rounds. Small maps work best |
+| `zeus` | **Zeus** — Deathmatch with a Zeus that never runs out |
+| `zombies` | **Zombies** — Survive five waves of zombie bots with all the guns and infinite ammo. If you die, you turn |
+
+**Competitive matches** (`competitivo`, `premier`, `wingman`, `duelo`) are normal matches, not custom rules: economy, side swap at half time and overtime. Humans play together or against each other (`--teams`, or **Teams** in the wizard) and bots fill the empty seats. In `competitivo`, `premier` and `wingman` the match starts when everyone types `!ready` or when the warmup ends; `duelo` starts as soon as you are both in. In `premier`, humans take turns banning maps during warmup unless you choose a map when you start. It has no CS Rating or matchmaking, which need Valve's servers.
 
 Per-team settings for your own modes or `--set` (`t` or `ct`): `modo_<team>_quitar`, `_arma`, `_pistola`,
 `_objeto`, `_vida`, `_velocidad`, `_color` (`R,G,B`).
@@ -168,7 +185,8 @@ navigation mesh: press **Generate .nav** (or `nav`) with the map loaded. Surf, b
 |---|---|
 | `!ws` | skin for the weapon in your hand (or any other); the most wanted ones come first |
 | `!knife` | knife model (Karambit, Butterfly, M9…) and its skin |
-| `!guns` / `!armas` | any weapon (free play mode only) |
+| `!guns` / `!armas` | any weapon (free play and aim practice modes only) |
+| `!ready` / `!listo` | start the match without waiting for the warmup to end (competitive modes) |
 
 Choices are saved per SteamID and applied every time you join. Messages follow each player's game language (English/Spanish).
 
