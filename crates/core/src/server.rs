@@ -540,6 +540,49 @@ impl Server<'_> {
     }
 }
 
+/// Use of the machine by the server process.
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub struct ProcStats {
+    pub cpu_percent: u32,
+    pub rss_mb: u64,
+    pub uptime_secs: u64,
+}
+
+/// (CPU ticks used, start time in ticks) from the text of /proc/PID/stat.
+fn parse_proc_stat(stat: &str) -> Option<(u64, u64)> {
+    // the name in parentheses may hold spaces; after it: state is field 0, utime 11, stime 12, starttime 19
+    let f: Vec<&str> = stat.rsplit_once(')')?.1.split_whitespace().collect();
+    Some((f.get(11)?.parse::<u64>().ok()? + f.get(12)?.parse::<u64>().ok()?, f.get(19)?.parse().ok()?))
+}
+
+fn server_pid(port: u16) -> Option<u32> {
+    std::fs::read_dir("/proc").ok()?.flatten().find_map(|e| {
+        let pid: u32 = e.file_name().to_str()?.parse().ok()?;
+        let comm = std::fs::read_to_string(e.path().join("comm")).ok()?;
+        let cmd = std::fs::read(e.path().join("cmdline")).ok()?;
+        (comm.trim() == "srcds_linux" && String::from_utf8_lossy(&cmd).contains(&format!("-port\0{port}\0"))).then_some(pid)
+    })
+}
+
+/// Samples the server for a moment. shortcut: assumes 100 ticks per second, as on every usual Linux build.
+pub fn process_stats(port: u16) -> Option<ProcStats> {
+    const TICKS: u64 = 100;
+    const SAMPLE_MS: u64 = 250;
+    let pid = server_pid(port)?;
+    let stat = || std::fs::read_to_string(format!("/proc/{pid}/stat")).ok().and_then(|s| parse_proc_stat(&s));
+    let (before, start) = stat()?;
+    std::thread::sleep(Duration::from_millis(SAMPLE_MS));
+    let (after, _) = stat()?;
+    let status = std::fs::read_to_string(format!("/proc/{pid}/status")).ok()?;
+    let rss_kb: u64 = status.lines().find_map(|l| l.strip_prefix("VmRSS:"))?.split_whitespace().next()?.parse().ok()?;
+    let boot_secs: f64 = std::fs::read_to_string("/proc/uptime").ok()?.split_whitespace().next()?.parse().ok()?;
+    Some(ProcStats {
+        cpu_percent: ((after - before) * 100 * 1000 / (TICKS * SAMPLE_MS)) as u32,
+        rss_mb: rss_kb / 1024,
+        uptime_secs: (boot_secs as u64).saturating_sub(start / TICKS),
+    })
+}
+
 /// What opening the server to the internet means.
 fn exposure_warning(port: u16, password: &str) -> String {
     // the fixed part comes before ": " so the app can translate it
@@ -563,6 +606,13 @@ fn write_private(path: &Path, txt: &str) -> crate::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn reads_proc_stat() {
+        let stat = "123 (srcds linux) S 1 2 3 4 5 6 7 8 9 10 40 2 0 0 20 0 1 0 5000 999 7";
+        assert_eq!(parse_proc_stat(stat), Some((42, 5000)));
+        assert_eq!(parse_proc_stat("nonsense"), None);
+    }
 
     #[test]
     fn secrets_are_not_in_the_arguments() {

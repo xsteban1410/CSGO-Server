@@ -41,6 +41,12 @@ fn last_run_errors(log: &str) -> Vec<&str> {
     log[start..].lines().filter(|l| l.contains("Exception reported") || l.contains("signature not found") || l.contains("Failed to load plugin") || l.contains("[SM] Unable to load plugin")).collect()
 }
 
+/// Newest error of the last session in the log, with its date.
+pub fn last_error(cfg: &Config) -> Option<String> {
+    let log = std::fs::read_to_string(latest_error_log(cfg)?).ok()?;
+    last_run_errors(&log).last().map(|l| l.to_string())
+}
+
 /// "yes"/"no" from systemd; None if it cannot tell.
 fn linger() -> Option<bool> {
     let user = std::env::var("USER").ok()?;

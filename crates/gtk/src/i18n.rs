@@ -5,6 +5,9 @@ use std::sync::OnceLock;
 
 static ES: &[(&str, &str)] = &[
     ("Warning", "Aviso"),
+    ("Resources", "Recursos"),
+    ("Last SourceMod error", "Último error de SourceMod"),
+    ("The server has stopped. The Console tab may say why", "El servidor se ha detenido. La pestaña Consola puede indicar el motivo"),
     ("Plugins", "Plugins"),
     ("Server install", "Instalación del servidor"),
     ("Free space", "Espacio libre"),

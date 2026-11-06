@@ -33,6 +33,8 @@ pub struct Live {
     pub mode: String,
     /// VPN profile: is the bridge running?
     pub bridge: bool,
+    pub stats: Option<csls_core::server::ProcStats>,
+    pub last_error: Option<String>,
 }
 
 fn fetch(cfg: &Config) -> Live {
@@ -40,6 +42,8 @@ fn fetch(cfg: &Config) -> Live {
     let mut l = Live { running: srv.state() == State::Running, ..Default::default() };
     if l.running {
         l.bridge = csls_core::server::bridge_running();
+        l.stats = csls_core::server::process_stats(cfg.server.port);
+        l.last_error = csls_core::doctor::last_error(cfg);
         if let Ok(mut r) = srv.rcon() {
             // srcds writes output to console.log: markers so the console can hide it
             let _ = r.exec(&format!("echo {POLL_BEGIN}"));
@@ -65,6 +69,8 @@ pub struct App {
     listeners: RefCell<Vec<Box<dyn Fn(&Live)>>>,
     modes_listeners: RefCell<Vec<Box<dyn Fn()>>>,
     polling: Cell<bool>,
+    /// The user asked to stop, so the next stop is no surprise.
+    pub stop_requested: Cell<bool>,
     monitors: RefCell<Vec<gio::FileMonitor>>,
     deploy_pending: RefCell<Option<glib::SourceId>>,
 }
@@ -102,6 +108,9 @@ impl App {
         let app = self.clone();
         bg(move || fetch(&cfg), move |l| {
             app.polling.set(false);
+            if app.live.borrow().running && !l.running && !app.stop_requested.replace(false) {
+                app.toast(&t("The server has stopped. The Console tab may say why"));
+            }
             if *app.live.borrow() != l {
                 *app.live.borrow_mut() = l;
                 for f in app.listeners.borrow().iter() {
@@ -232,6 +241,7 @@ fn build(app: &adw::Application) {
         listeners: RefCell::new(Vec::new()),
         modes_listeners: RefCell::new(Vec::new()),
         polling: Cell::new(false),
+        stop_requested: Cell::new(false),
         monitors: RefCell::new(Vec::new()),
         deploy_pending: RefCell::new(None),
     });

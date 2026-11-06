@@ -8,6 +8,14 @@ use gtk::glib;
 use std::cell::RefCell;
 use std::rc::Rc;
 
+fn uptime_text(secs: u64) -> String {
+    if secs >= 3600 {
+        format!("{} h {} min", secs / 3600, secs / 60 % 60)
+    } else {
+        format!("{} min", secs / 60)
+    }
+}
+
 pub fn page(a: &AppRc) -> gtk::Widget {
     let page = adw::PreferencesPage::new();
     let g = adw::PreferencesGroup::new();
@@ -16,6 +24,9 @@ pub fn page(a: &AppRc) -> gtk::Widget {
     let mode = adw::ActionRow::builder().title(t("Mode")).build();
     let map = adw::ActionRow::builder().title(t("Map")).build();
     let players = adw::ActionRow::builder().title(t("Players")).build();
+    let resources = adw::ActionRow::builder().title(t("Resources")).build();
+    let last_error = adw::ActionRow::builder().title(t("Last SourceMod error")).subtitle_selectable(true).build();
+    last_error.set_visible(false);
     let addr = adw::ActionRow::builder().title(t("Connect address")).build();
     addr.add_css_class("property");
     let copy = gtk::Button::from_icon_name("edit-copy-symbolic");
@@ -34,7 +45,7 @@ pub fn page(a: &AppRc) -> gtk::Widget {
     let bridge_start = gtk::Button::with_label(&t("Start"));
     bridge_start.set_valign(gtk::Align::Center);
     bridge.add_suffix(&bridge_start);
-    for r in [&state, &mode, &map, &players, &addr, &vpn_addr, &bridge] {
+    for r in [&state, &mode, &map, &players, &resources, &last_error, &addr, &vpn_addr, &bridge] {
         r.add_css_class("property");
         g.add(r);
     }
@@ -159,6 +170,7 @@ pub fn page(a: &AppRc) -> gtk::Widget {
             if r != "stop" {
                 return;
             }
+            a.stop_requested.set(true);
             let cfg = a.cfg.borrow().clone();
             bg(move || Server::new(&cfg).stop(), glib::clone!(#[strong] a, move |r| {
                 match r {
@@ -215,6 +227,9 @@ pub fn page(a: &AppRc) -> gtk::Widget {
         }
         state.set_subtitle(&if !on { t("Stopped") } else if l.rcon_ok { t("Running") } else { t("Starting…") });
         mode.set_subtitle(if l.mode.is_empty() { "—" } else { &l.mode });
+        resources.set_subtitle(&l.stats.map_or("—".to_string(), |s| format!("CPU {}% · RAM {} MB · {}", s.cpu_percent, s.rss_mb, uptime_text(s.uptime_secs))));
+        last_error.set_visible(l.last_error.is_some());
+        last_error.set_subtitle(l.last_error.as_deref().unwrap_or(""));
         map.set_subtitle(if l.status.map.is_empty() { "—" } else { &l.status.map });
         players.set_subtitle(&if on { format!("{} + {} bots / {}", l.status.humans, l.status.bots, l.status.max) } else { "—".into() });
         start.set_visible(!on);
