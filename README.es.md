@@ -188,7 +188,7 @@ surf, bhop y KZ no sirven para bots.
 | `!guns` / `!armas` | cualquier arma (solo en los modos de juego libre y práctica de puntería) |
 | `!ready` / `!listo` | comenzar el partido sin esperar a que termine el calentamiento (modos competitivos) |
 | `!armas` / `!guns` | cualquier arma (solo en el modo libre) |
-
+Las opciones se guardan por SteamID y se aplican cada vez que te unes. El idioma elegido en Configuración (inglés por defecto o español) se aplica a la aplicación, la línea de comando, los nombres de los skins y los mensajes del juego para cada jugador.
 Se guarda por SteamID y se aplica cada vez que entras. Los mensajes salen en el idioma del juego de cada jugador (inglés/español).
 
 ## Archivos
