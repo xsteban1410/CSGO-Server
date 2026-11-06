@@ -5,7 +5,6 @@ use crate::paths;
 use anyhow::Context;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::time::SystemTime;
 
 #[derive(Debug, Clone)]
 pub struct Plugin {
@@ -23,6 +22,8 @@ pub struct Report {
     pub reloaded: bool,
     /// Own plugins whose .sp was deleted: they get removed from the server.
     pub removed: Vec<String>,
+    /// Plugin messages changed: a running server has to read them again.
+    pub translations: bool,
 }
 
 impl Report {
@@ -58,24 +59,35 @@ pub fn find_plugins(dir: &Path) -> Vec<Plugin> {
     v
 }
 
-fn newest_source(dir: &Path) -> SystemTime {
-    // shortcut: checks the date of the .sp/.inc in the folder and does not follow external #includes; if a system
-    // include changes, force it with `deploy --force`.
-    std::fs::read_dir(dir)
+/// Hash of the sources in a plugin's folder. Dates are no use here: a package keeps its build date, so
+/// after switching between versions an older source could be newer code than the .smx, or the other way round,
+/// and the plugin then no longer matches its translations.
+fn source_hash(dir: &Path) -> String {
+    use std::hash::{DefaultHasher, Hash, Hasher};
+    let mut files: Vec<PathBuf> = std::fs::read_dir(dir)
         .into_iter()
         .flatten()
         .flatten()
-        .filter(|e| e.path().extension().is_some_and(|x| x == "sp" || x == "inc" || x == "txt"))
-        .filter_map(|e| e.metadata().ok()?.modified().ok())
-        .max()
-        .unwrap_or(SystemTime::UNIX_EPOCH)
+        .map(|e| e.path())
+        .filter(|p| p.extension().is_some_and(|x| x == "sp" || x == "inc" || x == "txt"))
+        .collect();
+    files.sort();
+    let mut h = DefaultHasher::new();
+    for f in files {
+        f.file_name().hash(&mut h);
+        std::fs::read(&f).unwrap_or_default().hash(&mut h);
+    }
+    format!("{:016x}", h.finish())
+}
+
+/// Remembers which sources an .smx was built from. SourceMod only loads *.smx, so it ignores this file.
+fn stamp_path(smx: &Path) -> PathBuf {
+    smx.with_extension("smx.src")
 }
 
 pub fn needs_compile(p: &Plugin, smx: &Path) -> bool {
-    match smx.metadata().and_then(|m| m.modified()) {
-        Ok(t) => newest_source(&p.dir) > t,
-        Err(_) => true,
-    }
+    // shortcut: does not follow external #includes; if a system include changes, force it with `deploy --force`
+    !smx.is_file() || std::fs::read_to_string(stamp_path(smx)).ok().as_deref() != Some(source_hash(&p.dir).as_str())
 }
 
 pub fn sourcemod_dir(cfg: &Config) -> PathBuf {
@@ -109,6 +121,7 @@ pub fn compile(sm: &Path, p: &Plugin) -> crate::Result<std::result::Result<(), S
         return Ok(Err(if errs.is_empty() { text } else { errs.join("\n") }));
     }
     std::fs::rename(&tmp, &out)?;
+    std::fs::write(stamp_path(&out), source_hash(&p.dir))?;
     Ok(Ok(()))
 }
 
@@ -124,15 +137,19 @@ pub fn copy_writable(from: &Path, to: &Path) -> crate::Result<()> {
     Ok(())
 }
 
-fn copy_glob(from: &Path, suffix: &str, to: &Path, rename: impl Fn(&str) -> String) -> crate::Result<()> {
+/// Copies the files that differ and says whether there were any.
+fn copy_glob(from: &Path, suffix: &str, to: &Path, rename: impl Fn(&str) -> String) -> crate::Result<bool> {
     std::fs::create_dir_all(to)?;
+    let mut changed = false;
     for e in std::fs::read_dir(from).into_iter().flatten().flatten() {
         let n = e.file_name().to_string_lossy().into_owned();
-        if n.ends_with(suffix) && e.path().is_file() {
-            copy_writable(&e.path(), &to.join(rename(&n)))?;
+        let dest = to.join(rename(&n));
+        if n.ends_with(suffix) && e.path().is_file() && std::fs::read(e.path()).ok() != std::fs::read(&dest).ok() {
+            copy_writable(&e.path(), &dest)?;
+            changed = true;
         }
     }
-    Ok(())
+    Ok(changed)
 }
 
 /// All the plugins (official + user) that apply with this config.
@@ -166,15 +183,20 @@ pub fn deploy(cfg: &Config, force: bool, reload: bool) -> crate::Result<Report> 
         copy_glob(&p.dir, ".games.txt", &sm.join("gamedata"), str::to_string)?;
         let tr = p.dir.join("translations");
         if tr.is_dir() {
-            copy_glob(&tr, ".phrases.txt", &sm.join("translations"), str::to_string)?;
+            r.translations |= copy_glob(&tr, ".phrases.txt", &sm.join("translations"), str::to_string)?;
         }
     }
+    let remove_smx = |n: &str| {
+        let smx = sm.join("plugins").join(format!("{n}.smx"));
+        let _ = std::fs::remove_file(stamp_path(&smx));
+        let _ = std::fs::remove_file(smx);
+    };
     if !cfg.server.skins {
-        let _ = std::fs::remove_file(sm.join("plugins/skins.smx"));
+        remove_smx("skins");
     }
     // plugins from earlier versions replaced by others
     for (n, gd) in OBSOLETE {
-        let _ = std::fs::remove_file(sm.join("plugins").join(format!("{n}.smx")));
+        remove_smx(n);
         let _ = std::fs::remove_file(sm.join("gamedata").join(gd));
     }
     // own plugins deployed earlier whose .sp no longer exists
@@ -183,7 +205,7 @@ pub fn deploy(cfg: &Config, force: bool, reload: bool) -> crate::Result<Report> 
     let before = std::fs::read_to_string(&manifest).unwrap_or_default();
     r.removed = gone(&before, &user, &plugins);
     for n in &r.removed {
-        let _ = std::fs::remove_file(sm.join("plugins").join(format!("{n}.smx")));
+        remove_smx(n);
     }
     std::fs::create_dir_all(paths::data_dir())?;
     std::fs::write(&manifest, user.join("\n"))?;
@@ -214,11 +236,12 @@ pub fn deploy(cfg: &Config, force: bool, reload: bool) -> crate::Result<Report> 
         }
     }
 
-    if reload && !(r.compiled.is_empty() && r.removed.is_empty()) {
+    if reload && (r.translations || !(r.compiled.is_empty() && r.removed.is_empty())) {
         if let Ok(mut rc) = crate::rcon::Rcon::from_config(cfg) {
+            let phrases = r.translations.then(|| "sm_reload_translations".to_string());
             let unload = r.compiled.iter().chain(&r.removed).map(|n| format!("sm plugins unload {n}"));
             let load = r.compiled.iter().map(|n| format!("sm plugins load {n}"));
-            for c in unload.chain(load).collect::<Vec<_>>() {
+            for c in phrases.into_iter().chain(unload).chain(load).collect::<Vec<_>>() {
                 // loading a plugin can take longer than the rcon timeout, and the command is applied anyway
                 if rc.exec(&c).is_err() {
                     rc = crate::rcon::Rcon::from_config(cfg)?;
@@ -266,6 +289,41 @@ mod tests {
         let n: Vec<String> = find_plugins(&root).into_iter().map(|p| p.name).collect();
         assert!(n.contains(&"modos".into()) && n.contains(&"skins".into()) && n.contains(&"csls_directconnect".into()));
         assert!(!n.contains(&"modos_extras".into()), "includes are not compiled on their own");
+    }
+
+    #[test]
+    fn recompiles_when_sources_differ_whatever_their_date() {
+        let d = std::env::temp_dir().join(format!("csls-hash-{}", std::process::id()));
+        std::fs::create_dir_all(&d).unwrap();
+        let sp = d.join("a.sp");
+        std::fs::write(&sp, "new").unwrap();
+        let smx = d.join("a.smx");
+        let p = Plugin { name: "a".into(), main: sp.clone(), dir: d.clone() };
+        assert!(needs_compile(&p, &smx), "no .smx");
+        std::fs::write(&smx, "x").unwrap();
+        assert!(needs_compile(&p, &smx), ".smx of unknown origin");
+        std::fs::write(stamp_path(&smx), source_hash(&d)).unwrap();
+        assert!(!needs_compile(&p, &smx));
+        // same as installing another version whose files have an older date than the .smx
+        std::fs::write(&sp, "other").unwrap();
+        std::fs::File::options().write(true).open(&sp).unwrap().set_modified(std::time::SystemTime::UNIX_EPOCH).unwrap();
+        assert!(needs_compile(&p, &smx));
+        std::fs::remove_dir_all(d).ok();
+    }
+
+    #[test]
+    fn copies_only_what_differs() {
+        let d = std::env::temp_dir().join(format!("csls-glob-{}", std::process::id()));
+        let (from, to) = (d.join("from"), d.join("to"));
+        std::fs::create_dir_all(&from).unwrap();
+        std::fs::write(from.join("a.txt"), "1").unwrap();
+        std::fs::write(from.join("b.other"), "1").unwrap();
+        assert!(copy_glob(&from, ".txt", &to, str::to_string).unwrap());
+        assert!(!copy_glob(&from, ".txt", &to, str::to_string).unwrap());
+        assert!(!to.join("b.other").exists());
+        std::fs::write(from.join("a.txt"), "2").unwrap();
+        assert!(copy_glob(&from, ".txt", &to, str::to_string).unwrap());
+        std::fs::remove_dir_all(d).ok();
     }
 
     #[test]
