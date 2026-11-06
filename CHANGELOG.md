@@ -33,6 +33,13 @@ The section of each version becomes the notes of its GitHub release, so keep the
 - New modes: `aim`, `hardcore`, `pesados`, `ffa`, `tdm`, `dangerzone`, `trigger`, `stabzap`, `clutch` and `ninjas`.
 - `modo_<team>_color` accepts `R,G,B,alpha` for see-through players.
 
+### Security
+
+- The rcon password, GSLT token and workshop key are no longer process arguments, which anyone on the PC could read with `ps`.
+  They live in files only you can read, and so does `server.cfg`, which holds the server password.
+- Internet and community profiles warn at start that the server is reachable from the internet, has no VAC and whether it has a password.
+- `doctor` warns if rcon can be reached from other machines, and a GSLT with quotes or `;` is rejected.
+
 ### Fixed
 
 - Skins and knives did nothing when the installed package and the repo were mixed: `deploy` compared file dates, kept an old
