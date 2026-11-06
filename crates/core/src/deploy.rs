@@ -85,6 +85,13 @@ fn stamp_path(smx: &Path) -> PathBuf {
     smx.with_extension("smx.src")
 }
 
+/// Plugins whose compiled file does not come from the current sources.
+pub fn stale_plugins(cfg: &Config) -> crate::Result<Vec<String>> {
+    let sm = sourcemod_dir(cfg);
+    let plugins = all_plugins(cfg)?;
+    Ok(plugins.iter().filter(|p| (cfg.server.skins || p.name != "skins") && needs_compile(p, &sm.join("plugins").join(format!("{}.smx", p.name)))).map(|p| p.name.clone()).collect())
+}
+
 pub fn needs_compile(p: &Plugin, smx: &Path) -> bool {
     // shortcut: does not follow external #includes; if a system include changes, force it with `deploy --force`
     !smx.is_file() || std::fs::read_to_string(stamp_path(smx)).ok().as_deref() != Some(source_hash(&p.dir).as_str())

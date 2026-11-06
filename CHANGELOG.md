@@ -26,6 +26,7 @@ The section of each version becomes the notes of its GitHub release, so keep the
   system locale, and it covers the app, the command line, skin names and in-game messages for every player. Install progress and
   common errors are translated too.
 - Backups: `backup create|list|restore [--dry-run]` and **Settings → Backups** save your config, modes, plugins, presets and skins. `install --update` makes one first.
+- `doctor` also checks unfinished installs, stale plugins, SourceMod errors, config permissions and whether the server survives logging out. **Settings → Diagnosis** shows the same. `doctor --report` hides private data, and `status --json` is for scripts.
 - Changing only one README translates the changed lines into the other, with Google Translate.
 - `.claude/` holds rules for contributors who use Claude Code.
 - Competitive category with normal matches instead of custom rules: `competitivo` (MR15), `premier` (MR12 with map bans), `wingman`

@@ -1,10 +1,10 @@
 //! Settings tab: config.toml, maintenance and diagnostics.
-use crate::i18n::t;
+use crate::i18n::{t, t_msg};
 use crate::{bg, button, AppRc};
 use adw::prelude::*;
 use csls_core::config::{Language, Network};
-use csls_core::server::{self, Server};
-use csls_core::{backup, deploy, install, net};
+use csls_core::server;
+use csls_core::{backup, deploy, doctor};
 use gtk::glib;
 
 pub fn page(a: &AppRc) -> gtk::Widget {
@@ -107,27 +107,14 @@ pub fn page(a: &AppRc) -> gtk::Widget {
 
     let d = adw::PreferencesGroup::new();
     d.set_title(&t("Diagnosis"));
-    let missing = install::missing_deps();
-    let deps = adw::ActionRow::builder()
-        .title(t("Dependencies"))
-        .subtitle(if missing.is_empty() { t("installed") } else { format!("{}: {} — {}", t("missing"), missing.join(", "), install::deps_command()) })
-        .subtitle_selectable(true)
-        .build();
-    deps.add_css_class("property");
-    d.add(&deps);
-    let p = a.cfg.borrow().server.port;
-    if let Some(h) = net::firewall_hint(p) {
-        let fw = adw::ActionRow::builder().title(t("Firewall")).subtitle(&h).subtitle_selectable(true).build();
-        fw.add_css_class("property");
-        d.add(&fw);
+    for c in doctor::run(&a.cfg.borrow()) {
+        let row = adw::ActionRow::builder().title(t(c.name)).subtitle(t_msg(&c.detail)).subtitle_selectable(true).build();
+        row.add_css_class("property");
+        if c.status == doctor::Status::Problem {
+            row.add_css_class("warning");
+        }
+        d.add(&row);
     }
-    let sd = adw::ActionRow::builder().title("systemd --user").subtitle(if server::systemd_available() { t("installed") } else { t("missing") }).build();
-    sd.add_css_class("property");
-    d.add(&sd);
-    let installed = Server::new(&a.cfg.borrow()).is_installed();
-    let inst = adw::ActionRow::builder().title(t("Server folder")).subtitle(if installed { t("Installed") } else { t("Not installed") }).build();
-    inst.add_css_class("property");
-    d.add(&inst);
     page.add(&d);
     page.upcast()
 }

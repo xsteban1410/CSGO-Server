@@ -5,7 +5,7 @@ use csls_core::config::{Config, Kind};
 use csls_core::launch::{parse_cvar, LaunchOptions, Site, Teams};
 use csls_core::modes::Modes;
 use csls_core::server::{Server, State};
-use csls_core::{backup, bridge, deploy, install, modes, net, players, steam_client, workshop};
+use csls_core::{backup, bridge, deploy, doctor, install, modes, net, players, steam_client, workshop};
 use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
 use std::time::Duration;
@@ -70,7 +70,11 @@ enum Cmd {
         update: bool,
     },
     /// Check the system and say how to fix what is missing
-    Doctor,
+    Doctor {
+        /// Text to paste in an issue, without passwords, IPs or SteamIDs
+        #[arg(long)]
+        report: bool,
+    },
     /// Open CS:GO Legacy (or CS2) on this PC, optionally connecting: play [cs2] [IP:PORT|local]
     Play { target: Vec<String> },
     /// Start the server
@@ -78,7 +82,11 @@ enum Cmd {
     /// Stop the server
     Stop,
     /// Show whether it is running, map and players
-    Status,
+    Status {
+        /// Print JSON
+        #[arg(long)]
+        json: bool,
+    },
     /// Change mode/map with the server running
     Mode(Game),
     /// List available modes
@@ -272,32 +280,19 @@ fn main() -> Result<()> {
             println!("Ready. Start with: csgo-legacy-server start awp alone");
             println!("Players need CS2 with the \"csgo_legacy\" beta and connect with: connect {}", srv.connect_address());
         }
-        Cmd::Doctor => {
-            let ok = |b: bool| if b { "ok " } else { "!! " };
-            let missing = install::missing_deps();
-            println!("{}dependencies{}", ok(missing.is_empty()), if missing.is_empty() { String::new() } else { format!(": missing {} -> {}", missing.join(", "), install::deps_command()) });
-            println!("{}server installed in {}", ok(srv.is_installed()), cfg.install_dir().display());
-            if !srv.is_installed() {
-                let free = install::free_bytes(cfg.install_dir()).unwrap_or(0);
-                println!("{}free space: {} GB (needs ~40)", ok(free >= install::NEEDED_BYTES), free >> 30);
+        Cmd::Doctor { report } => {
+            if report {
+                print!("{}", doctor::report(&cfg));
+                return Ok(());
             }
-            println!("{}systemd --user (server keeps running after closing the app)", ok(csls_core::server::systemd_available()));
-            println!("{}local IP: {}", ok(net::local_ip().is_some()), net::local_ip().map(|i| i.to_string()).unwrap_or("none".into()));
-            let port_ok = srv.state() == State::Running || net::udp_port_free(cfg.server.port);
-            println!("{}UDP port {} {}", ok(port_ok), cfg.server.port, if port_ok { "free" } else { "busy" });
-            if srv.state() == State::Running {
-                let exposed = net::tcp_exposed(cfg.server.port);
-                let ips: Vec<String> = exposed.iter().map(ToString::to_string).collect();
-                println!("{}rcon only on this PC{}", ok(exposed.is_empty()), if exposed.is_empty() { String::new() } else { format!(": other machines can reach it on {}", ips.join(", ")) });
+            for c in doctor::run(&cfg) {
+                let mark = match c.status {
+                    doctor::Status::Ok => "ok",
+                    doctor::Status::Problem => "!!",
+                    doctor::Status::Info => "--",
+                };
+                println!("{mark} {}: {}", c.name, c.detail);
             }
-            if let Some(h) = net::firewall_hint(cfg.server.port) {
-                println!("-- firewall active; for internet players: {h}");
-            }
-            match steam_client::find_steam() {
-                Some(s) => println!("{}CS:GO Legacy client ({:?} Steam): {}", ok(s.game_dir().is_some()), s.flavor, s.game_dir().map(|d| d.display().to_string()).unwrap_or("not installed: enable the csgo_legacy beta of CS2".into())),
-                None => println!("-- Steam not found (only needed to play on this PC)"),
-            }
-            println!("-- config: {}", csls_core::config::config_path().display());
         }
         Cmd::Play { target } => {
             let t: Vec<&str> = target.iter().map(String::as_str).collect();
@@ -346,7 +341,11 @@ fn main() -> Result<()> {
             srv.stop()?;
             println!("Server stopped.");
         }
-        Cmd::Status => {
+        Cmd::Status { json } => {
+            if json {
+                println!("{}", srv.status_json()?);
+                return Ok(());
+            }
             if srv.state() == State::Stopped {
                 println!("Stopped.");
                 return Ok(());

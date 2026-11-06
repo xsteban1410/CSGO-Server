@@ -208,6 +208,9 @@ Choices are saved per SteamID and applied every time you join. The language chos
 
 ## Notes and limits
 
+- Without lingering, systemd stops user services when you log out, and the server with them. To keep it running, run `loginctl enable-linger`; `doctor` tells you if it is off.
+- `doctor --report` prints a report for issues with passwords, IPs and SteamIDs hidden, and `status --json` is meant for scripts.
+
 - `plugin/csls_directconnect` patches the engine in memory so players can join by IP without a matchmaking lobby. Its Linux
   signatures match the current `engine.so`; if Valve updates the server binaries it will log "signature not found" and they
   must be found again. The idea comes from [NoLobbyReservation](https://github.com/vanz666/NoLobbyReservation).
