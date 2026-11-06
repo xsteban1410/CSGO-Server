@@ -7,6 +7,27 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 
+/// Present while an install runs and after one is interrupted or fails: the server may be half written.
+pub const INCOMPLETE_MARKER: &str = ".csls-install-incomplete";
+
+/// A SourceMod or Metamod build this version was tested with. Bumping it means testing the plugins again.
+struct Pinned {
+    base: &'static str,
+    file: &'static str,
+    sha256: &'static str,
+}
+
+const METAMOD: Pinned = Pinned {
+    base: "https://mms.alliedmods.net/mmsdrop/1.12",
+    file: "mmsource-1.12.0-git1229-linux.tar.gz",
+    sha256: "df2f8723741d90aea730e06103e57844bac970225be9fd4137ed1d2b753bedb2",
+};
+const SOURCEMOD: Pinned = Pinned {
+    base: "https://sm.alliedmods.net/smdrop/1.12",
+    file: "sourcemod-1.12.0-git7260-linux.tar.gz",
+    sha256: "b01719e6143bc7d5bb63aae8086d031574da6ef838f041ba4b8ab72c8c75b888",
+};
+
 /// Space needed for app 740, with margin.
 pub const NEEDED_BYTES: u64 = 40 * 1024 * 1024 * 1024;
 
@@ -137,16 +158,24 @@ fn ensure_steamcmd(cancel: &AtomicBool, cb: &mut dyn FnMut(Progress)) -> crate::
     cb(Progress { step: "steamcmd", fraction: None, message: "Downloading SteamCMD (~20 MB)".into() });
     let dir = p.parent().unwrap();
     std::fs::create_dir_all(dir)?;
-    let tgz = dir.join("steamcmd_linux.tar.gz");
+    // its tarball changes without a version, so it cannot have a fixed hash: SteamCMD updates and checks itself.
+    // Unpacked aside so an interrupted download never leaves a broken steamcmd.sh behind.
+    let tmp = dir.with_extension("tmp");
+    let _ = std::fs::remove_dir_all(&tmp);
+    std::fs::create_dir_all(&tmp)?;
+    let tgz = tmp.join("steamcmd_linux.tar.gz");
     let ok = run_logged(
-        Command::new("curl").args(["-fsSL", "-o"]).arg(&tgz).arg("https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz"),
+        Command::new("curl").args(["-fsSL", "--retry", "5", "-o"]).arg(&tgz).arg("https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz"),
         cancel,
         |_| {},
     )?;
-    if !ok || !Command::new("tar").arg("-xzf").arg(&tgz).arg("-C").arg(dir).status()?.success() {
+    if !ok || !Command::new("tar").arg("-xzf").arg(&tgz).arg("-C").arg(&tmp).status()?.success() {
         bail!("could not download SteamCMD");
     }
-    let _ = std::fs::remove_file(tgz);
+    std::fs::remove_file(tgz)?;
+    // steamcmd.sh is missing here, so this folder of ours holds nothing that works
+    std::fs::remove_dir_all(dir)?;
+    std::fs::rename(&tmp, dir)?;
     Ok(p)
 }
 
@@ -172,27 +201,48 @@ fn app_update(steamcmd: &Path, dir: &Path, validate: bool, cancel: &AtomicBool, 
         }
         // SteamCMD often fails at first (self-updates, timeouts): retry
         cb(Progress { step: "server", fraction: None, message: format!("SteamCMD did not finish ({last}); retry {attempt}/5") });
-        std::thread::sleep(std::time::Duration::from_secs(5));
+        std::thread::sleep(std::time::Duration::from_secs(5 * attempt));
     }
     bail!("could not install app 740; try again (it resumes where it stopped)")
 }
 
-/// Downloads the latest build of an AlliedModders branch (mmsdrop/smdrop).
-fn alliedmods(base: &str, prefix: &str, cancel: &AtomicBool) -> crate::Result<PathBuf> {
-    let dl = paths::data_dir().join("dl");
-    std::fs::create_dir_all(&dl)?;
-    let o = Command::new("curl").args(["-fsSL", &format!("{base}/{prefix}-latest-linux")]).output()?;
-    let name = String::from_utf8_lossy(&o.stdout).trim().to_string();
-    if !o.status.success() || !name.ends_with(".tar.gz") || !name.bytes().all(|b| b.is_ascii_alphanumeric() || b"._-".contains(&b)) {
-        bail!("unexpected response from {base}: {name}");
+fn sha256(file: &Path) -> crate::Result<String> {
+    let o = Command::new("sha256sum").arg(file).output().context("running sha256sum")?;
+    if !o.status.success() {
+        bail!("could not read {}", file.display());
     }
-    let f = dl.join(&name);
-    if !f.is_file() {
-        let tmp = dl.join(format!("{name}.part"));
-        if !run_logged(Command::new("curl").args(["-fsSL", "-o"]).arg(&tmp).arg(format!("{base}/{name}")), cancel, |_| {})? {
-            bail!("could not download {name}");
-        }
-        std::fs::rename(tmp, &f)?;
+    Ok(String::from_utf8_lossy(&o.stdout).split_whitespace().next().unwrap_or("").to_string())
+}
+
+/// Returns the pinned file in `dl`, downloading it if needed. Nothing unverified ever gets the final name.
+fn fetch(p: &Pinned, dl: &Path, cancel: &AtomicBool) -> crate::Result<PathBuf> {
+    std::fs::create_dir_all(dl)?;
+    let f = dl.join(p.file);
+    if f.is_file() && sha256(&f)? == p.sha256 {
+        return Ok(f);
+    }
+    let tmp = dl.join(format!("{}.part", p.file));
+    if !run_logged(Command::new("curl").args(["-fsSL", "--retry", "5", "-o"]).arg(&tmp).arg(format!("{}/{}", p.base, p.file)), cancel, |_| {})? {
+        bail!("could not download {}", p.file);
+    }
+    if sha256(&tmp)? != p.sha256 {
+        std::fs::remove_file(&tmp)?;
+        bail!("{} does not match its checksum: not installing it", p.file);
+    }
+    std::fs::rename(tmp, &f)?;
+    Ok(f)
+}
+
+/// Only one install at a time: the lock goes away with the process, even if it crashes.
+fn lock_install() -> crate::Result<std::fs::File> {
+    std::fs::create_dir_all(paths::data_dir())?;
+    try_lock(&paths::data_dir().join("install.lock"))
+}
+
+fn try_lock(path: &Path) -> crate::Result<std::fs::File> {
+    let f = std::fs::OpenOptions::new().write(true).create(true).truncate(false).open(path)?;
+    if f.try_lock().is_err() {
+        bail!("another install is already running");
     }
     Ok(f)
 }
@@ -208,6 +258,10 @@ fn tar(args: &[&str], file: &Path, dest: &Path) -> crate::Result<()> {
 /// Installs or updates everything. `update` revalidates with SteamCMD and updates SourceMod.
 pub fn install(cfg: &Config, update: bool, cancel: &AtomicBool, cb: &mut dyn FnMut(Progress)) -> crate::Result<()> {
     let dir = cfg.install_dir().to_path_buf();
+    let _lock = lock_install()?;
+    if crate::server::Server::new(cfg).state() == crate::server::State::Running {
+        bail!("stop the server before installing or updating");
+    }
     let missing = missing_deps();
     if !missing.is_empty() {
         bail!("missing: {}\n  {}", missing.join(", "), deps_command());
@@ -220,7 +274,19 @@ pub fn install(cfg: &Config, update: bool, cancel: &AtomicBool, cb: &mut dyn FnM
         }
     }
 
-    if !dir.join("srcds_run").is_file() || update {
+    // a previous run did not finish: repeat its steps, they are idempotent and SteamCMD resumes
+    let marker = dir.join(INCOMPLETE_MARKER);
+    let resume = marker.is_file();
+    std::fs::create_dir_all(&dir)?;
+    std::fs::write(&marker, "")?;
+
+    // SteamCMD cannot go back to an older build, but what the user made can be saved first
+    if update && !resume && dir.join("srcds_run").is_file() {
+        cb(Progress { step: "backup", fraction: None, message: "Saving a backup".into() });
+        crate::backup::create_auto(cfg).context("saving a backup before updating")?;
+    }
+
+    if !dir.join("srcds_run").is_file() || update || resume {
         let sc = ensure_steamcmd(cancel, cb)?;
         app_update(&sc, &dir, update, cancel, cb)?;
     }
@@ -229,14 +295,16 @@ pub fn install(cfg: &Config, update: bool, cancel: &AtomicBool, cb: &mut dyn FnM
     let _ = std::fs::remove_file(dir.join("bin/libgcc_s.so.1"));
     let csgo = dir.join("csgo");
 
-    if !csgo.join("addons/metamod/bin/server.so").is_file() {
+    if !csgo.join("addons/metamod/bin/server.so").is_file() || resume {
         cb(Progress { step: "metamod", fraction: None, message: "Installing Metamod:Source".into() });
-        let f = alliedmods("https://mms.alliedmods.net/mmsdrop/1.12", "mmsource", cancel)?;
+        let f = fetch(&METAMOD, &paths::data_dir().join("dl"), cancel)?;
         tar(&[], &f, &csgo)?;
     }
-    if !csgo.join("addons/sourcemod/bin/sourcemod_mm_i486.so").is_file() || update {
+    if !csgo.join("addons/sourcemod/bin/sourcemod_mm_i486.so").is_file() || update || resume {
         cb(Progress { step: "sourcemod", fraction: None, message: "Installing SourceMod".into() });
-        let f = alliedmods("https://sm.alliedmods.net/smdrop/1.12", "sourcemod", cancel)?;
+        let f = fetch(&SOURCEMOD, &paths::data_dir().join("dl"), cancel)?;
+        // shortcut: a file cut in half by an interruption stays if it is not in the overwrite list below; deleting
+        // addons/sourcemod would also delete the skins database. Improve it if a broken config ever shows up.
         // do not overwrite configs, data or the skins database when reinstalling
         tar(&["--skip-old-files"], &f, &csgo)?;
         tar(
@@ -260,6 +328,7 @@ pub fn install(cfg: &Config, update: bool, cancel: &AtomicBool, cb: &mut dyn FnM
     if let Some(e) = r.error_text() {
         bail!("some plugins do not compile:\n{e}");
     }
+    std::fs::remove_file(&marker)?;
     cb(Progress { step: "done", fraction: Some(1.0), message: "Done".into() });
     Ok(())
 }
@@ -274,6 +343,66 @@ mod tests {
         assert_eq!(s, "downloading");
         assert!(steamcmd_progress("Loading Steam API...OK").is_none());
     }
+    /// A folder for one test, with the pinned file served from `src` through file://.
+    fn tmp(name: &str) -> PathBuf {
+        let d = std::env::temp_dir().join(format!("csls-install-{name}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).unwrap();
+        d
+    }
+
+    fn pinned(base: &str, sha: &str) -> Pinned {
+        Pinned { base: Box::leak(format!("file://{base}").into_boxed_str()), file: "a.tar.gz", sha256: Box::leak(sha.to_string().into_boxed_str()) }
+    }
+
+    #[test]
+    fn fetch_checks_the_hash() {
+        let d = tmp("fetch");
+        let (src, dl) = (d.join("src"), d.join("dl"));
+        std::fs::create_dir_all(&src).unwrap();
+        std::fs::write(src.join("a.tar.gz"), "hello\n").unwrap();
+        let cancel = AtomicBool::new(false);
+        let good = "5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03";
+
+        let bad = fetch(&pinned(src.to_str().unwrap(), "00"), &dl, &cancel).unwrap_err();
+        assert!(bad.to_string().contains("checksum"), "{bad}");
+        assert!(!dl.join("a.tar.gz").exists() && !dl.join("a.tar.gz.part").exists());
+
+        let f = fetch(&pinned(src.to_str().unwrap(), good), &dl, &cancel).unwrap();
+        assert_eq!(std::fs::read_to_string(&f).unwrap(), "hello\n");
+
+        // a corrupt copy is replaced, a good one needs no network
+        std::fs::write(&f, "corrupt").unwrap();
+        fetch(&pinned(src.to_str().unwrap(), good), &dl, &cancel).unwrap();
+        assert_eq!(std::fs::read_to_string(&f).unwrap(), "hello\n");
+        fetch(&pinned("/does/not/exist", good), &dl, &cancel).unwrap();
+        assert!(fetch(&pinned("/does/not/exist", "00"), &dl, &cancel).is_err());
+        std::fs::remove_dir_all(d).unwrap();
+    }
+
+    #[test]
+    fn only_one_install_at_a_time() {
+        let d = tmp("lock");
+        let p = d.join("install.lock");
+        let first = try_lock(&p).unwrap();
+        assert!(try_lock(&p).is_err());
+        drop(first);
+        assert!(try_lock(&p).is_ok());
+        std::fs::remove_dir_all(d).unwrap();
+    }
+
+    #[test]
+    fn interrupted_install_is_not_installed() {
+        let d = tmp("marker");
+        std::fs::write(d.join("srcds_run"), "").unwrap();
+        let mut cfg = Config::default();
+        cfg.server.install_dir = d.clone();
+        assert!(crate::server::Server::new(&cfg).is_installed());
+        std::fs::write(d.join(INCOMPLETE_MARKER), "").unwrap();
+        assert!(!crate::server::Server::new(&cfg).is_installed());
+        std::fs::remove_dir_all(d).unwrap();
+    }
+
     #[test]
     fn free_space_of_folder() {
         assert!(free_bytes(Path::new("/tmp/no/existe")).is_some());

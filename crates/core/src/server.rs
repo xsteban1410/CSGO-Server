@@ -148,7 +148,7 @@ impl<'a> Server<'a> {
         self.csgo_dir().join("console.log")
     }
     pub fn is_installed(&self) -> bool {
-        self.dir().join("srcds_run").is_file()
+        self.dir().join("srcds_run").is_file() && !self.dir().join(crate::install::INCOMPLETE_MARKER).exists()
     }
 
     pub fn state(&self) -> State {
@@ -242,10 +242,8 @@ impl<'a> Server<'a> {
             "-tickrate".into(), s.tickrate.to_string(),
         ];
         a.extend(["+sv_lan".into(), s.network.sv_lan().to_string()]);
-        if s.network == Network::Community {
-            if s.gslt.is_empty() {
-                bail!("the community profile needs a GSLT token (https://steamcommunity.com/dev/managegameservers, app 730)");
-            }
+        if s.network == Network::Community && s.gslt.is_empty() {
+            bail!("the community profile needs a GSLT token (https://steamcommunity.com/dev/managegameservers, app 730)");
         }
         // before the map: the Steam account has to be set by the time the server starts
         a.extend(["+exec".into(), SECRETS_CFG.into()]);
@@ -261,7 +259,7 @@ impl<'a> Server<'a> {
     /// Starts the server with these options.
     pub fn start(&self, modes: &Modes, opts: &LaunchOptions) -> crate::Result<Started> {
         if !self.is_installed() {
-            bail!("the server is not installed in {} (csgo-legacy-server install)", self.dir().display());
+            bail!("the server is not installed or its install did not finish in {} (csgo-legacy-server install)", self.dir().display());
         }
         if self.state() == State::Running {
             bail!("the server is already running");
