@@ -208,6 +208,9 @@ Se guarda por SteamID y se aplica cada vez que entras. Los mensajes salen en el 
 
 ## Notas y límites
 
+- Sin demorarse, systemd detiene los servicios del usuario cuando cierra la sesión, y el servidor con ellos. Para que siga funcionando, ejecute `loginctl enable-linger`; `doctor` te indica si está apagado.
+- `doctor --report` imprime un informe sobre problemas con contraseñas, IP e ID de Steam ocultos, y `status --json` está destinado a scripts.
+
 - `plugin/csls_directconnect` parchea el motor en memoria para que se pueda entrar por IP sin lobby de matchmaking. Sus firmas
   para Linux corresponden al `engine.so` actual; si Valve actualiza los binarios del servidor, el log dirá "signature not
   found" y habrá que volver a sacarlas. La idea viene de [NoLobbyReservation](https://github.com/vanz666/NoLobbyReservation).
