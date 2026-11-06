@@ -77,6 +77,7 @@ csgo-legacy-server bots +2 | bots -1 | round [--warmup]
 csgo-legacy-server workshop search|install|list|remove|import
 csgo-legacy-server mode-file export|import|delete      compartir modos propios
 csgo-legacy-server presets [--delete nombre]           opciones de arranque guardadas
+csgo-legacy-server backup create | list | restore <file> [--dry-run]   your config, modes, plugins, presets and skins
 csgo-legacy-server deploy [--force] [--watch]          compilar plugins, copiar configs
 csgo-legacy-server nav [--force]                       navegación de bots del mapa actual
 csgo-legacy-server skins                               rehacer la lista de skins tras actualizar el juego
@@ -172,6 +173,10 @@ aliados, votekick, flood, plazas reservadas). Los kicks y baneos que hagas desde
 
 Con la app abierta (o `deploy --watch`) lo nuevo o cambiado se compila y se recarga en el servidor encendido; los errores
 de compilación salen con su línea y el servidor sigue con la versión anterior. Los plugins borrados se descargan.
+
+### Copias de seguridad
+
+`backup create` (o **Configuración → Copias de seguridad**) guarda su configuración, modos, complementos, ajustes preestablecidos y máscaras en `~/.local/share/csgo-legacy-server/backups/`, nunca en el servidor. `install --update` hace uno primero y se queda con los últimos cinco automáticos. `restore --dry-run` muestra lo que cambiaría, y una restauración guarda primero los archivos actuales y deja los archivos que la copia de seguridad no tiene. Las copias de seguridad contienen sus contraseñas, así que no las comparta.
 
 ## Mapas del workshop
 
