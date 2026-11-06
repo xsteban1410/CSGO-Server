@@ -364,6 +364,27 @@ impl<'a> Server<'a> {
         Ok(())
     }
 
+    /// The state as JSON, for scripts.
+    pub fn status_json(&self) -> crate::Result<String> {
+        if self.state() != State::Running {
+            return Ok(serde_json::json!({ "running": false }).to_string());
+        }
+        let mut r = self.rcon()?;
+        let st = crate::players::parse_status(&r.exec("status")?);
+        let mode = r.exec("modo_nombre").unwrap_or_default();
+        Ok(serde_json::json!({
+            "running": true,
+            "hostname": st.hostname,
+            "mode": mode.split('"').nth(3).unwrap_or(""),
+            "map": st.map,
+            "humans": st.humans,
+            "bots": st.bots,
+            "max_players": st.max,
+            "connect": self.connect_address(),
+        })
+        .to_string())
+    }
+
     pub fn current_map(r: &mut Rcon) -> Option<String> {
         // "host_map" = "de_dust2.bsp" ( def. "" )
         let o = r.exec("host_map").ok()?;
