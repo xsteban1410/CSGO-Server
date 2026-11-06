@@ -1,0 +1,8 @@
+# Metadata for cfg/modo_premier.cfg
+category = "competitive"
+name = { en = "Premier", es = "Premier" }
+description = { en = "Premier rules: 5v5, first to 13, overtime and map bans in warmup. No CS Rating, that needs Valve's servers", es = "Reglas de Premier: 5v5, a 13 rondas, prórroga y vetos de mapa en el calentamiento. Sin CS Rating, eso necesita los servidores de Valve" }
+game_type = 0
+game_mode = 1
+map_prefixes = ["de_"]
+options = ["teams", "veto"]

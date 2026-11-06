@@ -21,6 +21,7 @@ float g_SiteCenter[3];
 
 #include "modos_extras.sp"
 #include "modos_zombies.sp"
+#include "modos_competitivo.sp"
 
 public void OnPluginStart()
 {
@@ -49,11 +50,12 @@ public void OnPluginStart()
 		Format(name, sizeof(name), "modo_%s_velocidad", team[i]);
 		g_Velocidad[i] = CreateConVar(name, "1.0", "Speed multiplier");
 		Format(name, sizeof(name), "modo_%s_color", team[i]);
-		g_Color[i] = CreateConVar(name, "", "Player RGB color, e.g. 80,255,80 (empty = normal)");
+		g_Color[i] = CreateConVar(name, "", "Player color as R,G,B or R,G,B,alpha, e.g. 80,255,80 (empty = normal)");
 	}
 
 	Extras_Start();
 	Zombies_Start();
+	Comp_Start();
 	for (int i = 1; i <= MaxClients; i++)
 		if (IsClientInGame(i))
 			OnClientPutInServer(i);
@@ -73,6 +75,13 @@ public void OnPluginStart()
 public void OnMapStart()
 {
 	Zombies_MapStart();
+	Extras_MapStart();
+	Comp_MapStart();
+}
+
+public void OnClientDisconnect(int c)
+{
+	Comp_ClientGone(c);
 }
 
 public void OnClientPutInServer(int c)
@@ -133,17 +142,25 @@ public Action CheckWarmup(Handle t)
 		return Plugin_Continue;
 	}
 	int h = CountHumans();
-	if (h >= need)
-	{
-		g_Pausa.SetInt(0);
-		ServerCommand("mp_warmup_end");
-		PrintToChatAll(" \x04[Modos]\x01 %t", "match_starts", h);
-	}
-	else
+	if (h < need)
 	{
 		g_Pausa.SetInt(1);
 		PrintHintTextToAll("%t", "warmup_waiting", h, need);
+		return Plugin_Continue;
 	}
+	if (Veto_Pending())
+	{
+		g_Pausa.SetInt(1);
+		return Plugin_Continue;
+	}
+	g_Pausa.SetInt(0);
+	if (g_Listos.BoolValue && Comp_ReadyCount() < h)
+	{
+		PrintHintTextToAll("%t", "warmup_ready", Comp_ReadyCount(), h);
+		return Plugin_Continue;
+	}
+	ServerCommand("mp_warmup_end");
+	PrintToChatAll(" \x04[Modos]\x01 %t", "match_starts", h);
 	return Plugin_Continue;
 }
 
@@ -162,16 +179,19 @@ void Give(int c, ConVar cv)
 		GivePlayerItem(c, w);
 }
 
-// If the mode forces humans onto a team (mp_humanteam), moves them.
+// If the mode decides the team of humans (modo_equipos or mp_humanteam), moves them.
 bool FixHumanTeam(int c)
 {
 	if (IsFakeClient(c) || Zombies_Infectado(c))
 		return false;
 	char ht[8];
 	g_HumanTeam.GetString(ht, sizeof(ht));
-	int want = StrEqual(ht, "CT", false) ? CS_TEAM_CT : StrEqual(ht, "T", false) ? CS_TEAM_T : 0;
+	int want = StrEqual(ht, "CT", false) ? CS_TEAM_CT : StrEqual(ht, "T", false) ? CS_TEAM_T : Comp_TeamFor(c);
 	if (want == 0 || GetClientTeam(c) == want)
+	{
+		Comp_BalanceBots(false);
 		return false;
+	}
 	CS_SwitchTeam(c, want);
 	CS_RespawnPlayer(c);
 	return true;
@@ -198,7 +218,8 @@ public Action Equip(Handle t, any userid)
 		Give(c, g_Arma[i]);
 		Give(c, g_Pistola[i]);
 		Give(c, g_Objeto[i]);
-		SetEntProp(c, Prop_Send, "m_ArmorValue", 100);
+		if (GetEntProp(c, Prop_Send, "m_ArmorValue") < 100)  // the heavy suit has more
+			SetEntProp(c, Prop_Send, "m_ArmorValue", 100);
 		SetEntProp(c, Prop_Send, "m_bHasHelmet", 1);
 	}
 	if (g_Vida[i].IntValue > 0)
@@ -206,12 +227,14 @@ public Action Equip(Handle t, any userid)
 	SetEntPropFloat(c, Prop_Send, "m_flLaggedMovementValue", g_Velocidad[i].FloatValue);
 	SetEntPropFloat(c, Prop_Send, "m_flModelScale", 1.0);  // in case they were a boss or tank
 
-	char col[32], rgb[3][8];
+	char col[32], rgb[4][8];
 	g_Color[i].GetString(col, sizeof(col));
-	if (col[0] && ExplodeString(col, ",", rgb, 3, 8) == 3)
+	int parts = col[0] ? ExplodeString(col, ",", rgb, sizeof(rgb), sizeof(rgb[])) : 0;
+	if (parts >= 3)
 	{
-		SetEntityRenderMode(c, RENDER_TRANSCOLOR);
-		SetEntityRenderColor(c, StringToInt(rgb[0]), StringToInt(rgb[1]), StringToInt(rgb[2]), 255);
+		int alpha = parts == 4 ? StringToInt(rgb[3]) : 255;
+		SetEntityRenderMode(c, alpha < 255 ? RENDER_TRANSALPHA : RENDER_TRANSCOLOR);
+		SetEntityRenderColor(c, StringToInt(rgb[0]), StringToInt(rgb[1]), StringToInt(rgb[2]), alpha);
 	}
 	else
 		SetEntityRenderColor(c, 255, 255, 255, 255);
@@ -233,6 +256,7 @@ public void OnRoundPreStart(Event e, const char[] name, bool dontBroadcast)
 {
 	Extras_PreStart();
 	Zombies_PreStart();
+	Comp_BalanceBots(true);
 	if (!g_Retake.BoolValue)
 		return;
 	char s[8];

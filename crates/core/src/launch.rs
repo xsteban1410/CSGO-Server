@@ -31,6 +31,34 @@ impl Site {
     }
 }
 
+/// Where humans play in the competitive modes, against bots filling the rest.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Teams {
+    Together,
+    Versus,
+    Free,
+}
+
+impl Teams {
+    pub fn parse(s: &str) -> Option<Teams> {
+        match s.to_ascii_lowercase().as_str() {
+            "together" | "juntos" => Some(Teams::Together),
+            "versus" | "contra" => Some(Teams::Versus),
+            "free" | "libre" => Some(Teams::Free),
+            _ => None,
+        }
+    }
+    /// Value of modo_equipos.
+    fn as_str(self) -> &'static str {
+        match self {
+            Teams::Together => "juntos",
+            Teams::Versus => "contra",
+            Teams::Free => "libre",
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct LaunchOptions {
     pub mode: String,
@@ -44,6 +72,8 @@ pub struct LaunchOptions {
     pub rounds: Option<u32>,
     pub kind: Kind,
     pub site: Option<Site>,
+    /// Modes with the "teams" option; None = what the mode says.
+    pub teams: Option<Teams>,
     /// No spread or recoil for anyone.
     pub precision: bool,
     /// No automatic kicks or bans.
@@ -64,6 +94,7 @@ impl LaunchOptions {
             rounds: None,
             kind: d.kind,
             site: None,
+            teams: None,
             precision: false,
             anarchy: false,
             cvars: Vec::new(),
@@ -74,6 +105,9 @@ impl LaunchOptions {
         let mode = modes.get(&self.mode)?;
         if !mode.allows_kind(self.kind) {
             bail!("mode {} does not support match type {}", mode.id, self.kind.label());
+        }
+        if self.teams.is_some() && !mode.has_option("teams") {
+            bail!("mode {} has fixed teams", mode.id);
         }
         if self.humans == 0 {
             bail!("at least 1 human is needed");
@@ -96,7 +130,7 @@ impl LaunchOptions {
     }
 
     /// Commands run after the mode cfg (modo_extra convar).
-    pub fn extra(&self) -> String {
+    pub fn extra(&self, mode: &Mode) -> String {
         let mut e = format!("bot_difficulty {}", self.difficulty);
         if self.precision {
             e += "; weapon_accuracy_nospread 1; weapon_recoil_scale 0";
@@ -112,6 +146,13 @@ impl LaunchOptions {
         }
         if let Some(s) = self.site {
             e += &format!("; modo_sitio {}", s.as_str());
+        }
+        if let Some(t) = self.teams {
+            e += &format!("; modo_equipos {}", t.as_str());
+        }
+        // choosing a map is already the decision the map bans would make
+        if mode.has_option("veto") && (self.map.is_some() || self.workshop.is_some()) {
+            e += "; modo_veto 0";
         }
         for (k, v) in &self.cvars {
             e += &format!("; {k} {v}");
@@ -293,10 +334,34 @@ mod tests {
         o.bots = Some(5);
         o.site = Some(Site::A);
         o.cvars.push(parse_cvar("sv_gravity=300").unwrap());
-        assert_eq!(o.extra(), "bot_difficulty 3; weapon_accuracy_nospread 1; weapon_recoil_scale 0; bot_quota 5; modo_sitio a; sv_gravity 300");
+        assert_eq!(o.extra(m.get("awp").unwrap()), "bot_difficulty 3; weapon_accuracy_nospread 1; weapon_recoil_scale 0; bot_quota 5; modo_sitio a; sv_gravity 300");
         assert_eq!(o.game_type_mode(m.get("awp").unwrap()), (0, 1));
         assert_eq!(o.game_type_mode(m.get("dm").unwrap()), (1, 2));
         assert!(parse_cvar("sv_gravity=1;quit").is_err());
         assert!(parse_cvar("SV=1").is_err());
+    }
+
+    #[test]
+    fn competitive_options() {
+        let (m, c, maps) = setup();
+        let mut o = LaunchOptions::from_config(&c);
+        o.mode = "premier".into();
+        let premier = m.get("premier").unwrap();
+        assert_eq!(o.game_type_mode(premier), (0, 1));
+        assert_eq!(o.tipo_cfg(premier), "", "the match type does not touch it");
+        assert_eq!(o.extra(premier), "bot_difficulty 3");
+        o.teams = Some(Teams::Versus);
+        o.map = Some("de_dust2".into());
+        assert_eq!(o.extra(premier), "bot_difficulty 3; modo_equipos contra; modo_veto 0", "a chosen map skips the bans");
+        assert!(o.validate(&m, &c).is_ok());
+        o.mode = "awp".into();
+        assert!(o.validate(&m, &c).is_err(), "awp forces humans onto CT");
+        assert_eq!(Teams::parse("JUNTOS"), Some(Teams::Together));
+        assert_eq!(Teams::parse("x"), None);
+        // presets saved before the option existed still load
+        let old = "[p]\nmode = \"awp\"\nhumans = 2\ndifficulty = 3\nkind = \"competitive\"\nprecision = false\nanarchy = false\ncvars = []\n";
+        let p: crate::presets::Presets = toml::from_str(old).unwrap();
+        assert_eq!(p.0["p"].teams, None);
+        std::fs::remove_dir_all(maps).ok();
     }
 }

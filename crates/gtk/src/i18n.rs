@@ -4,6 +4,13 @@ use std::collections::HashMap;
 use std::sync::OnceLock;
 
 static ES: &[(&str, &str)] = &[
+    ("Teams", "Equipos"),
+    ("Humans; bots fill the empty seats", "Humanos; los bots ocupan los sitios libres"),
+    ("Together", "Juntos"),
+    ("Against each other", "Uno contra otro"),
+    ("Each one chooses", "Cada uno elige"),
+    ("Advanced", "Avanzado"),
+    ("Rule changes for this match", "Cambios de reglas para esta partida"),
     ("Server", "Servidor"),
     ("Players", "Jugadores"),
     ("Console", "Consola"),

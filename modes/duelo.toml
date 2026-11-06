@@ -1,0 +1,4 @@
+# Metadata for cfg/modo_duelo.cfg
+category = "competitive"
+name = { en = "Duel", es = "Duelo" }
+description = { en = "You against your friend, no bots. Same random weapon each round, first to 10 wins", es = "Tú contra tu amigo, sin bots. La misma arma al azar cada ronda, gana el primero en llegar a 10" }

@@ -3,7 +3,7 @@ use crate::i18n::t;
 use crate::{bg, button, AppRc};
 use adw::prelude::*;
 use csls_core::config::{Kind, Network};
-use csls_core::launch::{installed_maps, parse_cvar, LaunchOptions, Site};
+use csls_core::launch::{installed_maps, parse_cvar, LaunchOptions, Site, Teams};
 use csls_core::modes::Mode;
 use csls_core::server::Server;
 use gtk::glib;
@@ -12,6 +12,7 @@ use std::rc::Rc;
 use std::time::Duration;
 
 const CATEGORIES: &[(&str, &str)] = &[
+    ("competitive", "Competitive"),
     ("classic", "Classic"),
     ("weapons", "Weapons"),
     ("deathmatch", "Deathmatch"),
@@ -203,15 +204,25 @@ fn options_page(w: &Wr) -> adw::NavigationPage {
     kind.set_visible(mode.meta.game_type.is_none());
     let site = adw::ComboRow::builder().title(t("Bomb site")).model(&gtk::StringList::new(&[&t("Random"), "A", "B"])).build();
     site.set_visible(mode.has_option("site"));
+    let teams = adw::ComboRow::builder().title(t("Teams")).subtitle(t("Humans; bots fill the empty seats")).model(&gtk::StringList::new(&[&t("Together"), &t("Against each other"), &t("Each one chooses")])).build();
+    teams.set_visible(mode.has_option("teams"));
     let precision = adw::SwitchRow::builder().title(t("Infinite accuracy")).subtitle(t("No spread and no recoil for everyone")).build();
     let anarchy = adw::SwitchRow::builder().title(t("Anarchy")).subtitle(t("Nobody is kicked or banned automatically")).build();
     let extra = adw::EntryRow::builder().title(t("Extra variables")).build();
     extra.set_tooltip_text(Some(&t("cvar=value separated by spaces")));
     let preset = adw::EntryRow::builder().title(t("Save as preset (name, optional)")).build();
-    for r in [humans.upcast_ref::<gtk::Widget>(), bots_on.upcast_ref(), bots.upcast_ref(), diff.upcast_ref(), rounds.upcast_ref(), kind.upcast_ref(), site.upcast_ref(), precision.upcast_ref(), anarchy.upcast_ref(), extra.upcast_ref(), preset.upcast_ref()] {
+    for r in [humans.upcast_ref::<gtk::Widget>(), teams.upcast_ref(), diff.upcast_ref(), site.upcast_ref(), bots_on.upcast_ref(), bots.upcast_ref(), preset.upcast_ref()] {
         g.add(r);
     }
     page.add(&g);
+    // what most matches do not need stays out of the way
+    let advanced = adw::PreferencesGroup::new();
+    let more = adw::ExpanderRow::builder().title(t("Advanced")).subtitle(t("Rule changes for this match")).build();
+    for r in [kind.upcast_ref::<gtk::Widget>(), rounds.upcast_ref(), precision.upcast_ref(), anarchy.upcast_ref(), extra.upcast_ref()] {
+        more.add_row(r);
+    }
+    advanced.add(&more);
+    page.add(&advanced);
 
     let mode_game_type = mode.meta.game_type;
     let next = button(&if w.live { t("Apply") } else { t("Next") }, &["suggested-action", "pill"]);
@@ -230,6 +241,7 @@ fn options_page(w: &Wr) -> adw::NavigationPage {
                 }
             }
             o.site = site.is_visible().then(|| [Site::Random, Site::A, Site::B][site.selected().min(2) as usize]);
+            o.teams = teams.is_visible().then(|| [Teams::Together, Teams::Versus, Teams::Free][teams.selected().min(2) as usize]);
             o.precision = precision.is_active();
             o.anarchy = anarchy.is_active();
             o.cvars.clear();

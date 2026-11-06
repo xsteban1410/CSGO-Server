@@ -1,0 +1,9 @@
+# Metadata for cfg/modo_wingman.cfg
+category = "competitive"
+name = { en = "Wingman", es = "Wingman" }
+description = { en = "Official 2v2 on one bomb site, sixteen rounds. Small maps work best", es = "2v2 oficial en un solo sitio de bomba, dieciséis rondas. Mejor en mapas pequeños" }
+game_type = 0
+game_mode = 2
+map_prefixes = ["de_"]
+default_map = "de_shortdust"
+options = ["teams"]

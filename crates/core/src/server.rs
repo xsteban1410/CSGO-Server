@@ -184,6 +184,16 @@ impl<'a> Server<'a> {
         Ok(())
     }
 
+    /// The plugin runs this file whenever it loads. It has to follow live changes too: a plugin hot-reload
+    /// would otherwise bring back the mode the server was started with.
+    fn write_mode_start(&self, mode: &crate::modes::Mode, opts: &LaunchOptions) -> crate::Result<()> {
+        std::fs::write(
+            self.csgo_dir().join("cfg/modo_inicio.cfg"),
+            format!("modo_nombre \"{}\"\nmodo_tipo \"{}\"\nmodo_humanos {}\nmodo_extra \"{}\"\n", opts.mode, opts.tipo_cfg(mode), opts.humans, opts.extra(mode)),
+        )?;
+        Ok(())
+    }
+
     /// Fixes that `steamcmd validate` undoes, so they are applied on every start.
     fn patch(&self) -> crate::Result<()> {
         // the CS:GO Legacy client is the csgo_legacy branch of app 730
@@ -256,11 +266,7 @@ impl<'a> Server<'a> {
         }
         self.patch()?;
         self.write_server_cfg()?;
-        // initial mode: the plugin runs it once on load
-        std::fs::write(
-            self.csgo_dir().join("cfg/modo_inicio.cfg"),
-            format!("modo_nombre \"{}\"\nmodo_tipo \"{}\"\nmodo_humanos {}\nmodo_extra \"{}\"\n", opts.mode, opts.tipo_cfg(mode), opts.humans, opts.extra()),
-        )?;
+        self.write_mode_start(mode, opts)?;
 
         // shortcut: console.log only rotates at startup (grows ~1 MB/h with the app open); rotate by size if it becomes a problem
         let log = self.console_log();
@@ -377,6 +383,7 @@ impl<'a> Server<'a> {
         if let Some(e) = report.error_text() {
             bail!("some plugins do not compile:\n{e}");
         }
+        self.write_mode_start(mode, opts)?;
         // after the deploy: reloading plugins can leave an already open connection unresponsive
         let mut r = self.rcon()?;
         // the plugin applies modo_base + modo_<mode> + modo_extra when the map loads
@@ -388,7 +395,7 @@ impl<'a> Server<'a> {
             format!("modo_nombre {}", opts.mode),
             format!("modo_tipo \"{}\"", opts.tipo_cfg(mode)),
             format!("modo_humanos {}", opts.humans),
-            format!("modo_extra \"{}\"", opts.extra()),
+            format!("modo_extra \"{}\"", opts.extra(mode)),
             format!("game_type {t}"),
             format!("game_mode {g}"),
         ] {

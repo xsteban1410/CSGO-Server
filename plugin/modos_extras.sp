@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Modes with their own rules: one bullet, random weapon, vampire and boss. Included by modos.sp.
+// Modes with their own rules: one bullet, random weapon, vampire, boss and clutch. Included by modos.sp.
 
-ConVar g_UnaBala, g_Aleatorio, g_Vampiro, g_VampiroMax, g_Jefe, g_Anarquia;
+ConVar g_UnaBala, g_Aleatorio, g_Vampiro, g_VampiroMax, g_Jefe, g_Anarquia, g_Clutch, g_ClutchMax;
+int g_ClutchBots;
 
 // Anarchy: cvars that kick or ban on their own, and SourceMod plugins that do too
 char g_AnarquiaCvars[][][] = {
@@ -28,9 +29,17 @@ void Extras_Start()
 	g_VampiroMax = CreateConVar("modo_vampiro_max", "200", "Maximum health reachable by healing");
 	g_Jefe       = CreateConVar("modo_jefe", "0", "Health of the giant boss bot each round (0 = no boss)");
 	g_Anarquia   = CreateConVar("modo_anarquia", "0", "1 = nobody is kicked or banned automatically (admin kick/ban still work)");
+	g_Clutch     = CreateConVar("modo_clutch", "0", "Bots in the first round of the clutch mode (0 = off)");
+	g_ClutchMax  = CreateConVar("modo_clutch_max", "12", "Most bots the clutch mode can reach");
 	g_Anarquia.AddChangeHook(Extras_Anarquia);
+	HookEvent("round_end", Extras_RoundEnd);
 	HookEvent("player_death", Extras_Death);
 	HookEvent("player_hurt", Extras_Hurt);
+}
+
+void Extras_MapStart()
+{
+	g_ClutchBots = 0;
 }
 
 // One bullet: leaves the pistol with 1 bullet and no reserve. Called from Equip.
@@ -83,6 +92,12 @@ public void Extras_Hurt(Event e, const char[] name, bool dontBroadcast)
 // Random: drawn in round_prestart, before anyone spawns.
 void Extras_PreStart()
 {
+	if (g_Clutch.IntValue > 0 && !GameRules_GetProp("m_bWarmupPeriod"))
+	{
+		if (g_ClutchBots == 0)
+			g_ClutchBots = g_Clutch.IntValue;
+		ServerCommand("bot_quota %d", g_ClutchBots);
+	}
 	if (!g_Aleatorio.BoolValue)
 		return;
 	char w[32];
@@ -115,6 +130,22 @@ void Extras_FreezeEnd()
 	char bn[MAX_NAME_LENGTH];
 	GetClientName(b, bn, sizeof(bn));
 	PrintToChatAll(" \x04[Jefe]\x01 %t", "boss_is", bn, g_Jefe.IntValue);
+}
+
+// Clutch: winning a round adds a bot, losing one takes it away. Humans are on the team mp_humanteam says (CT).
+public void Extras_RoundEnd(Event e, const char[] name, bool dontBroadcast)
+{
+	if (g_Clutch.IntValue <= 0 || g_ClutchBots == 0 || GameRules_GetProp("m_bWarmupPeriod"))
+		return;
+	int winner = e.GetInt("winner");
+	if (winner != CS_TEAM_T && winner != CS_TEAM_CT)
+		return;
+	g_ClutchBots += winner == CS_TEAM_CT ? 1 : -1;
+	if (g_ClutchBots < 1)
+		g_ClutchBots = 1;
+	else if (g_ClutchBots > g_ClutchMax.IntValue)
+		g_ClutchBots = g_ClutchMax.IntValue;
+	PrintToChatAll(" \x04[Clutch]\x01 %t", "clutch_next", g_ClutchBots);
 }
 
 // --- anarchy ----------------------------------------------------------------

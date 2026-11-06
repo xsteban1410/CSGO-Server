@@ -221,12 +221,14 @@ void Niebla()
 public Action CmdEstado(int args)
 {
 	PrintToServer("Oleada %d/%d calentamiento=%d", g_Oleada, g_ZOleadas.IntValue, GameRules_GetProp("m_bWarmupPeriod"));
+	PrintToServer("round=%d T=%d score=%d CT=%d score=%d clutch=%d", GameRules_GetProp("m_totalRoundsPlayed"), GetTeamClientCount(CS_TEAM_T), CS_GetTeamScore(CS_TEAM_T),
+		GetTeamClientCount(CS_TEAM_CT), CS_GetTeamScore(CS_TEAM_CT), g_ClutchBots);
 	for (int i = 1; i <= MaxClients; i++)
 		if (IsClientInGame(i) && IsPlayerAlive(i))
 		{
 			float p[3];
 			GetClientAbsOrigin(i, p);
-			PrintToServer("%N team=%d health=%d speed=%.2f scale=%.2f type=%d pos=%.0f,%.0f,%.0f", i, GetClientTeam(i), GetClientHealth(i),
+			PrintToServer("%N team=%d health=%d armor=%d speed=%.2f scale=%.2f type=%d pos=%.0f,%.0f,%.0f", i, GetClientTeam(i), GetClientHealth(i), GetEntProp(i, Prop_Send, "m_ArmorValue"),
 				GetEntPropFloat(i, Prop_Send, "m_flLaggedMovementValue"), GetEntPropFloat(i, Prop_Send, "m_flModelScale"), g_ZTipo[i], p[0], p[1], p[2]);
 		}
 	return Plugin_Handled;

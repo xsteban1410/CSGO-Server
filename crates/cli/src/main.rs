@@ -2,7 +2,7 @@
 use anyhow::{bail, Context, Result};
 use clap::{Args, Parser, Subcommand};
 use csls_core::config::{Config, Kind};
-use csls_core::launch::{parse_cvar, LaunchOptions, Site};
+use csls_core::launch::{parse_cvar, LaunchOptions, Site, Teams};
 use csls_core::modes::Modes;
 use csls_core::server::{Server, State};
 use csls_core::{bridge, deploy, install, modes, net, players, steam_client, workshop};
@@ -37,6 +37,9 @@ struct Game {
     /// Retake/post-plant site: a | b | random
     #[arg(short, long)]
     site: Option<String>,
+    /// Competitive modes: together | versus | free
+    #[arg(long)]
+    teams: Option<String>,
     /// Infinite accuracy: no spread and no recoil for everyone
     #[arg(short, long)]
     precision: bool,
@@ -204,6 +207,9 @@ fn options(g: &Game, cfg: &Config) -> Result<LaunchOptions> {
     if let Some(s) = &g.site {
         o.site = Some(Site::parse(s).context("--site is a, b or random")?);
     }
+    if let Some(t) = &g.teams {
+        o.teams = Some(Teams::parse(t).context("--teams is together, versus or free")?);
+    }
     o.precision |= g.precision;
     o.anarchy |= g.anarchy;
     o.workshop = g.workshop.or(o.workshop);
@@ -335,7 +341,7 @@ fn main() -> Result<()> {
             let modes = Modes::load()?;
             let o = options(&g, &cfg)?;
             let map = srv.change(&modes, &o)?;
-            println!("Mode {} on {map}; starts with {} human(s). Settings: {}", o.mode, o.humans, o.extra());
+            println!("Mode {} on {map}; starts with {} human(s). Settings: {}", o.mode, o.humans, o.extra(modes.get(&o.mode)?));
         }
         Cmd::Modes => {
             for m in Modes::load()?.0.values() {
