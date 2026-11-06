@@ -265,7 +265,10 @@ mod tests {
     fn setup() -> (Modes, Config, std::path::PathBuf) {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
         let m = Modes::load_from(&root.join("modes"), &root.join("cfg"), Path::new("/nonexistent")).unwrap();
-        let maps = std::env::temp_dir().join(format!("csls-maps-{}", std::process::id()));
+        // tests run at once and each removes its folder at the end
+        static NEXT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+        let n = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let maps = std::env::temp_dir().join(format!("csls-maps-{}-{n}", std::process::id()));
         std::fs::create_dir_all(&maps).unwrap();
         for n in ["de_dust2", "de_nuke", "ar_shoots", "gd_cbble", "cs_office"] {
             std::fs::write(maps.join(format!("{n}.bsp")), "").unwrap();
