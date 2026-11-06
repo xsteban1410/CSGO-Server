@@ -37,6 +37,34 @@ jobs:
           desktop-file-validate packaging/*.desktop
           appstreamcli validate --no-net packaging/*.metainfo.xml
 
+  # Core and CLI on other distros. The GTK app is built on Arch only, see the job above.
+  distros:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: rust:slim
+            deps: apt-get update && apt-get install -y --no-install-recommends ca-certificates curl gcc libc6-dev libsqlite3-dev pkg-config
+          - image: fedora:latest
+            deps: dnf install -y cargo gcc sqlite-devel pkgconf-pkg-config tar
+    container: ${{ matrix.image }}
+    steps:
+      - name: Dependencies
+        run: ${{ matrix.deps }}
+      - uses: actions/checkout@v7
+      - name: Build and test
+        run: cargo test --locked -p csls-core -p csgo-legacy-server
+
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Known vulnerabilities in dependencies
+        run: |
+          cargo install cargo-audit --locked
+          cargo audit
+
   plugins:
     runs-on: ubuntu-latest
     steps:
