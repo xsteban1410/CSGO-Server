@@ -7,7 +7,6 @@ use csls_core::modes::{self, CfgDoc, Localized, Mode, ModeMeta};
 use csls_core::paths;
 use csls_core::server::Server;
 use gtk::{gio, glib};
-use std::cell::RefCell;
 use std::rc::Rc;
 
 const PRIMARIES: &[&str] = &[
