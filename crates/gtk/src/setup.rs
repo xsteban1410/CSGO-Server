@@ -1,4 +1,4 @@
-//! Primer arranque: crear servidor (elegir carpeta, dependencias, descarga en segundo plano) o solo unirse.
+//! First run: create a server (choose folder, dependencies, background download) or just join.
 use crate::i18n::t;
 use crate::{button, AppRc};
 use adw::prelude::*;
@@ -13,7 +13,7 @@ fn free_text(dir: &std::path::Path) -> String {
 pub fn page(a: &AppRc, root: &gtk::Stack, tabs: &adw::ViewStack) -> gtk::Widget {
     let nav = adw::NavigationView::new();
 
-    // 1. bienvenida
+    // 1. welcome
     let welcome = adw::StatusPage::builder().icon_name("network-server-symbolic").title(t("Welcome")).description(t("Set up a CS:GO Legacy server to play with friends and bots, or join one")).build();
     let create = button(&t("Create a server"), &["suggested-action", "pill"]);
     let join = button(&t("Only join servers"), &["pill"]);
@@ -32,7 +32,7 @@ pub fn page(a: &AppRc, root: &gtk::Stack, tabs: &adw::ViewStack) -> gtk::Widget 
         root.set_visible_child_name("main");
     }));
 
-    // 2. carpeta + dependencias + descarga
+    // 2. folder + dependencies + download
     let pp = adw::PreferencesPage::new();
     let g = adw::PreferencesGroup::new();
     g.set_title(&t("Download the server"));
@@ -42,10 +42,10 @@ pub fn page(a: &AppRc, root: &gtk::Stack, tabs: &adw::ViewStack) -> gtk::Widget 
     let change = gtk::Button::with_label(&t("Change"));
     change.set_valign(gtk::Align::Center);
     folder.add_suffix(&change);
-    let falta = install::missing_deps();
+    let missing = install::missing_deps();
     let deps = adw::ActionRow::builder()
         .title(t("Dependencies"))
-        .subtitle(if falta.is_empty() { t("installed") } else { format!("{}: {}\n{}", t("missing"), falta.join(", "), install::deps_command()) })
+        .subtitle(if missing.is_empty() { t("installed") } else { format!("{}: {}\n{}", t("missing"), missing.join(", "), install::deps_command()) })
         .subtitle_selectable(true)
         .build();
     g.add(&folder);
@@ -55,7 +55,7 @@ pub fn page(a: &AppRc, root: &gtk::Stack, tabs: &adw::ViewStack) -> gtk::Widget 
     let download = button(&t("Download"), &["suggested-action", "pill"]);
     download.set_halign(gtk::Align::Center);
     download.set_margin_top(18);
-    download.set_sensitive(falta.is_empty());
+    download.set_sensitive(missing.is_empty());
     let g2 = adw::PreferencesGroup::new();
     g2.add(&download);
     g2.add(&progress);
@@ -73,7 +73,7 @@ pub fn page(a: &AppRc, root: &gtk::Stack, tabs: &adw::ViewStack) -> gtk::Widget 
         fd.select_folder(Some(&a.win), None::<&gio::Cancellable>, glib::clone!(#[strong] a, #[weak] folder, move |r| {
             let Ok(f) = r else { return };
             let Some(p) = f.path() else { return };
-            // una carpeta con srcds_run se usa tal cual; si no, se instala en <carpeta>/server
+            // a folder with srcds_run is used as is; otherwise it installs into <folder>/server
             let p = if p.join("srcds_run").is_file() || p.ends_with("server") { p } else { p.join("server") };
             let mut cfg = a.cfg.borrow().clone();
             cfg.server.install_dir = p.clone();
@@ -114,7 +114,7 @@ pub fn page(a: &AppRc, root: &gtk::Stack, tabs: &adw::ViewStack) -> gtk::Widget 
             let label = if msg.is_empty() { t("Installing…") } else { msg.to_string() };
             progress.set_text(Some(&label));
             if !server::running(server::INSTALL_UNIT) && !Server::new(&a.cfg.borrow()).is_installed() && !txt.is_empty() && f != "done" {
-                // el proceso murió sin escribir el final
+                // the process died without writing the end
                 download.set_sensitive(true);
             }
             glib::ControlFlow::Continue
@@ -125,7 +125,7 @@ pub fn page(a: &AppRc, root: &gtk::Stack, tabs: &adw::ViewStack) -> gtk::Widget 
         Ok(()) => w2(),
         Err(e) => a.error(&e),
     }));
-    // instalación ya en marcha (app reabierta)
+    // install already running (app reopened)
     if server::running(server::INSTALL_UNIT) {
         nav.push(&install_page);
         watch();

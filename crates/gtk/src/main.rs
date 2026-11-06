@@ -1,4 +1,4 @@
-//! App GTK de csgo-legacy-server.
+//! GTK app for csgo-legacy-server.
 mod console;
 mod i18n;
 mod join;
@@ -24,14 +24,14 @@ pub const POLL_BEGIN: &str = "csls_poll_begin";
 pub const POLL_END: &str = "csls_poll_end";
 pub const APP_ID: &str = "io.github.xsteban1410.CsgoLegacyServer";
 
-/// Estado del servidor leído por rcon cada pocos segundos.
+/// Server state read over rcon every few seconds.
 #[derive(Clone, Default, PartialEq)]
 pub struct Live {
     pub running: bool,
     pub rcon_ok: bool,
     pub status: Status,
     pub mode: String,
-    /// Perfil VPN: ¿está el puente en marcha?
+    /// VPN profile: is the bridge running?
     pub bridge: bool,
 }
 
@@ -41,7 +41,7 @@ fn fetch(cfg: &Config) -> Live {
     if l.running {
         l.bridge = csls_core::server::bridge_running();
         if let Ok(mut r) = srv.rcon() {
-            // srcds escribe la salida en console.log: marcas para que la consola la oculte
+            // srcds writes output to console.log: markers so the console can hide it
             let _ = r.exec(&format!("echo {POLL_BEGIN}"));
             if let Ok(s) = r.exec("status") {
                 l.rcon_ok = true;
@@ -87,7 +87,7 @@ impl App {
         self.listeners.borrow_mut().push(Box::new(f));
     }
 
-    /// Vuelve a leer el estado ya (tras iniciar/parar/cambiar).
+    /// Reads the state again now (after start/stop/change).
     pub fn refresh(self: &Rc<Self>) {
         if self.polling.replace(true) {
             return;
@@ -109,14 +109,14 @@ impl App {
         self.modes_listeners.borrow_mut().push(Box::new(f));
     }
 
-    /// Avisa a quien muestra modos o presets de que hay que redibujar.
+    /// Tells whoever shows modes or presets to redraw.
     pub fn modes_changed(&self) {
         for f in self.modes_listeners.borrow().iter() {
             f();
         }
     }
 
-    /// Vigila las carpetas de modos y plugins: al cambiar algo se recompila/copia y se recarga en caliente.
+    /// Watches the mode and plugin folders: on change it recompiles/copies and hot-reloads.
     fn watch(self: &Rc<Self>) {
         let mut dirs = vec![csls_core::paths::user_modes_dir(), csls_core::paths::user_plugins_dir()];
         if let Ok(r) = csls_core::paths::resources_dir() {
@@ -143,7 +143,7 @@ impl App {
         }
     }
 
-    /// Agrupa ráfagas de cambios (los editores guardan varias veces) y despliega una vez.
+    /// Groups bursts of changes (editors save several times) and deploys once.
     fn schedule_deploy(self: &Rc<Self>) {
         if let Some(id) = self.deploy_pending.borrow_mut().take() {
             id.remove();
@@ -182,7 +182,7 @@ impl App {
     }
 }
 
-/// Ejecuta `f` en un hilo y luego `done` en el hilo de la interfaz.
+/// Runs `f` on a thread and then `done` on the UI thread.
 pub fn bg<T: Send + 'static>(f: impl FnOnce() -> T + Send + 'static, done: impl FnOnce(T) + 'static) {
     glib::spawn_future_local(async move {
         if let Ok(v) = gio::spawn_blocking(f).await {
@@ -191,7 +191,7 @@ pub fn bg<T: Send + 'static>(f: impl FnOnce() -> T + Send + 'static, done: impl 
     });
 }
 
-/// Botón con estilo.
+/// Styled button.
 pub fn button(label: &str, class: &[&str]) -> gtk::Button {
     let b = gtk::Button::with_label(label);
     for c in class {
@@ -248,14 +248,14 @@ fn build(app: &adw::Application) {
     tv.add_top_bar(&header);
     tv.set_content(Some(&stack));
     tv.add_bottom_bar(&bar);
-    // en ventanas estrechas las pestañas bajan a la barra inferior
+    // in narrow windows the tabs move to the bottom bar
     let bp = adw::Breakpoint::new(adw::BreakpointCondition::new_length(adw::BreakpointConditionLengthType::MaxWidth, 600.0, adw::LengthUnit::Sp));
     bp.add_setter(&switcher, "visible", Some(&false.to_value()));
     bp.add_setter(&bar, "reveal", Some(&true.to_value()));
     win.add_breakpoint(bp);
 
     toasts.set_child(Some(&tv));
-    // sin servidor instalado: asistente de primer arranque encima de todo
+    // no server installed: first-run wizard on top of everything
     let root = gtk::Stack::new();
     root.add_named(&toasts, Some("main"));
     let need_setup = !Server::new(&a.cfg.borrow()).is_installed() || std::env::var_os("CSLS_FORCE_SETUP").is_some();
@@ -283,7 +283,7 @@ fn build(app: &adw::Application) {
     debug_screenshot(&win);
 }
 
-/// Depuración: CSLS_SCREENSHOT=archivo.png renderiza la ventana a los 4 s y cierra.
+/// Debug: CSLS_SCREENSHOT=file.png renders the window after 4 s and closes.
 fn debug_screenshot(win: &adw::ApplicationWindow) {
     let Some(path) = std::env::var_os("CSLS_SCREENSHOT") else { return };
     let win = win.clone();

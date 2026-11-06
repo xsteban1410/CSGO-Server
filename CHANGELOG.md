@@ -8,6 +8,19 @@ The section of each version becomes the notes of its GitHub release, so keep the
 
 ## [Unreleased]
 
+### Changed
+
+- All code comments, messages, logs, tests and documentation are now in English. The app, plugin messages and `README.es.md`
+  are still translated into Spanish, but errors coming from the core now always appear in English.
+- `tools/probar-modos.sh` is now `tools/test-modes.sh`, and `modo_estado` prints `team=`, `health=`, `speed=`, `scale=` and `type=`.
+- The in-game skin menus follow each player's language.
+- Dependabot Rust updates go to `pre-releases`.
+
+### Added
+
+- `pre-releases` branch: contributor pull requests are moved to it automatically, and it reaches `master` after three quiet
+  days (see [CONTRIBUTING.md](CONTRIBUTING.md#branches)).
+
 ## [1.1.0] - 2026-11-06
 
 ### Added
@@ -20,7 +33,7 @@ The section of each version becomes the notes of its GitHub release, so keep the
   Tailscale address (100.x).
 - Server tab: the address to give friends over VPN and the bridge status, with a button to start it.
 - `csgo-legacy-server bridge --test IP:PORT` checks that a server answers, through a bridge too.
-- `tools/probar-modos.sh` runs every mode and match type on a real server and checks bots move and respawn.
+- `tools/test-modes.sh` runs every mode and match type on a real server and checks bots move and respawn.
 - Continuous integration builds an installable package on every push, and pushing a new version publishes the release
   by itself, with its notes taken from this file.
 - Changelog, contributing guide with the sensitive areas of the code, code of conduct, security policy, support guide,
@@ -40,7 +53,7 @@ The section of each version becomes the notes of its GitHub release, so keep the
 - **Deathmatch bots stood still and nobody respawned.** `modo_base.cfg` overwrote the rules of Valve's game modes, which
   also broke Arms Race, Demolition and Guardian. Classic round rules now only apply to `game_type 0`.
 - Guardian now uses Valve's per-map rules (respawn, money, round time), which the server never executed.
-- Changing mode failed with "rcon: conexión perdida" and left the change half done when plugins had to be reloaded.
+- Changing mode failed with a lost rcon connection and left the change half done when plugins had to be reloaded.
 - Respawn waves and the "no objective" winner from Guardian no longer leak into the next mode.
 - Changing mode from a Danger Zone map to a normal one no longer stays on that map.
 

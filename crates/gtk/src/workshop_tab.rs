@@ -1,5 +1,5 @@
-//! Pestaña Workshop: buscar e instalar mapas de CS:GO, biblioteca, .nav para bots e importar .bsp locales.
-//! Los mapas de CS2 salen marcados como incompatibles.
+//! Workshop tab: search and install CS:GO maps, library, .nav for bots and import local .bsp.
+//! CS2 maps show up marked as incompatible.
 use crate::i18n::t;
 use crate::{bg, button, AppRc};
 use adw::prelude::*;
@@ -16,7 +16,7 @@ fn mb(b: u64) -> String {
     format!("{:.1} MB", b as f64 / 1048576.0)
 }
 
-/// Instala ítems (las colecciones se expanden) y avisa.
+/// Installs items (collections get expanded) and notifies.
 fn install(a: &AppRc, items: Vec<Item>, done: Rc<dyn Fn()>) {
     let maps = Server::new(&a.cfg.borrow()).maps_dir();
     a.toast(&t("Installing…"));
@@ -103,7 +103,7 @@ fn card(a: &AppRc, it: &Item, installed: bool, refresh: Rc<dyn Fn()>) -> gtk::Wi
 pub fn page(a: &AppRc) -> gtk::Widget {
     let page = adw::PreferencesPage::new();
 
-    // --- biblioteca ---
+    // --- library ---
     let lib = adw::PreferencesGroup::new();
     lib.set_title(&t("Installed maps"));
     lib.set_description(Some(&t("Drop a .bsp file here to import it. Bots need a .nav: generate it once per map.")));
@@ -114,7 +114,7 @@ pub fn page(a: &AppRc) -> gtk::Widget {
     lib_list.set_selection_mode(gtk::SelectionMode::None);
     lib.add(&lib_list);
 
-    // --- búsqueda ---
+    // --- search ---
     let sg = adw::PreferencesGroup::new();
     sg.set_title(&t("Search the Workshop"));
     sg.set_description(Some(&t("Only CS:GO maps work. CS2 maps (Source 2) cannot be loaded by CS:GO Legacy.")));
@@ -144,7 +144,7 @@ pub fn page(a: &AppRc) -> gtk::Widget {
     let page_n = Rc::new(Cell::new(1u32));
     let installed_ids: Rc<RefCell<Vec<u64>>> = Rc::default();
 
-    // rellenar biblioteca
+    // fill the library
     let fill_lib: Rc<RefCell<Option<Rc<dyn Fn()>>>> = Rc::default();
     let fl = fill_lib.clone();
     let refill: Rc<dyn Fn()> = Rc::new(glib::clone!(#[strong] a, #[weak] lib_list, #[strong] installed_ids, move || {
@@ -222,7 +222,7 @@ pub fn page(a: &AppRc) -> gtk::Widget {
     }));
     *fill_lib.borrow_mut() = Some(refill.clone());
     refill();
-    // los botones Cargar / .nav dependen de si el servidor responde: solo se rehace al cambiar eso
+    // the Load / .nav buttons depend on the server answering: only rebuilt when that changes
     let was = Cell::new(a.live.borrow().rcon_ok);
     a.on_live(glib::clone!(#[strong] refill, move |l| {
         if was.replace(l.rcon_ok) != l.rcon_ok {
@@ -230,7 +230,7 @@ pub fn page(a: &AppRc) -> gtk::Widget {
         }
     }));
 
-    // búsqueda
+    // search
     let run_search: Rc<dyn Fn(bool)> = Rc::new(glib::clone!(#[strong] a, #[weak] flow, #[weak] more, #[weak] spinner, #[weak] search, #[weak] tag, #[weak] sort, #[strong] page_n, #[strong] installed_ids, #[strong] refill, move |append: bool| {
         if !append {
             page_n.set(1);
@@ -263,7 +263,7 @@ pub fn page(a: &AppRc) -> gtk::Widget {
     tag.connect_selected_notify(glib::clone!(#[strong] run_search, move |_| run_search(false)));
     sort.connect_selected_notify(glib::clone!(#[strong] run_search, move |_| run_search(false)));
     more.connect_clicked(glib::clone!(#[strong] run_search, move |_| run_search(true)));
-    // primera carga perezosa: al mostrar la pestaña
+    // lazy first load: when the tab is shown
     let loaded = Rc::new(Cell::new(false));
     page.connect_map(glib::clone!(#[strong] run_search, move |_| {
         if !loaded.replace(true) {
@@ -272,7 +272,7 @@ pub fn page(a: &AppRc) -> gtk::Widget {
     }));
 
     by_id.connect_apply(glib::clone!(#[strong] a, #[strong] refill, move |e| {
-        // admite el número o un enlace ...?id=123
+        // accepts the number or a ...?id=123 link
         let txt = e.text().to_string();
         let digits: String = txt.rsplit("id=").next().unwrap_or(&txt).chars().take_while(char::is_ascii_digit).collect();
         let Ok(id) = digits.parse::<u64>() else {
@@ -287,7 +287,7 @@ pub fn page(a: &AppRc) -> gtk::Widget {
         }));
     }));
 
-    // importar .bsp (botón o arrastrar)
+    // import .bsp (button or drag)
     let import_file = Rc::new(glib::clone!(#[strong] a, #[strong] refill, move |p: std::path::PathBuf| {
         match workshop::import_local(&Server::new(&a.cfg.borrow()).maps_dir(), &p) {
             Ok(m) => {

@@ -1,4 +1,4 @@
-//! Pestaña Consola: log en vivo (console.log de -condebug) y comandos rcon.
+//! Console tab: live log (console.log from -condebug) and rcon commands.
 use crate::i18n::t;
 use crate::{bg, AppRc};
 use adw::prelude::*;
@@ -32,7 +32,7 @@ pub fn page(a: &AppRc) -> gtk::Widget {
         let adj = scroll.vadjustment();
         let at_bottom = adj.value() + adj.page_size() >= adj.upper() - 40.0;
         buf.insert(&mut buf.end_iter(), s);
-        // no crecer sin límite
+        // do not grow without limit
         if buf.char_count() > 400_000 {
             let mut st = buf.start_iter();
             let mut cut = buf.iter_at_offset(100_000);
@@ -59,7 +59,7 @@ pub fn page(a: &AppRc) -> gtk::Widget {
             Err(e) => ap(&format!("{e:#}\n")),
         });
     }));
-    // flechas: historial
+    // arrows: history
     let keys = gtk::EventControllerKey::new();
     keys.connect_key_pressed(glib::clone!(#[weak] entry, #[upgrade_or] glib::Propagation::Proceed, move |_, k, _, _| {
         let h = history.borrow();
@@ -76,7 +76,7 @@ pub fn page(a: &AppRc) -> gtk::Widget {
     }));
     entry.add_controller(keys);
 
-    // seguir el archivo de log
+    // follow the log file
     let pos = Rc::new(Cell::new(u64::MAX));
     let in_poll = Rc::new(Cell::new(false));
     glib::timeout_add_local(std::time::Duration::from_millis(800), glib::clone!(#[strong] a, #[strong] append, move || {
@@ -91,7 +91,7 @@ pub fn page(a: &AppRc) -> gtk::Widget {
             let mut b = Vec::new();
             if f.take(len - p).read_to_end(&mut b).is_ok() {
                 let txt = String::from_utf8_lossy(&b);
-                // el sondeo de la app manda rcon cada 3 s: no ensuciar la consola
+                // the app's polling sends rcon every 3 s: keep it out of the console
                 let mut clean = String::new();
                 for l in txt.split_inclusive('\n') {
                     if l.contains(crate::POLL_BEGIN) {

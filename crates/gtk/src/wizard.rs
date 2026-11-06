@@ -1,4 +1,4 @@
-//! Asistente: modo -> mapa -> opciones -> servidor (solo al iniciar) -> iniciar/aplicar.
+//! Wizard: mode -> map -> options -> server (only when starting) -> start/apply.
 use crate::i18n::t;
 use crate::{bg, button, AppRc};
 use adw::prelude::*;
@@ -31,7 +31,7 @@ struct W {
 
 type Wr = Rc<W>;
 
-/// Inicia (o aplica en caliente) un preset guardado sin pasar por el asistente.
+/// Starts (or applies live) a saved preset without going through the wizard.
 pub fn run_preset(a: &AppRc, opts: LaunchOptions, live: bool) {
     let nav = adw::NavigationView::new();
     let dialog = adw::Dialog::new();
@@ -140,7 +140,7 @@ fn map_page(w: &Wr) -> adw::NavigationPage {
     gs.add(&search);
     page.add(&gs);
 
-    // por prefijo: de_, cs_, ar_, gd_, workshop/…
+    // by prefix: de_, cs_, ar_, gd_, workshop/…
     let mut groups: Vec<(String, adw::PreferencesGroup)> = Vec::new();
     let rows: Rc<RefCell<Vec<(String, adw::ActionRow)>>> = Rc::default();
     for m in maps {
@@ -195,7 +195,7 @@ fn options_page(w: &Wr) -> adw::NavigationPage {
     let diff = adw::ComboRow::builder().title(t("Bot difficulty")).model(&gtk::StringList::new(&[&t("Easy"), &t("Normal"), &t("Hard"), &t("Expert")])).selected(o.difficulty as u32).build();
     let rounds = adw::SpinRow::with_range(0.0, 99.0, 1.0);
     rounds.set_title(&t("Max rounds (0 = default)"));
-    // solo los tipos que encajan con el modo elegido
+    // only the types that fit the chosen mode
     let kinds: Vec<Kind> = Kind::ALL.into_iter().filter(|k| mode.allows_kind(*k)).collect();
     let kind_names: Vec<String> = kinds.iter().map(|k| t(k.label())).collect();
     let kind = adw::ComboRow::builder().title(t("Match type")).subtitle(t("Arms Race, Guardian and Danger Zone use their own maps")).model(&gtk::StringList::new(&kind_names.iter().map(String::as_str).collect::<Vec<_>>())).build();
@@ -223,7 +223,7 @@ fn options_page(w: &Wr) -> adw::NavigationPage {
             o.difficulty = diff.selected() as u8;
             o.rounds = (rounds.value() > 0.0).then(|| rounds.value() as u32);
             o.kind = kinds.get(kind.selected() as usize).copied().unwrap_or_default();
-            // el tipo se elige después del mapa: si el mapa no le sirve, se usa el suyo
+            // the type is chosen after the map: if the map does not suit it, its own is used
             if let (Some((prefix, _)), None) = (o.kind.own_maps(), mode_game_type) {
                 if o.map.as_deref().is_some_and(|m| !m.starts_with(prefix)) {
                     o.map = None;

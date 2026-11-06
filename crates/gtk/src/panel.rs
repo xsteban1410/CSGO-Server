@@ -1,4 +1,4 @@
-//! Pestaña Servidor: estado, dirección para conectar e Iniciar / Cambiar / Detener / Jugar.
+//! Server tab: status, connect address and Start / Change / Stop / Play.
 use crate::i18n::t;
 use crate::{bg, button, wizard, AppRc};
 use adw::prelude::*;
@@ -23,7 +23,7 @@ pub fn page(a: &AppRc) -> gtk::Widget {
     copy.add_css_class("flat");
     copy.set_tooltip_text(Some(&t("Copy")));
     addr.add_suffix(&copy);
-    // perfil VPN: lo que hay que pasar a los amigos y si el puente está en marcha
+    // VPN profile: what to give friends and whether the bridge is running
     let vpn_addr = adw::ActionRow::builder().title(t("Address for friends over VPN")).build();
     let vpn_copy = gtk::Button::from_icon_name("edit-copy-symbolic");
     vpn_copy.set_valign(gtk::Align::Center);
@@ -50,7 +50,7 @@ pub fn page(a: &AppRc) -> gtk::Widget {
     for b in [&start, &change, &stop, &play] {
         bx.append(b);
     }
-    // controles de partida (con el servidor encendido)
+    // match controls (with the server running)
     let gl = adw::PreferencesGroup::new();
     gl.set_title(&t("Match"));
     let lb = gtk::Box::new(gtk::Orientation::Horizontal, 8);
@@ -80,7 +80,7 @@ pub fn page(a: &AppRc) -> gtk::Widget {
     quick(&addb, |s| s.add_bots(1).map(|q| format!("bot_quota {q}")));
     quick(&delb, |s| s.add_bots(-1).map(|q| format!("bot_quota {q}")));
 
-    // presets guardados
+    // saved presets
     let gp = adw::PreferencesGroup::new();
     gp.set_title(&t("Presets"));
     gp.set_description(Some(&t("Save one from the last step of “Start server”")));
@@ -181,7 +181,7 @@ pub fn page(a: &AppRc) -> gtk::Widget {
         }
     }));
 
-    // dirección: la local y, con perfil de internet, también la pública (petición en segundo plano)
+    // address: the local one and, with an internet profile, also the public one (background request)
     let set_addr = Rc::new(glib::clone!(#[strong] a, #[weak] addr, #[weak] vpn_addr, move || {
         let cfg = a.cfg.borrow().clone();
         let local = Server::new(&cfg).connect_address();

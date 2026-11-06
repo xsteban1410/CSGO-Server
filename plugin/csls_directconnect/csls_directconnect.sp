@@ -1,7 +1,7 @@
-// csls_directconnect: permite conectar por IP (connect IP:PUERTO) a un servidor de CS:GO Legacy.
-// El motor solo acepta jugadores que vienen de un lobby de matchmaking; este plugin parchea en memoria
-// las dos comprobaciones (servidor exclusivo de lobby y el id de lobby del challenge) y las deja como
-// estaban al descargarse. Las direcciones y los bytes están en gamedata/csls_directconnect.games.txt.
+// csls_directconnect: allows connecting by IP (connect IP:PORT) to a CS:GO Legacy server.
+// The engine only accepts players coming from a matchmaking lobby; this plugin patches in memory
+// both checks (lobby-exclusive server and the challenge's lobby id) and restores them
+// when unloaded. Addresses and bytes are in gamedata/csls_directconnect.games.txt.
 //
 // Copyright (C) 2026 xsteban1410 — GPL-3.0-or-later.
 #pragma semicolon 1
@@ -21,8 +21,8 @@ public Plugin myinfo =
 #define MAX_PATCHES 4
 #define MAX_BYTES 32
 
-// cada parche: nombre de la dirección en gamedata; los bytes en Keys "<nombre>:bytes"
-// y el desplazamiento opcional en Offsets "<nombre>:offset"
+// each patch: address name in gamedata; the bytes in Keys "<name>:bytes"
+// and the optional offset in Offsets "<name>:offset"
 static const char g_Names[][] = { "lobby_exclusive", "challenge_lobby_id" };
 
 Address g_Addr[MAX_PATCHES];
@@ -59,7 +59,7 @@ public void OnPluginStart()
 	}
 	delete gd;
 
-	// todo encontrado: ahora sí se escribe
+	// everything found: only now is it written
 	g_Count = sizeof(g_Names);
 	for (int i = 0; i < g_Count; i++)
 	{
@@ -79,7 +79,7 @@ public void OnPluginEnd()
 			StoreToAddress(g_Addr[i] + view_as<Address>(b), g_Saved[i][b], NumberType_Int8);
 }
 
-// "31 C0 C3" -> {0x31, 0xC0, 0xC3}; devuelve cuántos bytes leyó.
+// "31 C0 C3" -> {0x31, 0xC0, 0xC3}; returns how many bytes it read.
 int ParseHex(const char[] s, int out[MAX_BYTES])
 {
 	int n, digits, cur;

@@ -1,4 +1,4 @@
-//! Rutas XDG y de recursos. Nada depende de dónde está clonado el repo.
+//! XDG and resource paths. Nothing depends on where the repo is cloned.
 use std::path::{Path, PathBuf};
 
 pub const APP: &str = "csgo-legacy-server";
@@ -25,7 +25,7 @@ pub fn data_dir() -> PathBuf {
     xdg("XDG_DATA_HOME", ".local/share")
 }
 
-/// Directorio de runtime (pid, sockets). Cae en data_dir si no hay XDG_RUNTIME_DIR.
+/// Runtime directory (pid, sockets). Falls back to data_dir without XDG_RUNTIME_DIR.
 pub fn runtime_dir() -> PathBuf {
     match std::env::var_os("XDG_RUNTIME_DIR") {
         Some(p) if !p.is_empty() => PathBuf::from(p).join(APP),
@@ -33,12 +33,12 @@ pub fn runtime_dir() -> PathBuf {
     }
 }
 
-/// Modos propios del usuario (TOML + cfg).
+/// User's own modes (TOML + cfg).
 pub fn user_modes_dir() -> PathBuf {
     config_dir().join("modes")
 }
 
-/// Plugins propios del usuario (.sp que se compilan solos).
+/// User's own plugins (.sp, compiled automatically).
 pub fn user_plugins_dir() -> PathBuf {
     config_dir().join("plugins")
 }
@@ -47,8 +47,8 @@ fn is_resources(p: &Path) -> bool {
     p.join("modes").is_dir() && p.join("cfg").is_dir() && p.join("plugin").is_dir()
 }
 
-/// Carpeta con cfg/, modes/, plugin/ y data/: $CSLS_RESOURCES, la del paquete
-/// (<prefix>/share/csgo-legacy-server) o, en desarrollo, la raíz del repo.
+/// Folder with cfg/, modes/, plugin/ and data/: $CSLS_RESOURCES, the package's
+/// (<prefix>/share/csgo-legacy-server) or, in development, the repo root.
 pub fn resources_dir() -> crate::Result<PathBuf> {
     let mut cand: Vec<PathBuf> = Vec::new();
     if let Some(p) = std::env::var_os("CSLS_RESOURCES") {
@@ -57,23 +57,23 @@ pub fn resources_dir() -> crate::Result<PathBuf> {
     if let Ok(exe) = std::env::current_exe() {
         if let Some(prefix) = exe.parent().and_then(Path::parent) {
             cand.push(prefix.join("share").join(APP));
-            // compilado en el repo: <repo>/target/{debug,release}/<exe>
+            // built in the repo: <repo>/target/{debug,release}/<exe>
             if let Some(repo) = prefix.parent() {
                 cand.push(repo.to_path_buf());
             }
         }
     }
     cand.push(PathBuf::from("/usr/share").join(APP));
-    // en desarrollo (cargo run / tests) la raíz del repo; no se incrusta en los binarios de release
+    // in development (cargo run / tests) the repo root; not embedded in release binaries
     #[cfg(debug_assertions)]
     cand.push(Path::new(env!("CARGO_MANIFEST_DIR")).join("../.."));
     cand.into_iter()
         .find(|p| is_resources(p))
         .map(|p| p.canonicalize().unwrap_or(p))
-        .ok_or_else(|| anyhow::anyhow!("no encuentro los recursos (cfg/, modes/, plugin/); define CSLS_RESOURCES"))
+        .ok_or_else(|| anyhow::anyhow!("resources not found (cfg/, modes/, plugin/); set CSLS_RESOURCES"))
 }
 
-/// Carpetas donde puede haber una instalación previa (repo antiguo ~/CSGO-Server).
+/// Folders that may hold a previous install (old repo ~/CSGO-Server).
 pub fn legacy_dirs() -> Vec<PathBuf> {
     let mut v = vec![home().join("CSGO-Server")];
     if let Ok(r) = resources_dir() {

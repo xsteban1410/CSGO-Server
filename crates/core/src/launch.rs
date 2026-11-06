@@ -1,4 +1,4 @@
-//! Opciones de una partida (lo que antes leía parse_args de lib.sh) y elección de mapa (pick_map).
+//! Match options (what lib.sh's parse_args used to read) and map choice (pick_map).
 use crate::config::{Config, Kind};
 use crate::modes::{Mode, Modes};
 use anyhow::bail;
@@ -34,19 +34,19 @@ impl Site {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct LaunchOptions {
     pub mode: String,
-    /// Mapa pedido; None = el actual o el del modo/config.
+    /// Requested map; None = the current one or the one from the mode/config.
     pub map: Option<String>,
     pub workshop: Option<u64>,
-    /// Humanos para acabar el calentamiento.
+    /// Humans needed to end warmup.
     pub humans: u32,
     pub bots: Option<u32>,
     pub difficulty: u8,
     pub rounds: Option<u32>,
     pub kind: Kind,
     pub site: Option<Site>,
-    /// Sin dispersión ni retroceso para todos.
+    /// No spread or recoil for anyone.
     pub precision: bool,
-    /// Sin expulsiones ni baneos automáticos.
+    /// No automatic kicks or bans.
     pub anarchy: bool,
     pub cvars: Vec<(String, String)>,
 }
@@ -73,21 +73,21 @@ impl LaunchOptions {
     pub fn validate(&self, modes: &Modes, cfg: &Config) -> crate::Result<()> {
         let mode = modes.get(&self.mode)?;
         if !mode.allows_kind(self.kind) {
-            bail!("el modo {} no admite el tipo de partida {}", mode.id, self.kind.label());
+            bail!("mode {} does not support match type {}", mode.id, self.kind.label());
         }
         if self.humans == 0 {
-            bail!("hace falta al menos 1 humano");
+            bail!("at least 1 human is needed");
         }
         if self.difficulty > 3 {
-            bail!("la dificultad va de 0 a 3");
+            bail!("difficulty must be 0 to 3");
         }
         if let Some(m) = &self.map {
             if !valid_map_name(m) {
-                bail!("nombre de mapa inválido '{m}'");
+                bail!("invalid map name '{m}'");
             }
         }
         if self.workshop.is_some() && cfg.server.workshop_authkey.is_empty() {
-            bail!("los mapas del workshop necesitan workshop_authkey en la config (clave en https://steamcommunity.com/dev/apikey)");
+            bail!("workshop maps need workshop_authkey in the config (key at https://steamcommunity.com/dev/apikey)");
         }
         for (k, v) in &self.cvars {
             check_cvar(k, v)?;
@@ -95,7 +95,7 @@ impl LaunchOptions {
         Ok(())
     }
 
-    /// Comandos que se ejecutan después del cfg del modo (convar modo_extra).
+    /// Commands run after the mode cfg (modo_extra convar).
     pub fn extra(&self) -> String {
         let mut e = format!("bot_difficulty {}", self.difficulty);
         if self.precision {
@@ -119,7 +119,7 @@ impl LaunchOptions {
         e
     }
 
-    /// Valor de modo_tipo. Los modos que fijan su game_type no usan el tipo elegido.
+    /// Value of modo_tipo. Modes that set their own game_type ignore the chosen type.
     pub fn tipo_cfg(&self, mode: &Mode) -> &'static str {
         if mode.meta.game_type.is_some() { "" } else { self.kind.tipo_cfg() }
     }
@@ -131,7 +131,7 @@ impl LaunchOptions {
         }
     }
 
-    /// Mapa final. `current` = mapa cargado ahora (None al arrancar).
+    /// Final map. `current` = map loaded now (None at startup).
     pub fn pick_map(&self, modes: &Modes, cfg: &Config, current: Option<&str>, maps_dir: &Path) -> crate::Result<String> {
         if let Some(id) = self.workshop {
             return Ok(format!("workshop/{id}"));
@@ -159,15 +159,15 @@ impl LaunchOptions {
             }
         };
         if !mode.accepts_map(&m) {
-            bail!("el modo {} necesita un mapa {}", mode.id, mode.meta.map_prefixes.join(" o "));
+            bail!("mode {} needs a {} map", mode.id, mode.meta.map_prefixes.join(" or "));
         }
         if let Some((prefix, _)) = kind_maps {
             if !m.starts_with(prefix) {
-                bail!("el tipo de partida {} necesita un mapa {prefix}", self.kind.label());
+                bail!("match type {} needs a {prefix} map", self.kind.label());
             }
         }
         if !maps_dir.join(format!("{m}.bsp")).is_file() {
-            bail!("no existe el mapa '{m}' en {}", maps_dir.display());
+            bail!("map '{m}' does not exist in {}", maps_dir.display());
         }
         Ok(m)
     }
@@ -177,13 +177,13 @@ pub fn valid_map_name(m: &str) -> bool {
     !m.is_empty() && !m.contains("..") && m.bytes().all(|b| b.is_ascii_alphanumeric() || b"_-/.".contains(&b))
 }
 
-/// cvar=valor sin nada que permita encadenar comandos.
+/// cvar=value with nothing that allows chaining commands.
 pub fn check_cvar(k: &str, v: &str) -> crate::Result<()> {
     if k.is_empty() || !k.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_') {
-        bail!("cvar inválida '{k}'");
+        bail!("invalid cvar '{k}'");
     }
     if v.is_empty() || v.contains([';', '"', '\n', '\r']) {
-        bail!("valor inválido para {k}: sin ; ni comillas");
+        bail!("invalid value for {k}: no ; or quotes");
     }
     Ok(())
 }
@@ -195,7 +195,7 @@ pub fn parse_cvar(s: &str) -> crate::Result<(String, String)> {
     Ok((k.into(), v.into()))
 }
 
-/// Lista de mapas instalados (sin .bsp), oficiales y del workshop.
+/// List of installed maps (without .bsp), official and from the workshop.
 pub fn installed_maps(maps_dir: &Path) -> Vec<String> {
     let mut v = Vec::new();
     for e in std::fs::read_dir(maps_dir).into_iter().flatten().flatten() {
@@ -203,7 +203,7 @@ pub fn installed_maps(maps_dir: &Path) -> Vec<String> {
             v.push(n.to_string());
         }
     }
-    // del workshop: maps/<sub>/<id>/<nombre>.bsp
+    // workshop: maps/<sub>/<id>/<name>.bsp
     for sub in [crate::workshop::MAPS_SUBDIR, "workshop"] {
         for e in std::fs::read_dir(maps_dir.join(sub)).into_iter().flatten().flatten() {
             for f in std::fs::read_dir(e.path()).into_iter().flatten().flatten() {
@@ -233,12 +233,12 @@ mod tests {
     }
 
     #[test]
-    fn eleccion_de_mapa() {
+    fn map_choice() {
         let (m, c, maps) = setup();
         let mut o = LaunchOptions::from_config(&c);
         assert_eq!(o.pick_map(&m, &c, None, &maps).unwrap(), "de_dust2");
         assert_eq!(o.pick_map(&m, &c, Some("de_nuke"), &maps).unwrap(), "de_nuke");
-        // de un mapa de carrera de armas a un modo normal: vuelve al de la config
+        // from an Arms Race map to a normal mode: back to the config's
         assert_eq!(o.pick_map(&m, &c, Some("ar_shoots"), &maps).unwrap(), "de_dust2");
         o.mode = "guardian".into();
         assert_eq!(o.pick_map(&m, &c, Some("de_nuke"), &maps).unwrap(), "gd_cbble");
@@ -247,12 +247,12 @@ mod tests {
         o.map = Some("cs_office".into());
         assert!(o.pick_map(&m, &c, None, &maps).is_err());
         o.map = Some("de_mirage".into());
-        assert!(o.pick_map(&m, &c, None, &maps).is_err(), "no instalado");
+        assert!(o.pick_map(&m, &c, None, &maps).is_err(), "not installed");
         std::fs::remove_dir_all(maps).ok();
     }
 
     #[test]
-    fn tipos_de_partida() {
+    fn match_types() {
         use crate::config::Kind;
         let (m, c, maps) = setup();
         let mut o = LaunchOptions::from_config(&c);
@@ -266,17 +266,17 @@ mod tests {
         o.kind = Kind::FreeForAll;
         assert_eq!(o.tipo_cfg(m.get("normal").unwrap()), "ffa");
         assert_eq!(o.tipo_cfg(m.get("dm").unwrap()), "", "dm fija su game_type");
-        // de un mapa de Danger Zone a un tipo normal: vuelve al de la config
+        // from a Danger Zone map to a normal type: back to the config's
         o.kind = Kind::Competitive;
         std::fs::write(maps.join("dz_blacksite.bsp"), "").unwrap();
         assert_eq!(o.pick_map(&m, &c, Some("dz_blacksite"), &maps).unwrap(), "de_dust2");
-        // armas fijas o reglas propias: no todos los tipos encajan
+        // fixed weapons or their own rules: not every type fits
         assert!(m.get("awp").unwrap().allows_kind(Kind::Deathmatch));
         assert!(!m.get("awp").unwrap().allows_kind(Kind::ArmsRace));
         assert!(!m.get("zombies").unwrap().allows_kind(Kind::Deathmatch));
         assert!(!m.get("retake").unwrap().allows_kind(Kind::Deathmatch));
         assert!(m.get("retake").unwrap().allows_kind(Kind::Wingman));
-        assert!(m.get("dm").unwrap().allows_kind(Kind::ArmsRace), "dm ignora el tipo");
+        assert!(m.get("dm").unwrap().allows_kind(Kind::ArmsRace), "dm ignores the type");
         for k in Kind::ALL {
             assert_eq!(Kind::parse(&format!("{k:?}").to_lowercase()), Some(k));
             let cfg = k.tipo_cfg();
@@ -286,7 +286,7 @@ mod tests {
     }
 
     #[test]
-    fn extra_y_tipo() {
+    fn extra_and_type() {
         let (m, c, _) = setup();
         let mut o = LaunchOptions::from_config(&c);
         o.precision = true;

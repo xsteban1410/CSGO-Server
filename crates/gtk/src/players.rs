@@ -1,4 +1,4 @@
-//! Pestaña Jugadores: conectados (kick, ban, skins), skins guardadas y baneos.
+//! Players tab: connected (kick, ban, skins), saved skins and bans.
 use crate::i18n::t;
 use crate::{bg, button, AppRc};
 use adw::prelude::*;
@@ -151,7 +151,7 @@ pub fn page(a: &AppRc) -> gtk::Widget {
     let last: Rc<RefCell<Vec<Player>>> = Rc::new(RefCell::new(vec![Player { userid: u32::MAX, name: String::new(), steamid: String::new(), bot: false, connected: String::new(), ping: 0, loss: 0, addr: String::new() }]));
     a.on_live(glib::clone!(#[strong] a, move |l| {
         let ps = &l.status.players;
-        // solo se reconstruye si cambia algo (si no, los botones parpadean cada 3 s)
+        // only rebuilt when something changes (otherwise the buttons flicker every 3 s)
         let key: Vec<Player> = ps.iter().map(|p| Player { connected: String::new(), ping: p.ping / 20, ..p.clone() }).collect();
         if *last.borrow() == key {
             return;

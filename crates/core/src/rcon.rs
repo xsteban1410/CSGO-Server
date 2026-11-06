@@ -1,4 +1,4 @@
-//! Cliente Source RCON (TCP). Detecta en qué IP escucha srcds.
+//! Source RCON client (TCP). Detects which IP srcds listens on.
 use anyhow::{bail, Context};
 use std::io::{ErrorKind, Read, Write};
 use std::net::{IpAddr, SocketAddr, TcpStream};
@@ -34,7 +34,7 @@ fn read_full(s: &mut TcpStream) -> std::io::Result<(i32, i32, String)> {
     s.read_exact(&mut n)?;
     let size = i32::from_le_bytes(n);
     if !(10..=1 << 20).contains(&size) {
-        return Err(std::io::Error::new(ErrorKind::InvalidData, "paquete rcon inválido"));
+        return Err(std::io::Error::new(ErrorKind::InvalidData, "invalid rcon packet"));
     }
     let mut d = vec![0u8; size as usize];
     s.read_exact(&mut d)?;
@@ -50,12 +50,12 @@ impl Rcon {
         stream.set_read_timeout(Some(Duration::from_secs(5)))?;
         stream.set_nodelay(true).ok();
         stream.write_all(&packet(1, AUTH, password))?;
-        // srcds responde con un paquete vacío y luego el resultado (tipo 2; id -1 = contraseña mala)
+        // srcds answers with an empty packet and then the result (type 2; id -1 = wrong password)
         loop {
-            let (id, kind, _) = read_full(&mut stream).context("rcon: sin respuesta a la autenticación")?;
+            let (id, kind, _) = read_full(&mut stream).context("rcon: no answer to authentication")?;
             if kind == 2 {
                 if id == -1 {
-                    bail!("rcon: contraseña incorrecta");
+                    bail!("rcon: wrong password");
                 }
                 break;
             }
@@ -65,17 +65,17 @@ impl Rcon {
         Ok(r)
     }
 
-    /// Prueba las IPs candidatas (config, hostname, 127.0.0.1, IP local).
+    /// Tries the candidate IPs (config, hostname, 127.0.0.1, local IP).
     pub fn connect(configured_host: &str, port: u16, password: &str) -> crate::Result<Rcon> {
         let mut last = None;
         for ip in crate::net::rcon_candidates(configured_host) {
             match Rcon::connect_addr(SocketAddr::new(ip, port), password) {
                 Ok(r) => return Ok(r),
-                Err(e) if e.to_string().contains("contraseña") => return Err(e),
+                Err(e) if e.to_string().contains("password") => return Err(e),
                 Err(e) => last = Some(e),
             }
         }
-        Err(last.unwrap_or_else(|| anyhow::anyhow!("sin IPs")).context("el servidor no responde por rcon (¿está encendido?)"))
+        Err(last.unwrap_or_else(|| anyhow::anyhow!("no IPs")).context("the server does not answer rcon (is it running?)"))
     }
 
     pub fn from_config(c: &crate::config::Config) -> crate::Result<Rcon> {
@@ -88,20 +88,20 @@ impl Rcon {
         let _ = self.stream.set_read_timeout(Some(Duration::from_secs(5)));
     }
 
-    /// Ejecuta un comando y devuelve la respuesta completa (aunque venga en varios paquetes).
+    /// Runs a command and returns the full response (even across several packets).
     pub fn exec(&mut self, cmd: &str) -> crate::Result<String> {
         if cmd.contains(['\0', '\n']) {
-            bail!("comando rcon con caracteres no permitidos");
+            bail!("rcon command with forbidden characters");
         }
         let id = self.next_id;
         let marker = id + 1;
         self.next_id += 2;
         self.stream.write_all(&packet(id, EXEC, cmd))?;
-        // paquete vacío de marca: srcds lo devuelve después de toda la respuesta
+        // empty marker packet: srcds returns it after the whole response
         self.stream.write_all(&packet(marker, RESPONSE, ""))?;
         let mut out = String::new();
         loop {
-            let (rid, body) = read_packet(&mut self.stream).context("rcon: conexión perdida")?;
+            let (rid, body) = read_packet(&mut self.stream).context("rcon: connection lost")?;
             if rid == marker {
                 break;
             }
@@ -123,7 +123,7 @@ mod tests {
     use super::*;
     use std::net::TcpListener;
 
-    /// Servidor rcon falso que imita a srcds.
+    /// Fake rcon server imitating srcds.
     fn fake() -> SocketAddr {
         let l = TcpListener::bind("127.0.0.1:0").unwrap();
         let a = l.local_addr().unwrap();
@@ -136,7 +136,7 @@ mod tests {
                         s.write_all(&packet(id, RESPONSE, "")).unwrap();
                         s.write_all(&packet(id, 2, "")).unwrap();
                     }
-                    "malo" => {
+                    "bad" => {
                         s.write_all(&packet(id, RESPONSE, "")).unwrap();
                         s.write_all(&packet(-1, 2, "")).unwrap();
                     }
@@ -155,14 +155,14 @@ mod tests {
     }
 
     #[test]
-    fn multipaquete() {
+    fn multi_packet() {
         let mut r = Rcon::connect_addr(fake(), "secreto").unwrap();
         assert_eq!(r.exec("status").unwrap(), "status-1|2");
         assert_eq!(r.exec("otro").unwrap(), "otro-1|2");
     }
 
     #[test]
-    fn contrasena_mala() {
-        assert!(Rcon::connect_addr(fake(), "malo").unwrap_err().to_string().contains("contraseña"));
+    fn wrong_password() {
+        assert!(Rcon::connect_addr(fake(), "bad").unwrap_err().to_string().contains("password"));
     }
 }

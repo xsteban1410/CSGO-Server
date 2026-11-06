@@ -2,9 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [master]
+    branches: [master, pre-releases]
   pull_request:
   workflow_call:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -61,8 +62,10 @@ jobs:
         run: shellcheck tools/*.sh packaging/*.sh packaging/aur/*.sh
       - name: Version is the same everywhere
         run: tools/version.sh check
+      - name: Promotion rules
+        run: tools/test-promote.sh
 
-  # El paquete de cada commit: pestaña Actions > la ejecución > Artifacts, o `gh run download -n package`.
+  # Each commit's package: Actions tab > the run > Artifacts, or `gh run download -n package`.
   package:
     needs: [rust, plugins, scripts]
     runs-on: ubuntu-latest
@@ -72,7 +75,7 @@ jobs:
         run: pacman -Syu --noconfirm --needed base-devel git rust gtk4 libadwaita sqlite curl namcap
       - uses: actions/checkout@v7
       - name: Build package
-        # makepkg no se ejecuta como root; los tests ya han pasado en el job rust
+        # makepkg does not run as root; tests already passed in the rust job
         run: |
           useradd -m builder
           chown -R builder .

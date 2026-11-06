@@ -256,7 +256,7 @@ pub fn t(s: &str) -> String {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn sin_duplicados() {
+    fn no_duplicates() {
         let mut k: Vec<&str> = super::ES.iter().map(|x| x.0).collect();
         let n = k.len();
         k.sort();
@@ -266,7 +266,7 @@ mod tests {
 
     /// Todo llamada literal a t del código tiene traducción.
     #[test]
-    fn todo_traducido() {
+    fn everything_translated() {
         let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
         let mut falta = Vec::new();
         for e in std::fs::read_dir(dir).unwrap().flatten() {

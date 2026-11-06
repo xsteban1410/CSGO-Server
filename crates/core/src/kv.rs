@@ -1,4 +1,4 @@
-//! Parser mínimo de KeyValues de Valve ("clave" "valor" / "clave" { ... }).
+//! Minimal parser for Valve KeyValues ("key" "value" / "key" { ... }).
 #[derive(Debug, Clone, PartialEq)]
 pub enum Kv {
     Str(String),
@@ -56,7 +56,7 @@ fn tokens(s: &str) -> Vec<String> {
             }
             c if c.is_whitespace() => {}
             c => {
-                // palabra sin comillas
+                // unquoted word
                 let mut t = c.to_string();
                 while let Some(&n) = it.peek() {
                     if n.is_whitespace() || n == '"' || n == '{' || n == '}' {
@@ -65,7 +65,7 @@ fn tokens(s: &str) -> Vec<String> {
                     t.push(n);
                     it.next();
                 }
-                // condiciones de plataforma como [$WIN32] no son claves ni valores
+                // platform conditions like [$WIN32] are neither keys nor values
                 if !(t.starts_with('[') && t.ends_with(']')) {
                     out.push(t);
                 }
@@ -75,7 +75,7 @@ fn tokens(s: &str) -> Vec<String> {
     out
 }
 
-/// Parsea un documento; la raíz es un objeto con las claves de primer nivel.
+/// Parses a document; the root is an object with the top-level keys.
 pub fn parse(s: &str) -> Kv {
     let toks = tokens(s);
     let mut stack: Vec<Vec<(String, Kv)>> = vec![Vec::new()];

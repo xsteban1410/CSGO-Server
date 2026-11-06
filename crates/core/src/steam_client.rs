@@ -1,5 +1,5 @@
-//! Abrir CS:GO Legacy en este PC (antes jugar.sh). Busca Steam nativo, flatpak y snap, y el juego
-//! en cualquier biblioteca de Steam (libraryfolders.vdf).
+//! Opens CS:GO Legacy on this PC (formerly jugar.sh). Finds native, flatpak and snap Steam, and the game
+//! in any Steam library (libraryfolders.vdf).
 use anyhow::{bail, Context};
 use std::io::{Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
@@ -40,7 +40,7 @@ pub fn find_steam() -> Option<Steam> {
     .map(|(root, flavor)| Steam { root, flavor })
 }
 
-/// Rutas "path" de libraryfolders.vdf (más la propia carpeta de Steam).
+/// "path" entries from libraryfolders.vdf (plus the Steam folder itself).
 pub fn parse_library_folders(vdf: &str) -> Vec<PathBuf> {
     vdf.lines()
         .filter_map(|l| {
@@ -62,7 +62,7 @@ impl Steam {
         v
     }
 
-    /// Primer steamapps/common/<name> que exista en alguna biblioteca.
+    /// First steamapps/common/<name> existing in any library.
     pub fn find_common(&self, name: &str) -> Option<PathBuf> {
         self.libraries().into_iter().map(|l| l.join("steamapps/common").join(name)).find(|p| p.is_dir())
     }
@@ -72,25 +72,25 @@ impl Steam {
     }
 }
 
-/// ¿Hay un proceso "steam" corriendo?
+/// Is a "steam" process running?
 pub fn steam_running() -> bool {
     std::fs::read_dir("/proc").into_iter().flatten().flatten().any(|e| {
         std::fs::read_to_string(e.path().join("comm")).is_ok_and(|c| c.trim() == "steam")
     })
 }
 
-/// Un `+connect` llega antes de que el motor esté listo: el juego imprime "Deferring connect command!" y la orden
-/// se pierde. Con el juego ya abierto, `steam://connect` sí entra.
+/// A `+connect` arrives before the engine is ready: the game prints "Deferring connect command!" and the command
+/// is lost. With the game already open, `steam://connect` does get in.
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(240);
 const CONNECT_RETRY: Duration = Duration::from_secs(8);
-/// Sin red el juego no escribe la marca de "listo": se intenta igualmente pasado este tiempo.
+/// Without network the game never writes the "ready" marker: try anyway after this long.
 const READY_FALLBACK: Duration = Duration::from_secs(60);
 
 fn valid_address(addr: &str) -> bool {
     !addr.is_empty() && addr.bytes().all(|b| b.is_ascii_alphanumeric() || b".:-".contains(&b))
 }
 
-/// Lo que el juego ha escrito en console.log desde `from`.
+/// What the game has written to console.log since `from`.
 fn log_since(log: &Path, from: u64) -> String {
     let Ok(mut f) = std::fs::File::open(log) else { return String::new() };
     let mut b = Vec::new();
@@ -100,8 +100,8 @@ fn log_since(log: &Path, from: u64) -> String {
     String::from_utf8_lossy(&b).into_owned()
 }
 
-/// Espera al menú y pide conectar hasta que la consola lo confirma. `alive` = el juego sigue abierto
-/// (sin él, steam://connect abriría CS2). `true` si ha empezado a conectar.
+/// Waits for the menu and asks to connect until the console confirms. `alive` = the game is still open
+/// (without it, steam://connect would open CS2). `true` if it has started connecting.
 fn connect_when_ready(log: &Path, from: u64, mut alive: impl FnMut() -> bool, mut send: impl FnMut(), timeout: Duration, retry: Duration, ready_after: Duration) -> bool {
     let t = Instant::now();
     let mut sent: Option<Instant> = None;
@@ -120,21 +120,21 @@ fn connect_when_ready(log: &Path, from: u64, mut alive: impl FnMut() -> bool, mu
     false
 }
 
-/// Abre CS:GO Legacy, opcionalmente conectando a `connect` (IP:PUERTO).
-/// Con dirección devuelve el hilo que hace la conexión: `true` si el juego ha empezado a conectar.
-/// Hay que seguir vivo para que termine (la app lo está; el CLI espera).
+/// Opens CS:GO Legacy, optionally connecting to `connect` (IP:PORT).
+/// With an address it returns the thread doing the connection: `true` if the game has started connecting.
+/// You must stay alive for it to finish (the app does; the CLI waits).
 pub fn launch_csgo(connect: Option<&str>) -> crate::Result<Option<JoinHandle<bool>>> {
     if connect.is_some_and(|c| !valid_address(c)) {
-        bail!("dirección inválida '{}'", connect.unwrap_or_default());
+        bail!("invalid address '{}'", connect.unwrap_or_default());
     }
-    let s = find_steam().context("no encuentro la carpeta de Steam")?;
+    let s = find_steam().context("Steam folder not found")?;
     if !steam_running() {
-        bail!("abre Steam primero");
+        bail!("open Steam first");
     }
-    let game = s.game_dir().context("no está CS:GO Legacy: pon la beta csgo_legacy en Steam > CS2 > Propiedades > Betas")?;
-    let soldier = s.find_common("SteamLinuxRuntime_soldier").context("falta SteamLinuxRuntime_soldier (Steam lo instala al abrir CS2 una vez)")?;
-    let scout = s.find_common("SteamLinuxRuntime").context("falta SteamLinuxRuntime (Steam lo instala al abrir CS2 una vez)")?;
-    // Steam abre siempre CS2; CS:GO se lanza con su csgo.sh dentro del Steam Linux Runtime, como haría Steam
+    let game = s.game_dir().context("CS:GO Legacy is not installed: select the csgo_legacy beta in Steam > CS2 > Properties > Betas")?;
+    let soldier = s.find_common("SteamLinuxRuntime_soldier").context("SteamLinuxRuntime_soldier is missing (Steam installs it when CS2 is opened once)")?;
+    let scout = s.find_common("SteamLinuxRuntime").context("SteamLinuxRuntime is missing (Steam installs it when CS2 is opened once)")?;
+    // Steam always opens CS2; CS:GO is launched with its csgo.sh inside the Steam Linux Runtime, as Steam would
     let args: Vec<String> = vec![
         soldier.join("_v2-entry-point").to_string_lossy().into(),
         "--verb=waitforexitandrun".into(),
@@ -144,13 +144,13 @@ pub fn launch_csgo(connect: Option<&str>) -> crate::Result<Option<JoinHandle<boo
         game.join("csgo.sh").to_string_lossy().into(),
         "-steam".into(),
         "-console".into(),
-        // para saber cuándo está listo el menú y si ha entrado. shortcut: console.log crece sin rotar; recortarlo si molesta
+        // to know when the menu is ready and whether it joined. shortcut: console.log grows without rotation; trim it if it becomes a problem
         "-condebug".into(),
     ];
     let log = game.join("csgo/console.log");
     let from = std::fs::metadata(&log).map(|m| m.len()).unwrap_or(0);
     let mut cmd = match s.flavor {
-        // shortcut: flatpak y snap no se han probado; se ejecuta dentro del sandbox de Steam
+        // shortcut: flatpak and snap are untested; it runs inside Steam's sandbox
         Flavor::Flatpak => {
             let mut c = Command::new("flatpak");
             c.args(["run", &format!("--command={}", args[0]), FLATPAK_ID]).args(&args[1..]);
@@ -176,7 +176,7 @@ pub fn launch_csgo(connect: Option<&str>) -> crate::Result<Option<JoinHandle<boo
         .stderr(Stdio::null())
         .process_group(0)
         .spawn()
-        .context("lanzando CS:GO Legacy")?;
+        .context("launching CS:GO Legacy")?;
     let Some(addr) = connect.map(str::to_string) else { return Ok(None) };
     let url = format!("steam://connect/{addr}");
     let flavor = s.flavor;
@@ -195,7 +195,7 @@ pub fn launch_csgo(connect: Option<&str>) -> crate::Result<Option<JoinHandle<boo
     })))
 }
 
-/// El ejecutable de Steam, para pasarle una URL steam://.
+/// The Steam executable, to pass it a steam:// URL.
 fn steam_command(flavor: &Flavor) -> Command {
     match flavor {
         Flavor::Flatpak => {
@@ -207,9 +207,9 @@ fn steam_command(flavor: &Flavor) -> Command {
     }
 }
 
-/// Abre CS2 (lo que hace el botón Jugar de Steam).
+/// Opens CS2 (what Steam's Play button does).
 pub fn launch_cs2() -> crate::Result<()> {
-    let s = find_steam().context("no encuentro Steam")?;
+    let s = find_steam().context("Steam not found")?;
     steam_command(&s.flavor).arg("steam://rungameid/730").stdout(Stdio::null()).stderr(Stdio::null()).spawn()?;
     Ok(())
 }
@@ -219,45 +219,45 @@ mod tests {
     use super::*;
 
     #[test]
-    fn direcciones() {
+    fn addresses() {
         assert!(valid_address("1.2.3.4:27030"));
         assert!(!valid_address("1.2.3.4;quit"));
         assert!(!valid_address(""));
     }
 
     #[test]
-    fn conecta_cuando_el_menu_esta_listo() {
+    fn connects_when_menu_is_ready() {
         use std::cell::Cell;
         use std::io::Write;
         let log = std::env::temp_dir().join(format!("csls-console-{}.log", std::process::id()));
-        std::fs::write(&log, "Connected to 9.9.9.9:1 (partida anterior)\n").unwrap();
+        std::fs::write(&log, "Connected to 9.9.9.9:1 (previous match)\n").unwrap();
         let from = std::fs::metadata(&log).unwrap().len();
-        let enviados = Cell::new(0);
-        let (ms, largo) = (Duration::from_millis(1), Duration::from_secs(20));
-        // el juego abre sin escribir "listo": no se envía nada, y al cerrarse se abandona (sin abrir CS2)
-        let vueltas = Cell::new(0);
-        let vivo = || { vueltas.set(vueltas.get() + 1); vueltas.get() < 3 };
-        assert!(!connect_when_ready(&log, from, vivo, || enviados.set(enviados.get() + 1), largo, ms, largo));
-        assert_eq!(enviados.get(), 0);
-        // listo: envía hasta que la consola confirma
+        let sent_count = Cell::new(0);
+        let (ms, long) = (Duration::from_millis(1), Duration::from_secs(20));
+        // the game opens without writing "ready": nothing is sent, and when it closes it gives up (without opening CS2)
+        let polls = Cell::new(0);
+        let alive = || { polls.set(polls.get() + 1); polls.get() < 3 };
+        assert!(!connect_when_ready(&log, from, alive, || sent_count.set(sent_count.get() + 1), long, ms, long));
+        assert_eq!(sent_count.get(), 0);
+        // ready: sends until the console confirms
         let append = |t: &str| std::fs::OpenOptions::new().append(true).open(&log).unwrap().write_all(t.as_bytes()).unwrap();
         append("SDR RelayNetworkStatus: ...\n");
         let ok = connect_when_ready(&log, from, || true, || {
-            enviados.set(enviados.get() + 1);
-            if enviados.get() == 2 {
+            sent_count.set(sent_count.get() + 1);
+            if sent_count.get() == 2 {
                 append("Connecting to 1.2.3.4:27030\n");
             }
-        }, largo, ms, largo);
+        }, long, ms, long);
         assert!(ok);
-        assert_eq!(enviados.get(), 2);
+        assert_eq!(sent_count.get(), 2);
         std::fs::remove_file(log).ok();
     }
 
     #[test]
-    fn bibliotecas() {
+    fn libraries_from_vdf() {
         let v = parse_library_folders(
-            "\"libraryfolders\"\n{\n\t\"0\"\n\t{\n\t\t\"path\"\t\t\"/home/u/.local/share/Steam\"\n\t\t\"label\"\t\t\"\"\n\t}\n\t\"1\"\n\t{\n\t\t\"path\"\t\t\"/mnt/juegos/SteamLibrary\"\n\t}\n}\n",
+            "\"libraryfolders\"\n{\n\t\"0\"\n\t{\n\t\t\"path\"\t\t\"/home/u/.local/share/Steam\"\n\t\t\"label\"\t\t\"\"\n\t}\n\t\"1\"\n\t{\n\t\t\"path\"\t\t\"/mnt/games/SteamLibrary\"\n\t}\n}\n",
         );
-        assert_eq!(v, vec![PathBuf::from("/home/u/.local/share/Steam"), PathBuf::from("/mnt/juegos/SteamLibrary")]);
+        assert_eq!(v, vec![PathBuf::from("/home/u/.local/share/Steam"), PathBuf::from("/mnt/games/SteamLibrary")]);
     }
 }

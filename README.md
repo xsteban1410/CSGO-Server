@@ -192,6 +192,11 @@ Choices are saved per SteamID and applied every time you join. Messages follow e
   rules for public GSLT servers, so the Settings tab lets you turn the skins plugin off.
 - No gloves. Not tested on musl distros or SteamOS (read-only system: use distrobox).
 
+## Branches
+
+`master` is the stable version, and releases are built from it. New work and contributions go to `pre-releases` first, which
+reaches `master` by itself after three days without problems. Details are in [CONTRIBUTING.md](CONTRIBUTING.md#branches).
+
 ## License
 
 GPL-3.0-or-later. See [LICENSE](LICENSE).

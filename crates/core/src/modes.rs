@@ -1,6 +1,6 @@
-//! Modos de juego: metadatos en modes/<id>.toml + reglas en cfg/modo_<id>.cfg.
-//! Los del usuario viven en ~/.config/csgo-legacy-server/modes/<id>.toml + <id>.cfg y
-//! pisan a los oficiales con el mismo id. Un .cfg sin .toml también es un modo válido.
+//! Game modes: metadata in modes/<id>.toml + rules in cfg/modo_<id>.cfg.
+//! The user's live in ~/.config/csgo-legacy-server/modes/<id>.toml + <id>.cfg and
+//! override official ones with the same id. A .cfg without a .toml is also a valid mode.
 use crate::config::Kind;
 use crate::paths;
 use anyhow::{bail, Context};
@@ -33,15 +33,15 @@ pub struct ModeMeta {
     pub category: String,
     pub name: Localized,
     pub description: Localized,
-    /// game_type/game_mode de Valve fijos; si faltan, salen del tipo elegido (competitivo/casual/wingman).
+    /// Valve's fixed game_type/game_mode; if absent they come from the chosen type (competitive/casual/wingman).
     pub game_type: Option<u8>,
     pub game_mode: Option<u8>,
-    /// Prefijos de mapa válidos (vacío = cualquiera).
+    /// Valid map prefixes (empty = any).
     pub map_prefixes: Vec<String>,
     pub default_map: Option<String>,
-    /// Sus mapas (ar_, gd_) no sirven para otros modos.
+    /// Its maps (ar_, gd_) are not valid for other modes.
     pub exclusive_maps: bool,
-    /// Opciones extra del asistente: "site".
+    /// Extra wizard options: "site".
     pub options: Vec<String>,
 }
 
@@ -63,7 +63,7 @@ impl Mode {
         self.meta.options.iter().any(|x| x == o)
     }
 
-    /// ¿Tiene sentido este tipo de partida con este modo? Los modos que fijan su game_type lo ignoran.
+    /// Does this match type make sense with this mode? Modes that set their game_type ignore it.
     pub fn allows_kind(&self, k: Kind) -> bool {
         if self.meta.game_type.is_some() || !(k.is_deathmatch() || k.is_scripted()) {
             return true;
@@ -71,7 +71,7 @@ impl Mode {
         let doc = CfgDoc::parse(&std::fs::read_to_string(&self.cfg).unwrap_or_default());
         let on = |c: &str| doc.get(c).is_some_and(|v| v != "0");
         let own_rules = !self.meta.map_prefixes.is_empty() || on("modo_retake") || on("modo_zombies");
-        // el modo reparte sus armas al aparecer, y eso pisa la progresión de Carrera y Demolición
+        // the mode hands out its weapons on spawn, which overrides Arms Race and Demolition progression
         !own_rules && !(k.is_scripted() && (on("modo_t_quitar") || on("modo_ct_quitar")))
     }
 
@@ -89,7 +89,7 @@ pub fn valid_id(id: &str) -> bool {
 pub struct Modes(pub BTreeMap<String, Mode>);
 
 impl Modes {
-    /// Oficiales (recursos) + del usuario.
+    /// Official (resources) + user.
     pub fn load() -> crate::Result<Modes> {
         let r = paths::resources_dir()?;
         Self::load_from(&r.join("modes"), &r.join("cfg"), &paths::user_modes_dir())
@@ -104,7 +104,7 @@ impl Modes {
             let meta = read_meta(&official_meta.join(format!("{id}.toml")))?;
             m.insert(id.clone(), Mode { id, meta, cfg: e, custom: false });
         }
-        // del usuario: <id>.toml + <id>.cfg
+        // user's: <id>.toml + <id>.cfg
         for e in read_dir_sorted(user) {
             let Some(id) = file_id(&e, "", ".cfg") else { continue };
             if !valid_id(&id) { continue }
@@ -118,14 +118,14 @@ impl Modes {
     }
 
     pub fn get(&self, id: &str) -> crate::Result<&Mode> {
-        self.0.get(id).ok_or_else(|| anyhow::anyhow!("modo desconocido '{id}'. Modos: {}", self.ids().join(" ")))
+        self.0.get(id).ok_or_else(|| anyhow::anyhow!("unknown mode '{id}'. Modes: {}", self.ids().join(" ")))
     }
 
     pub fn ids(&self) -> Vec<String> {
         self.0.keys().cloned().collect()
     }
 
-    /// Prefijos que solo valen para su modo o tipo de partida (ar_, gd_, dz_).
+    /// Prefixes valid only for their mode or match type (ar_, gd_, dz_).
     pub fn exclusive_prefixes(&self) -> Vec<String> {
         let modes = self.0.values().filter(|m| m.meta.exclusive_maps).flat_map(|m| m.meta.map_prefixes.clone());
         let kinds = Kind::ALL.into_iter().filter_map(Kind::own_maps).map(|(p, _)| p.to_string());
@@ -149,15 +149,15 @@ fn file_id(p: &Path, prefix: &str, suffix: &str) -> Option<String> {
 
 fn read_meta(p: &Path) -> crate::Result<ModeMeta> {
     match std::fs::read_to_string(p) {
-        Ok(t) => toml::from_str(&t).with_context(|| format!("modo inválido en {}", p.display())),
+        Ok(t) => toml::from_str(&t).with_context(|| format!("invalid mode in {}", p.display())),
         Err(_) => Ok(ModeMeta::default()),
     }
 }
 
-/// Guarda un modo del usuario (TOML + cfg). Devuelve la ruta del cfg.
+/// Saves a user mode (TOML + cfg). Returns the cfg's path.
 pub fn save_user_mode(dir: &Path, id: &str, meta: &ModeMeta, cfg: &str) -> crate::Result<PathBuf> {
     if !valid_id(id) {
-        bail!("id de modo inválido '{id}': minúsculas, números y _ (máx. 31)");
+        bail!("invalid mode id '{id}': lowercase, numbers and _ (max 31)");
     }
     CfgDoc::parse(cfg).validate()?;
     std::fs::create_dir_all(dir)?;
@@ -172,42 +172,42 @@ mod tests {
     use super::*;
 
     #[test]
-    fn oficiales_tienen_toml_y_cfg() {
+    fn official_have_toml_and_cfg() {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
         let m = Modes::load_from(&root.join("modes"), &root.join("cfg"), Path::new("/nonexistent")).unwrap();
         assert!(m.0.len() >= 30);
         for mode in m.0.values() {
-            assert!(!mode.meta.name.en.is_empty(), "{} sin modes/{}.toml", mode.id, mode.id);
-            assert!(!mode.meta.category.is_empty(), "{} sin categoría", mode.id);
+            assert!(!mode.meta.name.en.is_empty(), "{} without modes/{}.toml", mode.id, mode.id);
+            assert!(!mode.meta.category.is_empty(), "{} without a category", mode.id);
         }
-        // y cada toml tiene su cfg
+        // and every toml has its cfg
         for e in read_dir_sorted(&root.join("modes")) {
             let id = file_id(&e, "", ".toml").unwrap();
-            assert!(m.0.contains_key(&id), "modes/{id}.toml sin cfg/modo_{id}.cfg");
+            assert!(m.0.contains_key(&id), "modes/{id}.toml without cfg/modo_{id}.cfg");
         }
         assert_eq!(m.get("armsrace").unwrap().meta.game_type, Some(1));
         assert!(m.exclusive_prefixes().contains(&"gd_".to_string()));
     }
 
     #[test]
-    fn usuario_pisa_y_cfg_suelto() {
+    fn user_overrides_and_loose_cfg() {
         let d = std::env::temp_dir().join(format!("csls-modes-{}", std::process::id()));
         std::fs::create_dir_all(&d).unwrap();
-        std::fs::write(d.join("mio.cfg"), "sv_gravity 200\n").unwrap();
+        std::fs::write(d.join("mine.cfg"), "sv_gravity 200\n").unwrap();
         save_user_mode(&d, "awp", &ModeMeta { name: Localized::same("Mi AWP"), ..Default::default() }, "x").unwrap();
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
         let m = Modes::load_from(&root.join("modes"), &root.join("cfg"), &d).unwrap();
-        assert!(m.get("mio").unwrap().custom);
-        assert_eq!(m.get("mio").unwrap().name("es"), "mio");
+        assert!(m.get("mine").unwrap().custom);
+        assert_eq!(m.get("mine").unwrap().name("es"), "mine");
         assert_eq!(m.get("awp").unwrap().name("en"), "Mi AWP");
         assert!(save_user_mode(&d, "Mal Id", &ModeMeta::default(), "").is_err());
         std::fs::remove_dir_all(d).ok();
     }
 }
 
-// ---------- editor: cfg como lista de "cvar valor" ----------
+// ---------- editor: cfg as a list of "cvar value" ----------
 
-/// Contenido de un cfg de modo: comentario de cabecera + pares cvar/valor en orden.
+/// Content of a mode cfg: header comment + cvar/value pairs in order.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct CfgDoc {
     pub comment: String,
@@ -254,7 +254,7 @@ impl CfgDoc {
             s += &format!("// {}\n", self.comment.replace('\n', " "));
         }
         for (k, v) in &self.pairs {
-            // los valores con espacios, comas o vacíos van entre comillas
+            // values with spaces, commas or empty ones are quoted
             if v.is_empty() || v.contains([' ', ',']) || k.starts_with("modo_") && v.parse::<f64>().is_err() {
                 s += &format!("{k} \"{v}\"\n");
             } else {
@@ -264,18 +264,18 @@ impl CfgDoc {
         s
     }
 
-    /// Valida todos los pares (sin ; ni comillas que permitan encadenar comandos, ni comandos peligrosos:
-    /// un modo importado viene de otra persona).
+    /// Validates all pairs (no ; or quotes that allow chaining commands, and no dangerous commands:
+    /// an imported mode comes from someone else).
     pub fn validate(&self) -> crate::Result<()> {
         for (k, v) in &self.pairs {
             if BLOCKED.contains(&k.to_ascii_lowercase().as_str()) || k.starts_with("sm_") {
-                bail!("comando no permitido en un modo: {k}");
+                bail!("command not allowed in a mode: {k}");
             }
             if k.is_empty() || !k.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_') {
-                bail!("cvar inválida '{k}'");
+                bail!("invalid cvar '{k}'");
             }
             if v.contains([';', '"', '\n', '\r']) {
-                bail!("valor inválido para {k}: sin ; ni comillas");
+                bail!("invalid value for {k}: no ; or quotes");
             }
         }
         Ok(())
@@ -289,7 +289,7 @@ const BLOCKED: &[&str] = &[
     "sv_downloadurl", "con_logfile", "rcon",
 ];
 
-/// Archivo para compartir un modo: metadatos + id + cfg en un solo TOML.
+/// File for sharing a mode: metadata + id + cfg in one TOML.
 #[derive(Debug, Serialize, Deserialize)]
 struct Exported {
     id: String,
@@ -303,22 +303,22 @@ pub fn export_mode(m: &Mode) -> crate::Result<String> {
     Ok(toml::to_string_pretty(&Exported { id: m.id.clone(), meta: m.meta.clone(), cfg })?)
 }
 
-/// Importa un modo exportado al directorio del usuario. Devuelve su id.
+/// Imports an exported mode into the user's directory. Returns its id.
 pub fn import_mode(dir: &Path, txt: &str) -> crate::Result<String> {
-    let e: Exported = toml::from_str(txt).context("no es un modo exportado válido")?;
+    let e: Exported = toml::from_str(txt).context("not a valid exported mode")?;
     CfgDoc::parse(&e.cfg).validate()?;
     let mut meta = e.meta;
     if meta.category.is_empty() {
         meta.category = "custom".into();
     }
-    // al importar se guarda el cfg ya limpio (solo pares cvar valor)
+    // on import the cfg is saved clean (only cvar value pairs)
     save_user_mode(dir, &e.id, &meta, &CfgDoc::parse(&e.cfg).render())?;
     Ok(e.id)
 }
 
 pub fn delete_user_mode(dir: &Path, id: &str) -> crate::Result<()> {
     if !valid_id(id) {
-        bail!("id inválido");
+        bail!("invalid id");
     }
     for ext in ["toml", "cfg"] {
         let p = dir.join(format!("{id}.{ext}"));
@@ -334,7 +334,7 @@ mod editor_tests {
     use super::*;
 
     #[test]
-    fn cfg_ida_y_vuelta() {
+    fn cfg_round_trip() {
         let t = "// awp: AWP + Deagle\nmodo_t_quitar 1\nmodo_t_arma \"weapon_awp\"\nmodo_t_objeto \"\"\nsv_gravity 300\n";
         let d = CfgDoc::parse(t);
         assert_eq!(d.comment, "awp: AWP + Deagle");
@@ -349,17 +349,17 @@ mod editor_tests {
     }
 
     #[test]
-    fn exportar_importar() {
+    fn export_import() {
         let d = std::env::temp_dir().join(format!("csls-exp-{}", std::process::id()));
-        let cfg = save_user_mode(&d, "mio", &ModeMeta { name: Localized::same("Mío"), ..Default::default() }, "sv_gravity 200\n").unwrap();
-        let m = Mode { id: "mio".into(), meta: ModeMeta { name: Localized::same("Mío"), ..Default::default() }, cfg, custom: true };
+        let cfg = save_user_mode(&d, "mine", &ModeMeta { name: Localized::same("Mine"), ..Default::default() }, "sv_gravity 200\n").unwrap();
+        let m = Mode { id: "mine".into(), meta: ModeMeta { name: Localized::same("Mine"), ..Default::default() }, cfg, custom: true };
         let txt = export_mode(&m).unwrap();
         let d2 = d.join("otro");
-        assert_eq!(import_mode(&d2, &txt).unwrap(), "mio");
-        assert_eq!(std::fs::read_to_string(d2.join("mio.cfg")).unwrap(), "sv_gravity 200\n");
+        assert_eq!(import_mode(&d2, &txt).unwrap(), "mine");
+        assert_eq!(std::fs::read_to_string(d2.join("mine.cfg")).unwrap(), "sv_gravity 200\n");
         assert!(import_mode(&d2, "id = \"x\"\ncfg = \"quit;rm\"\n").is_err() || CfgDoc::parse("quit;rm").validate().is_err());
-        delete_user_mode(&d2, "mio").unwrap();
-        assert!(!d2.join("mio.cfg").exists());
+        delete_user_mode(&d2, "mine").unwrap();
+        assert!(!d2.join("mine.cfg").exists());
         std::fs::remove_dir_all(d).ok();
     }
 }

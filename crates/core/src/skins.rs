@@ -1,4 +1,4 @@
-//! Skins guardadas por jugador (tabla skins_prefs de la base SQLite de SourceMod) con nombres de skins.cfg.
+//! Skins saved per player (skins_prefs table in the SourceMod SQLite database) with names from skins.cfg.
 use crate::kv::{self, Kv};
 use anyhow::Context;
 use std::collections::HashMap;
@@ -43,9 +43,9 @@ impl Catalog {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Entry {
-    /// Arma (o "Cuchillo" para el modelo elegido).
+    /// Weapon (or "Cuchillo" for the chosen model).
     pub weapon: String,
-    /// Skin o modelo.
+    /// Skin or model.
     pub value: String,
 }
 
@@ -54,11 +54,11 @@ pub fn db_path(csgo_dir: &Path) -> PathBuf {
 }
 
 fn open(db: &Path) -> crate::Result<rusqlite::Connection> {
-    // solo lectura: el servidor puede estar escribiendo
+    // read-only: the server may be writing
     Ok(rusqlite::Connection::open_with_flags(db, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)?)
 }
 
-/// SteamID64 de todos los jugadores con algo guardado.
+/// SteamID64 of every player with something saved.
 pub fn players(db: &Path) -> crate::Result<Vec<String>> {
     let c = open(db)?;
     let mut st = c.prepare("SELECT DISTINCT steamid FROM skins_prefs ORDER BY steamid")?;
@@ -87,7 +87,7 @@ pub fn player_skins(db: &Path, cat: &Catalog, steamid64: &str) -> crate::Result<
 mod tests {
     use super::*;
     #[test]
-    fn catalogo_y_base() {
+    fn catalog_and_database() {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/skins.cfg");
         let cat = Catalog::load(&root).unwrap();
         assert_eq!(cat.weapon_name("weapon_ak47"), "AK-47");

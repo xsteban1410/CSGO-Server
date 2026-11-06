@@ -1,14 +1,14 @@
-//! Workshop de la app 730 (CS:GO y CS2 comparten app). Sin clave de la Web API:
-//! búsqueda con la página pública del workshop y detalles con GetPublishedFileDetails (no pide clave).
-//! Los mapas de CS2 son Source 2 (.vpk) y el motor de CS:GO Legacy no los carga: se marcan incompatibles.
+//! Workshop of app 730 (CS:GO and CS2 share the app). Without a Web API key:
+//! search through the public workshop page and details through GetPublishedFileDetails (needs no key).
+//! CS2 maps are Source 2 (.vpk) and the CS:GO Legacy engine cannot load them: they are marked incompatible.
 use crate::paths;
 use anyhow::{bail, Context};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-/// Carpeta bajo maps/ donde se instalan. No se usa maps/workshop/ porque el motor intenta revalidar
-/// esos mapas con Steam (sin clave falla) y solo cargan la primera vez.
+/// Folder under maps/ where they get installed. maps/workshop/ is not used because the engine tries to revalidate
+/// those maps with Steam (fails without a key) and they only load the first time.
 pub const MAPS_SUBDIR: &str = "csls";
 
 const DETAILS: &str = "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/";
@@ -16,11 +16,11 @@ const COLLECTION: &str = "https://api.steampowered.com/ISteamRemoteStorage/GetCo
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Compat {
-    /// Mapa de CS:GO (.bsp): se puede instalar.
+    /// CS:GO map (.bsp): can be installed.
     Csgo,
-    /// Solo CS2: no funciona en CS:GO Legacy.
+    /// CS2 only: does not work on CS:GO Legacy.
     Cs2,
-    /// No es un mapa o no se sabe.
+    /// Not a map, or unknown.
     Unknown,
 }
 
@@ -28,7 +28,7 @@ pub enum Compat {
 pub struct Item {
     pub id: u64,
     pub title: String,
-    /// Ruta original (mymaps/de_x.bsp); vacía en los de CS2.
+    /// Original path (mymaps/de_x.bsp); empty for CS2 ones.
     pub filename: String,
     pub file_url: String,
     pub file_size: u64,
@@ -51,7 +51,7 @@ impl Item {
         }
     }
 
-    /// Nombre del mapa sin carpeta ni .bsp.
+    /// Map name without folder or .bsp.
     pub fn map_name(&self) -> Option<String> {
         let f = self.filename.rsplit('/').next()?;
         let n = f.strip_suffix(".bsp").or_else(|| f.strip_suffix(".BSP"))?;
@@ -62,7 +62,7 @@ impl Item {
 fn curl(args: &[String]) -> crate::Result<String> {
     let o = Command::new("curl").args(["-fsSL", "--max-time", "30"]).args(args).output().context("ejecutando curl")?;
     if !o.status.success() {
-        bail!("error de red: {}", String::from_utf8_lossy(&o.stderr).trim());
+        bail!("network error: {}", String::from_utf8_lossy(&o.stderr).trim());
     }
     Ok(String::from_utf8_lossy(&o.stdout).into_owned())
 }
@@ -78,7 +78,7 @@ fn num(v: &serde_json::Value) -> u64 {
 }
 
 pub fn parse_details(json: &str) -> crate::Result<Vec<Item>> {
-    let v: serde_json::Value = serde_json::from_str(json).context("respuesta del workshop inválida")?;
+    let v: serde_json::Value = serde_json::from_str(json).context("invalid workshop response")?;
     let list = v["response"]["publishedfiledetails"].as_array().cloned().unwrap_or_default();
     Ok(list
         .into_iter()
@@ -93,13 +93,13 @@ pub fn parse_details(json: &str) -> crate::Result<Vec<Item>> {
             tags: x["tags"].as_array().map(|t| t.iter().filter_map(|t| t["tag"].as_str().map(str::to_string)).collect()).unwrap_or_default(),
             subscriptions: num(&x["lifetime_subscriptions"]),
             time_updated: num(&x["time_updated"]),
-            // file_type 2 = colección
+            // file_type 2 = collection
             collection: num(&x["file_type"]) == 2,
         })
         .collect())
 }
 
-/// Detalles de varios ítems (sin clave).
+/// Details of several items (no key).
 pub fn details(ids: &[u64]) -> crate::Result<Vec<Item>> {
     if ids.is_empty() {
         return Ok(vec![]);
@@ -113,7 +113,7 @@ pub fn details(ids: &[u64]) -> crate::Result<Vec<Item>> {
     parse_details(&curl(&a)?)
 }
 
-/// Ítems de una colección.
+/// Items of a collection.
 pub fn collection(id: u64) -> crate::Result<Vec<u64>> {
     let j = curl(&["-d".into(), "collectioncount=1".into(), "-d".into(), format!("publishedfileids[0]={id}"), COLLECTION.into()])?;
     let v: serde_json::Value = serde_json::from_str(&j)?;
@@ -131,8 +131,8 @@ pub enum Sort {
     Text,
 }
 
-/// IDs de la página pública del workshop (sin clave).
-// shortcut: lee el HTML de steamcommunity.com; si Valve cambia la página, usar IPublishedFileService/QueryFiles con clave.
+/// IDs from the public workshop page (no key).
+// shortcut: reads steamcommunity.com HTML; if Valve changes the page, use IPublishedFileService/QueryFiles with a key.
 pub fn search_ids(text: &str, tag: Option<&str>, sort: Sort, page: u32) -> crate::Result<Vec<u64>> {
     let sort = match (sort, text.trim().is_empty()) {
         (_, false) | (Sort::Text, _) => "textsearch",
@@ -176,12 +176,12 @@ fn cache_dir() -> PathBuf {
     paths::data_dir().join("workshop")
 }
 
-/// Miniatura en caché (la descarga si falta).
+/// Cached thumbnail (downloads it if missing).
 pub fn thumbnail(it: &Item) -> crate::Result<PathBuf> {
     let p = cache_dir().join(format!("{}.jpg", it.id));
     if !p.is_file() {
         if it.preview_url.is_empty() {
-            bail!("sin miniatura");
+            bail!("no thumbnail");
         }
         std::fs::create_dir_all(cache_dir())?;
         let tmp = p.with_extension("part");
@@ -193,9 +193,9 @@ pub fn thumbnail(it: &Item) -> crate::Result<PathBuf> {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Installed {
-    /// Carpeta bajo maps/csls (id del workshop o "local").
+    /// Folder under maps/csls (workshop id or "local").
     pub dir: String,
-    /// Nombre para changelevel: csls/<dir>/<mapa>.
+    /// Name for changelevel: csls/<dir>/<map>.
     pub map: String,
     pub title: String,
     pub has_nav: bool,
@@ -224,14 +224,14 @@ pub fn installed(maps_dir: &Path) -> Vec<Installed> {
     v
 }
 
-/// Instala un mapa de CS:GO del workshop. Devuelve el nombre para changelevel.
+/// Installs a CS:GO workshop map. Returns the name for changelevel.
 pub fn install(maps_dir: &Path, it: &Item) -> crate::Result<String> {
     match it.compat() {
-        Compat::Cs2 => bail!("«{}» es un mapa de CS2 (Source 2): CS:GO Legacy no puede cargarlo", it.title),
-        Compat::Unknown => bail!("«{}» no es un mapa de CS:GO (.bsp)", it.title),
+        Compat::Cs2 => bail!("\"{}\" is a CS2 map (Source 2): CS:GO Legacy cannot load it", it.title),
+        Compat::Unknown => bail!("\"{}\" is not a CS:GO map (.bsp)", it.title),
         Compat::Csgo => {}
     }
-    let name = it.map_name().context("nombre de mapa inválido")?;
+    let name = it.map_name().context("invalid map name")?;
     let dir = maps_dir.join(MAPS_SUBDIR).join(it.id.to_string());
     std::fs::create_dir_all(&dir)?;
     let dest = dir.join(format!("{name}.bsp"));
@@ -239,7 +239,7 @@ pub fn install(maps_dir: &Path, it: &Item) -> crate::Result<String> {
     if !it.file_url.is_empty() {
         curl(&["-o".into(), tmp.to_string_lossy().into(), it.file_url.clone()])?;
     } else {
-        // contenido en SteamPipe: lo baja SteamCMD
+        // SteamPipe content: SteamCMD downloads it
         let sc = crate::install::which("steamcmd").unwrap_or_else(|| paths::data_dir().join("steamcmd/steamcmd.sh"));
         let root = paths::data_dir().join("steamcmd-workshop");
         let st = Command::new(&sc)
@@ -254,19 +254,19 @@ pub fn install(maps_dir: &Path, it: &Item) -> crate::Result<String> {
             Some(b) if st.success() => {
                 std::fs::copy(b, &tmp)?;
             }
-            _ => bail!("SteamCMD no pudo bajar el ítem {} (prueba a cargarlo con el servidor encendido)", it.id),
+            _ => bail!("SteamCMD could not download item {} (try loading it with the server running)", it.id),
         }
     }
-    // los mapas antiguos del workshop vienen dentro de un .zip
+    // old workshop maps come inside a .zip
     if magic(&tmp) == *b"PK\x03\x04" {
         let r = unzip_bsp(&tmp, &dest.with_extension("bsp.unzip"));
         let _ = std::fs::remove_file(&tmp);
         std::fs::rename(r?, &tmp)?;
     }
-    // un .bsp empieza por "VBSP"
+    // a .bsp starts with "VBSP"
     if magic(&tmp) != *b"VBSP" {
         let _ = std::fs::remove_file(&tmp);
-        bail!("lo descargado no es un mapa .bsp");
+        bail!("the download is not a .bsp map");
     }
     std::fs::rename(&tmp, &dest)?;
     std::fs::create_dir_all(cache_dir())?;
@@ -283,9 +283,9 @@ fn magic(p: &Path) -> [u8; 4] {
     h
 }
 
-/// Saca el primer .bsp de un zip (sin rutas: solo el contenido). Límite de 1 GB por si el zip es malicioso.
+/// Extracts the first .bsp from a zip (no paths: content only). 1 GB limit in case the zip is malicious.
 fn unzip_bsp(zip_path: &Path, out: &Path) -> crate::Result<PathBuf> {
-    let mut z = zip::ZipArchive::new(std::fs::File::open(zip_path)?).context("zip inválido")?;
+    let mut z = zip::ZipArchive::new(std::fs::File::open(zip_path)?).context("invalid zip")?;
     for i in 0..z.len() {
         let mut f = z.by_index(i)?;
         if !f.name().map(|n| n.to_ascii_lowercase().ends_with(".bsp")).unwrap_or(false) {
@@ -296,16 +296,16 @@ fn unzip_bsp(zip_path: &Path, out: &Path) -> crate::Result<PathBuf> {
         let n = std::io::copy(&mut (&mut f).take(1 << 30), &mut o)?;
         if n >= 1 << 30 {
             let _ = std::fs::remove_file(out);
-            bail!("el .bsp del zip es demasiado grande");
+            bail!("the .bsp in the zip is too large");
         }
         return Ok(out.to_path_buf());
     }
-    bail!("el zip no contiene ningún .bsp")
+    bail!("the zip contains no .bsp")
 }
 
 pub fn remove(maps_dir: &Path, dir: &str) -> crate::Result<()> {
     if dir.is_empty() || !dir.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_') {
-        bail!("carpeta inválida");
+        bail!("invalid folder");
     }
     let p = maps_dir.join(MAPS_SUBDIR).join(dir);
     if p.is_dir() {
@@ -315,22 +315,22 @@ pub fn remove(maps_dir: &Path, dir: &str) -> crate::Result<()> {
     Ok(())
 }
 
-/// Copia un .bsp local a maps/workshop/local/. Devuelve el nombre para changelevel.
+/// Copies a local .bsp to maps/workshop/local/. Returns the name for changelevel.
 pub fn import_local(maps_dir: &Path, bsp: &Path) -> crate::Result<String> {
-    let stem = bsp.file_stem().and_then(|s| s.to_str()).context("archivo sin nombre")?;
+    let stem = bsp.file_stem().and_then(|s| s.to_str()).context("file without a name")?;
     if !crate::launch::valid_map_name(stem) || stem.contains('/') {
-        bail!("nombre de mapa inválido '{stem}'");
+        bail!("invalid map name '{stem}'");
     }
     let mut head = [0u8; 4];
     use std::io::Read;
     std::fs::File::open(bsp)?.read_exact(&mut head)?;
     if &head != b"VBSP" {
-        bail!("{} no es un mapa .bsp de Source", bsp.display());
+        bail!("{} is not a Source .bsp map", bsp.display());
     }
     let dir = maps_dir.join(MAPS_SUBDIR).join("local");
     std::fs::create_dir_all(&dir)?;
     crate::deploy::copy_writable(bsp, &dir.join(format!("{stem}.bsp")))?;
-    // si viene con su .nav al lado, también
+    // if its .nav is next to it, that too
     let nav = bsp.with_extension("nav");
     if nav.is_file() {
         crate::deploy::copy_writable(&nav, &dir.join(format!("{stem}.nav")))?;
@@ -348,7 +348,7 @@ mod tests {
       {"publishedfileid":"1","result":9}]}}"#;
 
     #[test]
-    fn detalles_y_compat() {
+    fn details_and_compat() {
         let v = parse_details(J).unwrap();
         assert_eq!(v.len(), 2);
         assert_eq!(v[0].compat(), Compat::Cs2);
@@ -358,14 +358,14 @@ mod tests {
     }
 
     #[test]
-    fn navegador() {
+    fn browser() {
         let h = "<a href=\"https://steamcommunity.com/sharedfiles/filedetails/?id=123&searchtext=\">x</a> filedetails/?id=456\" filedetails/?id=123";
         assert_eq!(parse_browse(h), vec![123, 456]);
         assert_eq!(urlencode("aim map"), "aim%20map");
     }
 
     #[test]
-    fn importar_local_y_borrar() {
+    fn import_local_and_delete() {
         let d = std::env::temp_dir().join(format!("csls-ws-{}", std::process::id()));
         std::fs::create_dir_all(&d).unwrap();
         let bsp = d.join("aim_test.bsp");

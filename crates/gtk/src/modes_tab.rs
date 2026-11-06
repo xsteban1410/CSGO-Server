@@ -1,4 +1,4 @@
-//! Pestaña Modos: modos personalizados (crear, duplicar, editar, importar, exportar, borrar).
+//! Modes tab: custom modes (create, duplicate, edit, import, export, delete).
 use crate::i18n::t;
 use crate::{bg, button, AppRc};
 use adw::prelude::*;
@@ -24,7 +24,7 @@ const ITEMS: &[&str] = &[
     "", "weapon_hegrenade", "weapon_flashbang", "weapon_smokegrenade", "weapon_molotov", "weapon_incgrenade", "weapon_decoy",
     "weapon_taser", "weapon_healthshot", "item_defuser", "item_assaultsuit",
 ];
-/// Base de Valve: (texto, game_type, game_mode)
+/// Valve base: (text, game_type, game_mode)
 const BASES: &[(&str, Option<(u8, u8)>)] = &[
     ("From the match type", None),
     ("Deathmatch", Some((1, 2))),
@@ -32,7 +32,7 @@ const BASES: &[(&str, Option<(u8, u8)>)] = &[
     ("Demolition", Some((1, 1))),
 ];
 
-/// Lo que el editor maneja con controles; el resto va al cuadro de variables extra.
+/// What the editor handles with controls; the rest goes to the extra variables box.
 fn known(k: &str) -> bool {
     const K: &[&str] = &[
         "sv_gravity", "mp_respawn_on_death_t", "mp_respawn_on_death_ct", "mp_damage_headshot_only", "sv_infinite_ammo",
@@ -57,7 +57,7 @@ fn combo_value(c: &adw::ComboRow, list: &[&str]) -> String {
     let i = c.selected() as usize;
     match list.get(i) {
         Some(v) => v.to_string(),
-        // valor que no estaba en la lista (se añadió al final)
+        // value that was not in the list (added at the end)
         None => c.selected_item().and_downcast::<gtk::StringObject>().map(|s| s.string().to_string()).unwrap_or_default(),
     }
 }
@@ -117,7 +117,7 @@ fn write_team(d: &mut CfgDoc, p: &str, t: &Team) {
     put("color", t.color.text().trim().to_string(), "");
 }
 
-/// Abre el editor. `from`: modo a editar (si es del usuario) o a duplicar (si es oficial).
+/// Opens the editor. `from`: mode to edit (if the user's) or duplicate (if official).
 fn editor(a: &AppRc, from: Option<&Mode>, reload: Rc<dyn Fn()>) {
     let lang = csls_core::lang();
     let editing = from.is_some_and(|m| m.custom);
@@ -412,7 +412,7 @@ pub fn page(a: &AppRc) -> gtk::Widget {
             }
         }));
     }));
-    // los cambios en la carpeta (modos copiados a mano) se ven al volver a la pestaña
+    // changes in the folder (modes copied by hand) show up when returning to the tab
     a.on_modes_changed(move || fill());
     page.upcast()
 }
@@ -434,7 +434,7 @@ fn export(a: &AppRc, m: &Mode) {
     }));
 }
 
-/// Depuración (capturas): abre el editor duplicando el modo `id`.
+/// Debug (screenshots): opens the editor duplicating mode `id`.
 pub fn debug_open_editor(a: &AppRc, id: &str) {
     let m = a.modes.borrow().0.get(id).cloned();
     editor(a, m.as_ref(), Rc::new(|| {}));

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Cheats aleatorios: power-ups brillantes por el mapa; quien toca uno recibe un cheat al azar durante un tiempo.
-// Plugin aparte de modos.sp; se activa con modo_cheats 1 (lo resetea modo_base.cfg).
+// Random cheats: glowing power-ups around the map; whoever touches one gets a random cheat for a while.
+// Separate plugin from modos.sp; enabled with modo_cheats 1 (reset by modo_base.cfg).
 #pragma semicolon 1
 #pragma newdecls required
 
@@ -9,7 +9,7 @@
 #include <sdkhooks>
 #include <cstrike>
 
-public Plugin myinfo = { name = "Modos: cheats aleatorios", author = "xsteban1410", version = "1.0" };
+public Plugin myinfo = { name = "Modes: random cheats", author = "xsteban1410", version = "1.0" };
 
 #define EF_BONEMERGE          (1 << 0)
 #define EF_NOSHADOW           (1 << 4)
@@ -39,9 +39,9 @@ char g_Nombres[C_Total][] = {
 	"wallhack", "aimbot", "municion", "velocidad", "gravedad", "invencible",
 	"invisible", "untiro", "bhop", "superpulso", "regeneracion"
 };
-// los nombres de cada cheat están en translations/csls.phrases.txt (cheat_0…)
+// cheat names are in translations/csls.phrases.txt (cheat_0…)
 
-// modelos posibles del power-up (el primero que exista)
+// possible power-up models (the first that exists)
 char g_Modelos[][] = {
 	"models/props_survival/upgrades/upgrade_dz_helmet.mdl",
 	"models/weapons/w_eq_healthshot_dropped.mdl",
@@ -56,26 +56,26 @@ float g_Hasta[MAXPLAYERS + 1];
 float g_VelAntes[MAXPLAYERS + 1];
 ArrayList g_Glows[MAXPLAYERS + 1];
 
-int g_Pu[MAX_PU];          // referencias a las entidades de power-up
-float g_PuVuelve[MAX_PU];   // cuándo reaparece el que se ha cogido
-ArrayList g_Puntos;         // posiciones posibles (aparición + por donde pasan jugadores)
+int g_Pu[MAX_PU];          // references to the power-up entities
+float g_PuVuelve[MAX_PU];   // when a taken one comes back
+ArrayList g_Puntos;         // possible positions (spawns + places players pass through)
 
 public void OnPluginStart()
 {
 	LoadTranslations("csls.phrases");
-	g_On          = CreateConVar("modo_cheats", "0", "1 = power-ups con cheats aleatorios por el mapa");
-	g_Duracion    = CreateConVar("modo_cheats_duracion", "30", "Segundos que dura cada cheat");
-	g_Cantidad    = CreateConVar("modo_cheats_cantidad", "6", "Power-ups a la vez en el mapa", _, true, 1.0, true, float(MAX_PU));
-	g_Reaparicion = CreateConVar("modo_cheats_reaparicion", "20", "Segundos hasta que reaparece un power-up cogido");
-	g_Bots        = CreateConVar("modo_cheats_bots", "1", "1 = los bots también cogen power-ups");
-	g_Lista       = CreateConVar("modo_cheats_lista", "", "Cheats permitidos separados por comas (vacío = todos): wallhack,aimbot,municion,velocidad,gravedad,invencible,invisible,untiro,bhop,superpulso,regeneracion");
+	g_On          = CreateConVar("modo_cheats", "0", "1 = power-ups with random cheats around the map");
+	g_Duracion    = CreateConVar("modo_cheats_duracion", "30", "Seconds each cheat lasts");
+	g_Cantidad    = CreateConVar("modo_cheats_cantidad", "6", "Power-ups on the map at once", _, true, 1.0, true, float(MAX_PU));
+	g_Reaparicion = CreateConVar("modo_cheats_reaparicion", "20", "Seconds until a taken power-up respawns");
+	g_Bots        = CreateConVar("modo_cheats_bots", "1", "1 = bots also pick up power-ups");
+	g_Lista       = CreateConVar("modo_cheats_lista", "", "Allowed cheats separated by commas (empty = all): wallhack,aimbot,municion,velocidad,gravedad,invencible,invisible,untiro,bhop,superpulso,regeneracion");
 	g_On.AddChangeHook(OnToggle);
 	g_Puntos = new ArrayList(3);
 	HookEvent("round_start", OnRoundStart, EventHookMode_PostNoCopy);
 	HookEvent("player_death", OnDeath);
 	HookEvent("player_jump", OnJump);
 	HookEvent("weapon_fire", OnFire);
-	RegServerCmd("cheats_estado", CmdEstado, "Muestra el cheat activo de cada jugador y los power-ups");
+	RegServerCmd("cheats_estado", CmdEstado, "Shows the active cheat of each player and the power-ups");
 	CreateTimer(0.1, Tick, _, TIMER_REPEAT);
 	CreateTimer(1.0, TickLento, _, TIMER_REPEAT);
 	for (int c = 1; c <= MaxClients; c++)
@@ -214,7 +214,7 @@ public void OnRoundStart(Event e, const char[] name, bool dontBroadcast)
 	for (int c = 1; c <= MaxClients; c++)
 		if (IsClientInGame(c))
 			Quitar(c, false);
-	// las entidades se borran solas al reiniciar la ronda: se vuelven a crear
+	// entities are removed when the round restarts: create them again
 	for (int i = 0; i < MAX_PU; i++)
 	{
 		g_Pu[i] = INVALID_ENT_REFERENCE;
@@ -312,7 +312,7 @@ void Quitar(int c, bool avisar)
 	BorrarGlows(c);
 }
 
-// Wallhack: copia del modelo de cada enemigo pegada a él, con brillo, que solo ve el dueño.
+// Wallhack: a glowing copy of each enemy model attached to them, visible only to the owner.
 void CrearGlows(int c)
 {
 	BorrarGlows(c);
@@ -412,7 +412,7 @@ public Action TickLento(Handle t)
 	{
 		if (!IsClientInGame(c) || !IsPlayerAlive(c))
 			continue;
-		// aprender sitios por donde se pasa (sin navmesh, que SourceMod no expone en CS:GO)
+		// learn places people walk through (no navmesh: SourceMod does not expose it in CS:GO)
 		if (GetEntityFlags(c) & FL_ONGROUND)
 		{
 			GetClientAbsOrigin(c, p);
@@ -443,7 +443,7 @@ public Action TickLento(Handle t)
 	return Plugin_Continue;
 }
 
-// --- efectos que van por eventos ----------------------------------------------
+// --- effects driven by events ----------------------------------------------
 
 public void OnDeath(Event e, const char[] name, bool dontBroadcast)
 {
@@ -523,7 +523,7 @@ public Action OnPlayerRunCmd(int c, int &buttons, int &impulse, float vel[3], fl
 	}
 	if (ch != C_Aimbot || !IsPlayerAlive(c))
 		return Plugin_Continue;
-	// apunta suave a la cabeza enemiga visible más cercana al centro de la mira
+	// aims softly at the visible enemy head closest to the crosshair
 	float ojo[3], cabeza[3], mejor[3], dir[3], quiere[3];
 	GetClientEyePosition(c, ojo);
 	float mejorDif = 60.0;
@@ -576,7 +576,7 @@ public Action CmdEstado(int args)
 	return Plugin_Handled;
 }
 
-// Nombre del cheat en el idioma del jugador (frases cheat_0..cheat_N).
+// Cheat name in the player's language (phrases cheat_0..cheat_N).
 void CheatName(Cheat ch, int client, char[] out, int len)
 {
 	char key[16];

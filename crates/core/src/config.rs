@@ -1,4 +1,4 @@
-//! Configuración del usuario: ~/.config/csgo-legacy-server/config.toml (reemplaza config.env).
+//! User configuration: ~/.config/csgo-legacy-server/config.toml (replaces config.env).
 use crate::paths;
 use anyhow::{bail, Context};
 use serde::{Deserialize, Serialize};
@@ -10,11 +10,11 @@ pub enum Network {
     /// Solo red local (sv_lan 1).
     #[default]
     Lan,
-    /// Amigos por VPN: sv_lan 1 + puente UDP en PUERTO+1.
+    /// Friends over VPN: sv_lan 1 + UDP bridge on PORT+1.
     Vpn,
-    /// Por internet con el puerto abierto (sv_lan 0).
+    /// Over the internet with the port open (sv_lan 0).
     Internet,
-    /// Internet + token GSLT: sale en el navegador de servidores de Steam.
+    /// Internet + GSLT token: listed in the Steam server browser.
     Community,
 }
 
@@ -24,7 +24,7 @@ impl Network {
     }
 }
 
-/// Tipo de partida de Valve para los modos que no fijan game_type/game_mode.
+/// Valve match type for modes that do not set game_type/game_mode.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum Kind {
@@ -87,7 +87,7 @@ impl Kind {
         }
     }
 
-    /// Nombre para la interfaz (se traduce con t()).
+    /// Name for the UI (translated with t()).
     pub fn label(self) -> &'static str {
         match self {
             Kind::Competitive => "Competitive",
@@ -104,7 +104,7 @@ impl Kind {
         }
     }
 
-    /// cfg/modo_tipo_<x>.cfg que se ejecuta antes del cfg del modo.
+    /// cfg/modo_tipo_<x>.cfg, run before the mode cfg.
     pub fn tipo_cfg(self) -> &'static str {
         match self {
             Kind::CompetitiveShort => "corto",
@@ -119,7 +119,7 @@ impl Kind {
         }
     }
 
-    /// (prefijo, mapa por defecto) de los tipos que solo funcionan en sus mapas.
+    /// (prefix, default map) of the types that only work on their own maps.
     pub fn own_maps(self) -> Option<(&'static str, &'static str)> {
         match self {
             Kind::ArmsRace => Some(("ar_", "ar_shoots")),
@@ -133,7 +133,7 @@ impl Kind {
         matches!(self, Kind::Deathmatch | Kind::FreeForAll | Kind::TeamDeathmatch)
     }
 
-    /// El juego reparte las armas o los bots siguen su propio guion.
+    /// The game hands out the weapons, or the bots follow their own script.
     pub fn is_scripted(self) -> bool {
         matches!(self, Kind::ArmsRace | Kind::Demolition | Kind::Guardian | Kind::DangerZone)
     }
@@ -142,11 +142,11 @@ impl Kind {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Server {
-    /// Carpeta del servidor dedicado (app 740). Vacía = data_dir/server.
+    /// Dedicated server folder (app 740). Empty = data_dir/server.
     pub install_dir: PathBuf,
     pub port: u16,
     pub rcon_password: String,
-    /// IP donde escucha rcon. Vacía = autodetectar (IP del hostname, 127.0.0.1, IP local).
+    /// IP rcon listens on. Empty = autodetect (hostname IP, 127.0.0.1, local IP).
     pub rcon_host: String,
     pub tickrate: u32,
     pub max_players: u32,
@@ -157,11 +157,11 @@ pub struct Server {
     pub network: Network,
     /// Game Server Login Token (perfil comunitario): https://steamcommunity.com/dev/managegameservers
     pub gslt: String,
-    /// Clave de la Steam Web API para mapas del workshop: https://steamcommunity.com/dev/apikey
+    /// Steam Web API key for workshop maps: https://steamcommunity.com/dev/apikey
     pub workshop_authkey: String,
-    /// Plugin de skins/cuchillos. En servidores públicos puede costar el GSLT.
+    /// Skins/knives plugin. On public servers it can cost you the GSLT.
     pub skins: bool,
-    /// Perfiles Internet/Comunitario: abrir el puerto en el router por UPnP al arrancar.
+    /// Internet/Community profiles: open the port on the router via UPnP at startup.
     pub upnp: bool,
 }
 
@@ -219,7 +219,7 @@ fn random_password() -> String {
     const A: &[u8] = b"ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
     let mut buf = [0u8; 20];
     if std::fs::File::open("/dev/urandom").and_then(|mut f| f.read_exact(&mut buf)).is_err() {
-        // shortcut: sin /dev/urandom se usa la hora; solo pasa en sistemas muy raros
+        // shortcut: without /dev/urandom it uses the time; only happens on very odd systems
         let t = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_nanos();
         for (i, b) in buf.iter_mut().enumerate() {
             *b = (t >> (i % 16 * 8)) as u8 ^ i as u8;
@@ -229,7 +229,7 @@ fn random_password() -> String {
 }
 
 impl Config {
-    /// Carga la config; si no existe la crea (migrando config.env del repo antiguo si lo hay).
+    /// Loads the config; creates it if missing (migrating config.env from the old repo if there is one).
     pub fn load() -> crate::Result<Config> {
         Self::load_from(&config_path())
     }
@@ -247,7 +247,7 @@ impl Config {
             return Ok(c);
         }
         let txt = std::fs::read_to_string(path).with_context(|| format!("leyendo {}", path.display()))?;
-        let mut c: Config = toml::from_str(&txt).with_context(|| format!("config inválida en {}", path.display()))?;
+        let mut c: Config = toml::from_str(&txt).with_context(|| format!("invalid config in {}", path.display()))?;
         if c.server.install_dir.as_os_str().is_empty() {
             c.server.install_dir = paths::data_dir().join("server");
         }
@@ -267,7 +267,7 @@ impl Config {
             std::fs::create_dir_all(d)?;
         }
         let txt = toml::to_string_pretty(self)?;
-        // lleva la contraseña rcon: solo legible por el usuario
+        // holds the rcon password: readable by the user only
         let tmp = path.with_extension("toml.tmp");
         let mut f = std::fs::OpenOptions::new().write(true).create(true).truncate(true).mode(0o600).open(&tmp)?;
         f.write_all(txt.as_bytes())?;
@@ -280,20 +280,20 @@ impl Config {
         let s = &self.server;
         for (name, v) in [("hostname", &s.hostname), ("password", &s.password), ("tags", &s.tags), ("rcon_password", &s.rcon_password)] {
             if v.contains(['"', ';', '\n', '\r']) {
-                bail!("{name} no puede llevar comillas, ; ni saltos de línea");
+                bail!("{name} cannot contain quotes, ; or line breaks");
             }
         }
         if s.rcon_password.contains(' ') {
-            bail!("rcon_password no puede llevar espacios");
+            bail!("rcon_password cannot contain spaces");
         }
         if s.port == 0 || s.port == u16::MAX {
-            bail!("puerto inválido: {}", s.port);
+            bail!("invalid port: {}", s.port);
         }
         if !(1..=64).contains(&s.max_players) {
-            bail!("max_players va de 1 a 64");
+            bail!("max_players must be 1 to 64");
         }
         if self.defaults.difficulty > 3 {
-            bail!("la dificultad va de 0 a 3");
+            bail!("difficulty must be 0 to 3");
         }
         Ok(())
     }
@@ -303,14 +303,14 @@ impl Config {
     }
 }
 
-/// Primera carpeta con un servidor ya instalado (evita volver a bajar 33 GB).
+/// First folder with a server already installed (avoids downloading 33 GB again).
 pub fn find_install() -> Option<PathBuf> {
     let mut cand = vec![paths::data_dir().join("server")];
     cand.extend(paths::legacy_dirs().into_iter().map(|d| d.join("server")));
     cand.into_iter().find(|d| d.join("srcds_run").is_file())
 }
 
-/// Lee un config.env (formato KEY=valor) del proyecto bash antiguo.
+/// Reads a config.env (KEY=value format) from the old bash project.
 pub fn parse_env(txt: &str) -> Config {
     let mut c = Config::default();
     for line in txt.lines() {
@@ -326,7 +326,7 @@ pub fn parse_env(txt: &str) -> Config {
             "TICKRATE" => s.tickrate = v.parse().unwrap_or(s.tickrate),
             "MAX_JUGADORES" => s.max_players = v.parse().unwrap_or(s.max_players),
             "WORKSHOP_AUTHKEY" => s.workshop_authkey = v,
-            // en el proyecto antiguo SV_LAN=1 solo se usaba para amigos por VPN con puente.py
+            // in the old project SV_LAN=1 was only used for friends over VPN with puente.py
             "SV_LAN" => s.network = if v == "1" { Network::Vpn } else { Network::Internet },
             "MODO" => d.mode = v,
             "HUMANOS" => d.humans = v.parse().unwrap_or(d.humans),
@@ -355,7 +355,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn migra_config_env() {
+    fn migrates_config_env() {
         let c = parse_env("PUERTO=27031\nRCON_PASSWORD=abc # comentario\nSV_LAN=1\nTIPO=casual\nDIFICULTAD=2\n");
         assert_eq!(c.server.port, 27031);
         assert_eq!(c.server.rcon_password, "abc");
@@ -365,7 +365,7 @@ mod tests {
     }
 
     #[test]
-    fn guarda_y_carga() {
+    fn saves_and_loads() {
         let dir = std::env::temp_dir().join(format!("csls-test-{}", std::process::id()));
         let p = dir.join("config.toml");
         let mut c = Config::default();
@@ -380,14 +380,14 @@ mod tests {
     }
 
     #[test]
-    fn rechaza_comillas() {
+    fn rejects_quotes() {
         let mut c = Config::default();
         c.server.hostname = "a\";quit".into();
         assert!(c.validate().is_err());
     }
 
     #[test]
-    fn contrasena_aleatoria() {
+    fn random_password_is_long() {
         let a = random_password();
         assert_eq!(a.len(), 20);
         assert_ne!(a, random_password());

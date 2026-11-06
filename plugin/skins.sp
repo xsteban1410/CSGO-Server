@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Skins, cuchillos y armas a elección, guardados por jugador (SQLite).
-//   !ws      skin del arma en la mano (o de otra arma)
-//   !knife   modelo de cuchillo (también !cuchillo)
-//   !armas   cualquier arma (solo si skins_armas_libres = 1, p.ej. en el modo "libre"; también !guns)
-// La lista de skins sale de configs/skins.cfg (csgo-legacy-server skins).
+// Skins, knives and weapons of choice, saved per player (SQLite).
+//   !ws      skin of the weapon in hand (or another weapon)
+//   !knife   knife model (also !cuchillo)
+//   !armas   any weapon (only if skins_armas_libres = 1, e.g. in the "libre" mode; also !guns)
+// The skin list comes from configs/skins.cfg (csgo-legacy-server skins).
 #pragma semicolon 1
 #include <sourcemod>
 #include <sdktools>
@@ -14,27 +14,27 @@
 public Plugin myinfo = { name = "Skins", author = "xsteban1410", version = "1.0" };
 
 #define CLAVE_CUCHILLO "cuchillo"
-#define DESGASTE 0.0001  // Recién fabricado
+#define DESGASTE 0.0001  // Factory New
 
 KeyValues g_Kv;
 StringMap g_PorIndice;          // "60" -> "weapon_m4a1_silencer"
 StringMap g_Prefs[MAXPLAYERS + 1];
 char g_SteamId[MAXPLAYERS + 1][24];
-bool g_Dando[MAXPLAYERS + 1];   // evita reentrar en el hook mientras damos un arma
+bool g_Dando[MAXPLAYERS + 1];   // avoids re-entering the hook while giving a weapon
 Database g_Db;
 ConVar g_ArmasLibres;
 
 public void OnPluginStart()
 {
 	LoadTranslations("csls.phrases");
-	g_ArmasLibres = CreateConVar("skins_armas_libres", "0", "1 = permite !armas para coger cualquier arma");
+	g_ArmasLibres = CreateConVar("skins_armas_libres", "0", "1 = allows !armas to take any weapon");
 	RegConsoleCmd("sm_ws", CmdWs, "Elegir skin");
 	RegConsoleCmd("sm_skins", CmdWs, "Elegir skin");
 	RegConsoleCmd("sm_knife", CmdKnife, "Elegir cuchillo");
 	RegConsoleCmd("sm_cuchillo", CmdKnife, "Elegir cuchillo");
-	RegConsoleCmd("sm_armas", CmdArmas, "Elegir cualquier arma");
-	RegConsoleCmd("sm_guns", CmdArmas, "Elegir cualquier arma");
-	RegServerCmd("skins_estado", CmdEstado, "Muestra el SteamID y las skins cargadas de cada jugador");
+	RegConsoleCmd("sm_armas", CmdArmas, "Choose any weapon");
+	RegConsoleCmd("sm_guns", CmdArmas, "Choose any weapon");
+	RegServerCmd("skins_estado", CmdEstado, "Shows the SteamID and loaded skins of each player");
 	CargarLista();
 	Database.Connect(OnDb, "storage-local");
 	for (int c = 1; c <= MaxClients; c++)
@@ -48,7 +48,7 @@ void CargarLista()
 	BuildPath(Path_SM, path, sizeof(path), "configs/skins.cfg");
 	g_Kv = new KeyValues("skins");
 	if (!g_Kv.ImportFromFile(path))
-		SetFailState("No pude leer %s (genéralo con: csgo-legacy-server skins)", path);
+		SetFailState("Could not read %s (generate it with: csgo-legacy-server skins)", path);
 	g_PorIndice = new StringMap();
 	g_Kv.JumpToKey("armas");
 	if (g_Kv.GotoFirstSubKey())
@@ -63,13 +63,13 @@ void CargarLista()
 	g_Kv.Rewind();
 }
 
-// --- base de datos ---------------------------------------------------------
+// --- database ---------------------------------------------------------
 
 public void OnDb(Database db, const char[] error, any data)
 {
 	if (db == null)
 	{
-		LogError("Sin base de datos, las skins no se guardarán: %s", error);
+		LogError("No database, skins will not be saved: %s", error);
 		return;
 	}
 	g_Db = db;
@@ -96,7 +96,7 @@ public void OnClientPutInServer(int c)
 	Cargar(c);
 }
 
-// El SteamID llega después de entrar: se carga cuando el servidor lo confirma.
+// The SteamID arrives after joining: loaded when the server confirms it.
 public void OnClientPostAdminCheck(int c)
 {
 	if (!IsFakeClient(c) && !g_SteamId[c][0])
@@ -110,7 +110,7 @@ public void OnClientDisconnect(int c)
 
 void Cargar(int c)
 {
-	// validate=false: el servidor es -insecure y Steam no valida el ID, pero sigue siendo el del jugador.
+	// validate=false: the server is -insecure and Steam does not validate the ID, but it is still the player's.
 	if (g_Db == null || IsFakeClient(c) || g_SteamId[c][0])
 		return;
 	char id[32];
@@ -125,8 +125,8 @@ void Cargar(int c)
 	g_Db.Query(OnCargado, q, GetClientUserId(c));
 }
 
-// SteamID64 del jugador. Con el servidor en modo LAN/-insecure, SourceMod no lo da (devuelve
-// "STEAM_ID_STOP_IGNORING_RETVALS"), pero sí el número de cuenta: 76561197960265728 + cuenta.
+// Player SteamID64. With the server in LAN/-insecure mode, SourceMod does not give it (returns
+// "STEAM_ID_STOP_IGNORING_RETVALS"), but it does give the account number: 76561197960265728 + account.
 bool SteamId64(int c, char[] out, int len)
 {
 	if (GetClientAuthId(c, AuthId_SteamID64, out, len, false) && strlen(out) == 17 && strncmp(out, "7656", 4) == 0)
@@ -134,7 +134,7 @@ bool SteamId64(int c, char[] out, int len)
 	int cuenta = GetSteamAccountID(c, false);
 	if (cuenta <= 0)
 		return false;
-	// Suma en dos mitades de 9 cifras: los enteros de SourcePawn son de 32 bits
+	// Adds in two 9-digit halves: SourcePawn integers are 32-bit
 	int lo = 960265728 + cuenta % 1000000000, hi = 76561197 + cuenta / 1000000000 + lo / 1000000000;
 	Format(out, len, "%d%09d", hi, lo % 1000000000);
 	return true;
@@ -215,7 +215,7 @@ public void OnEquip(int c, int w)
 		return;
 	if ((IsCuchilloBase(w) || EsCuchillo(arma)) && g_Prefs[c].GetString(CLAVE_CUCHILLO, modelo, sizeof(modelo)) && !StrEqual(arma, modelo))
 	{
-		RequestFrame(CambiarCuchillo, GetClientUserId(c));  // no se puede quitar un arma dentro del propio hook
+		RequestFrame(CambiarCuchillo, GetClientUserId(c));  // a weapon cannot be removed inside its own hook
 		return;
 	}
 	Pintar(c, w, arma);
@@ -224,7 +224,7 @@ public void OnEquip(int c, int w)
 bool IsCuchilloBase(int w)
 {
 	int i = GetEntProp(w, Prop_Send, "m_iItemDefinitionIndex");
-	return i == 42 || i == 59;  // cuchillo CT / T por defecto
+	return i == 42 || i == 59;  // default CT / T knife
 }
 
 int BuscarCuchillo(int c)
@@ -240,7 +240,7 @@ int BuscarCuchillo(int c)
 	return -1;
 }
 
-// Da un arma nueva con la skin aplicada (sustituye a 'vieja' si se indica).
+// Gives a new weapon with the skin applied (replaces 'vieja' if given).
 int Dar(int c, int vieja, const char[] arma)
 {
 	if (vieja != -1)
@@ -273,7 +273,7 @@ public void CambiarCuchillo(int userid)
 	Dar(c, k, modelo);
 }
 
-// Vuelve a dar las armas que tenga de 'solo' (o todas si está vacío) para que se vea la skin al momento.
+// Gives back the weapons of 'solo' (or all if empty) so the skin shows right away.
 void Refrescar(int c, const char[] solo)
 {
 	char arma[64];
@@ -291,7 +291,7 @@ void Refrescar(int c, const char[] solo)
 	}
 }
 
-// --- menús -------------------------------------------------------------------
+// --- menus -------------------------------------------------------------------
 
 public Action CmdWs(int c, int args)
 {
@@ -310,10 +310,20 @@ public Action CmdWs(int c, int args)
 	return Plugin_Handled;
 }
 
+// Menu entry in the player's language, marked if it is the current choice.
+void AddOption(Menu m, const char[] info, const char[] phrase, int c, bool current)
+{
+	char text[128];
+	Format(text, sizeof(text), "%T", phrase, c);
+	if (current)
+		Format(text, sizeof(text), "%T", "skins_menu_current", c, text);
+	m.AddItem(info, text);
+}
+
 void MenuArmasSkin(int c)
 {
 	Menu m = new Menu(OnArmaSkin);
-	m.SetTitle("¿Skin para qué arma?");
+	m.SetTitle("%T", "skins_menu_which", c);
 	char arma[64], nombre[64];
 	g_Kv.JumpToKey("armas");
 	if (g_Kv.GotoFirstSubKey())
@@ -356,10 +366,10 @@ void MenuSkins(int c, const char[] arma)
 		return;
 	}
 	g_Kv.GetString("nombre", nombre, sizeof(nombre), arma);
-	m.SetTitle("Skin para %s", nombre);
+	m.SetTitle("%T", "skins_menu_for", c, nombre);
 	Format(skin, sizeof(skin), "%s|", arma);
-	m.AddItem(skin, actual[0] ? "Sin skin" : "Sin skin (actual)");
-	m.AddItem("_armas", "« Otra arma");
+	AddOption(m, skin, "skins_menu_none", c, !actual[0]);
+	AddOption(m, "_armas", "skins_menu_other", c, false);
 	if (g_Kv.JumpToKey("pintura") && g_Kv.GotoFirstSubKey(false))
 	{
 		do
@@ -407,8 +417,8 @@ public Action CmdKnife(int c, int args)
 	char arma[64], nombre[64], actual[64];
 	g_Prefs[c].GetString(CLAVE_CUCHILLO, actual, sizeof(actual));
 	Menu m = new Menu(OnKnife);
-	m.SetTitle("Elige cuchillo");
-	m.AddItem("", actual[0] ? "Por defecto" : "Por defecto (actual)");
+	m.SetTitle("%T", "skins_menu_knife", c);
+	AddOption(m, "", "skins_menu_default", c, !actual[0]);
 	g_Kv.JumpToKey("cuchillos");
 	if (g_Kv.GotoFirstSubKey(false))
 	{
@@ -436,14 +446,14 @@ public int OnKnife(Menu m, MenuAction a, int c, int item)
 		if (IsPlayerAlive(c))
 			RequestFrame(CambiarCuchillo, GetClientUserId(c));
 		if (arma[0])
-			MenuSkins(c, arma);  // y directamente la skin del cuchillo
+			MenuSkins(c, arma);  // and straight to the knife skin
 	}
 	else if (a == MenuAction_End)
 		delete m;
 	return 0;
 }
 
-// --- !armas: cualquier arma ---------------------------------------------------
+// --- !armas: any weapon ---------------------------------------------------
 
 static const char PISTOLAS[][] = { "weapon_glock", "weapon_hkp2000", "weapon_usp_silencer", "weapon_p250",
 	"weapon_fiveseven", "weapon_tec9", "weapon_cz75a", "weapon_deagle", "weapon_revolver", "weapon_elite" };
@@ -466,7 +476,7 @@ public Action CmdArmas(int c, int args)
 		return Plugin_Handled;
 	}
 	Menu m = new Menu(OnArmas);
-	m.SetTitle("Elige arma");
+	m.SetTitle("%T", "skins_menu_weapon", c);
 	char arma[64], nombre[64];
 	g_Kv.JumpToKey("armas");
 	if (g_Kv.GotoFirstSubKey())
@@ -493,7 +503,7 @@ public int OnArmas(Menu m, MenuAction a, int c, int item)
 		m.GetItem(item, arma, sizeof(arma));
 		int slot = EsPistola(arma) ? CS_SLOT_SECONDARY : CS_SLOT_PRIMARY;
 		Dar(c, GetPlayerWeaponSlot(c, slot), arma);
-		CmdArmas(c, 0);  // menú nuevo para elegir otra
+		CmdArmas(c, 0);  // new menu to choose another
 	}
 	else if (a == MenuAction_End)
 		delete m;

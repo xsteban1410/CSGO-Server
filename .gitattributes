@@ -1,5 +1,5 @@
 * text=auto eol=lf
 *.png binary
 *.smx binary
-# Lenguaje del repositorio en GitHub: los cfg no son código
+# Repository language on GitHub: cfgs are not code
 cfg/** linguist-documentation

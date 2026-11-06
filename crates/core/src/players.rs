@@ -1,11 +1,11 @@
-//! Jugadores: parseo de `status` y comandos de kick/ban.
+//! Players: `status` parsing and kick/ban commands.
 use anyhow::bail;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Player {
     pub userid: u32,
     pub name: String,
-    /// STEAM_1:x:y, o "BOT".
+    /// STEAM_1:x:y, or "BOT".
     pub steamid: String,
     pub bot: bool,
     pub connected: String,
@@ -15,7 +15,7 @@ pub struct Player {
 }
 
 impl Player {
-    /// SteamID64 a partir de STEAM_X:Y:Z.
+    /// SteamID64 from STEAM_X:Y:Z.
     pub fn steamid64(&self) -> Option<u64> {
         steamid64(&self.steamid)
     }
@@ -39,7 +39,7 @@ pub struct Status {
     pub players: Vec<Player>,
 }
 
-/// Parsea la salida de `status` de CS:GO.
+/// Parses the output of CS:GO `status`.
 pub fn parse_status(s: &str) -> Status {
     let mut st = Status::default();
     for line in s.lines() {
@@ -97,19 +97,19 @@ pub fn kick_cmd(userid: u32, reason: &str) -> String {
     format!("kickid {userid} \"{}\"", clean_reason(reason))
 }
 
-/// Ban de SourceMod (basebans): minutos, 0 = permanente.
+/// SourceMod ban (basebans): minutes, 0 = permanent.
 pub fn ban_cmd(userid: u32, minutes: u32, reason: &str) -> String {
     format!("sm_ban #{userid} {minutes} \"{}\"", clean_reason(reason))
 }
 
 pub fn unban_cmd(steamid: &str) -> crate::Result<String> {
     if !steamid.starts_with("STEAM_") || !steamid.bytes().all(|b| b.is_ascii_alphanumeric() || b == b':' || b == b'_') {
-        bail!("SteamID inválido '{steamid}'");
+        bail!("invalid SteamID '{steamid}'");
     }
     Ok(format!("sm_unban \"{steamid}\""))
 }
 
-/// Baneos guardados por SourceMod/srcds en cfg/banned_user.cfg ("banid 0 STEAM_1:0:1").
+/// Bans saved by SourceMod/srcds in cfg/banned_user.cfg ("banid 0 STEAM_1:0:1").
 pub fn read_bans(csgo_dir: &std::path::Path) -> Vec<String> {
     std::fs::read_to_string(csgo_dir.join("cfg/banned_user.cfg"))
         .unwrap_or_default()
@@ -150,7 +150,7 @@ players : 1 humans, 2 bots (20/0 max) (not hibernating)
     }
 
     #[test]
-    fn comandos() {
+    fn commands() {
         assert_eq!(kick_cmd(3, "fuera\";quit"), "kickid 3 \"fueraquit\"");
         assert_eq!(ban_cmd(3, 0, "x"), "sm_ban #3 0 \"x\"");
         assert!(unban_cmd("STEAM_1:0:1;quit").is_err());

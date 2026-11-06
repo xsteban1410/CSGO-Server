@@ -6,7 +6,7 @@ pkgdesc="Host a CS:GO Legacy dedicated server with bots: GTK app and command lin
 arch=('x86_64')
 url="https://github.com/xsteban1410/CSGO-Server"
 license=('GPL-3.0-or-later')
-# srcds y steamcmd son de 32 bits; curl/tar para descargar SteamCMD, SourceMod y mapas
+# srcds and steamcmd are 32-bit; curl/tar to download SteamCMD, SourceMod and maps
 depends=('gtk4' 'libadwaita' 'sqlite' 'curl' 'tar' 'lib32-glibc' 'lib32-gcc-libs')
 makedepends=('cargo')
 optdepends=('steamcmd: use the system SteamCMD instead of downloading it'

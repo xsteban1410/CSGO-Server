@@ -1,4 +1,4 @@
-//! csgo-legacy-server: CLI para servidores sin pantalla (la app GTK usa el mismo núcleo).
+//! csgo-legacy-server: CLI for headless servers (the GTK app uses the same core).
 use anyhow::{bail, Context, Result};
 use clap::{Args, Parser, Subcommand};
 use csls_core::config::{Config, Kind};
@@ -161,7 +161,7 @@ enum ModeFile {
 }
 
 fn watch_loop(cfg: &Config) -> Result<()> {
-    // shortcut: sondeo cada 2 s en vez de inotify (sin dependencias); deploy ya solo compila lo cambiado
+    // shortcut: polls every 2 s instead of inotify (no dependencies); deploy only compiles what changed
     let mut last = String::new();
     loop {
         let r = deploy::deploy(cfg, false, true)?;
@@ -226,7 +226,7 @@ fn main() -> Result<()> {
         Cmd::Install { update } => {
             let cancel = AtomicBool::new(false);
             let mut last = String::new();
-            // la app lee el progreso de este archivo (la instalación sigue aunque se cierre)
+            // the app reads progress from this file (the install continues if it is closed)
             let pf = csls_core::server::install_progress_file();
             let r = install::install(&cfg, update, &cancel, &mut |p| {
                 let _ = std::fs::write(&pf, format!("{}|{}", p.fraction.map(|f| f.to_string()).unwrap_or_default(), p.message));
@@ -249,8 +249,8 @@ fn main() -> Result<()> {
         }
         Cmd::Doctor => {
             let ok = |b: bool| if b { "ok " } else { "!! " };
-            let falta = install::missing_deps();
-            println!("{}dependencies{}", ok(falta.is_empty()), if falta.is_empty() { String::new() } else { format!(": missing {} -> {}", falta.join(", "), install::deps_command()) });
+            let missing = install::missing_deps();
+            println!("{}dependencies{}", ok(missing.is_empty()), if missing.is_empty() { String::new() } else { format!(": missing {} -> {}", missing.join(", "), install::deps_command()) });
             println!("{}server installed in {}", ok(srv.is_installed()), cfg.install_dir().display());
             if !srv.is_installed() {
                 let free = install::free_bytes(cfg.install_dir()).unwrap_or(0);
@@ -323,9 +323,9 @@ fn main() -> Result<()> {
             }
             let mut r = srv.rcon()?;
             let st = players::parse_status(&r.exec("status")?);
-            let modo = r.exec("modo_nombre").unwrap_or_default();
-            let modo = modo.split('"').nth(3).unwrap_or("?");
-            println!("Running: {} | mode {modo} | map {} | {} humans, {} bots / {}", st.hostname, st.map, st.humans, st.bots, st.max);
+            let mode = r.exec("modo_nombre").unwrap_or_default();
+            let mode = mode.split('"').nth(3).unwrap_or("?");
+            println!("Running: {} | mode {mode} | map {} | {} humans, {} bots / {}", st.hostname, st.map, st.humans, st.bots, st.max);
             println!("Connect with: connect {}", srv.connect_address());
         }
         Cmd::Mode(g) => {

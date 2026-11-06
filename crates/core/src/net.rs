@@ -1,8 +1,8 @@
-//! Red sin herramientas externas (sin ip/ss/hostname -I).
+//! Networking without external tools (no ip/ss/hostname -I).
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, ToSocketAddrs, UdpSocket};
 use std::time::{Duration, Instant};
 
-/// IP local con la que se sale a internet (truco del socket UDP: no envía nada).
+/// Local IP used to reach the internet (UDP socket trick: sends nothing).
 pub fn local_ip() -> Option<IpAddr> {
     let s = UdpSocket::bind("0.0.0.0:0").ok()?;
     s.connect("1.1.1.1:80").ok()?;
@@ -10,12 +10,12 @@ pub fn local_ip() -> Option<IpAddr> {
     (!ip.is_unspecified()).then_some(ip)
 }
 
-/// ¿Es una IP de VPN tipo Tailscale (100.64.0.0/10)? Steam echa a quien conecta a una de estas.
+/// Is it a Tailscale-style VPN IP (100.64.0.0/10)? Steam kicks anyone connecting to one of these.
 pub fn is_vpn_ip(ip: &str) -> bool {
     ip.parse::<Ipv4Addr>().is_ok_and(|i| i.octets()[0] == 100 && (64..128).contains(&i.octets()[1]))
 }
 
-/// IPs locales de /proc/net/fib_trie: cada "|-- IP" seguida de "/32 host LOCAL".
+/// Local IPs from /proc/net/fib_trie: each "|-- IP" followed by "/32 host LOCAL".
 fn parse_local_ips(fib: &str) -> Vec<String> {
     let lines: Vec<&str> = fib.lines().collect();
     let mut v = Vec::new();
@@ -29,12 +29,12 @@ fn parse_local_ips(fib: &str) -> Vec<String> {
     v
 }
 
-/// IP de este PC en la VPN. shortcut: solo reconoce 100.64.0.0/10 (Tailscale, ZeroTier con esa red); otras VPN no se detectan.
+/// This PC's VPN IP. shortcut: only recognizes 100.64.0.0/10 (Tailscale, ZeroTier with that range); other VPNs are not detected.
 pub fn vpn_ip() -> Option<String> {
     parse_local_ips(&std::fs::read_to_string("/proc/net/fib_trie").ok()?).into_iter().find(|i| is_vpn_ip(i))
 }
 
-/// Pregunta a un servidor Source su nombre (A2S_INFO). None si no contesta.
+/// Asks a Source server for its name (A2S_INFO). None if it does not answer.
 pub fn a2s_info(addr: SocketAddr, timeout: Duration) -> Option<String> {
     let s = UdpSocket::bind("0.0.0.0:0").ok()?;
     s.set_read_timeout(Some(Duration::from_millis(800))).ok()?;
@@ -46,12 +46,12 @@ pub fn a2s_info(addr: SocketAddr, timeout: Duration) -> Option<String> {
         s.send_to(&query, addr).ok();
         let Ok((n, _)) = s.recv_from(&mut buf) else { continue };
         match buf[..n] {
-            // reto: repetir la consulta con él al final
+            // challenge: repeat the query with it appended
             [0xFF, 0xFF, 0xFF, 0xFF, 0x41, a, b, c, d] => {
                 query.truncate(base);
                 query.extend([a, b, c, d]);
             }
-            // cabecera + 'I' + protocolo + nombre terminado en 0
+            // header + 'I' + protocol + null-terminated name
             [0xFF, 0xFF, 0xFF, 0xFF, 0x49, _, ref rest @ ..] => {
                 let name = rest.split(|b| *b == 0).next()?;
                 return Some(String::from_utf8_lossy(name).into_owned());
@@ -62,7 +62,7 @@ pub fn a2s_info(addr: SocketAddr, timeout: Duration) -> Option<String> {
     None
 }
 
-/// ¿Está libre el puerto UDP? (en Linux falla si alguien lo tiene en cualquier IP)
+/// Is the UDP port free? (on Linux it fails if anyone holds it on any IP)
 pub fn udp_port_free(port: u16) -> bool {
     UdpSocket::bind(("0.0.0.0", port)).is_ok()
 }
@@ -75,13 +75,13 @@ pub fn hostname() -> Option<String> {
     (!h.is_empty()).then(|| h.to_string())
 }
 
-/// IPv4 de este nombre de host según /etc/hosts o DNS (srcds ata rcon a esta IP, p. ej. 127.0.1.1).
+/// IPv4 of this hostname per /etc/hosts or DNS (srcds binds rcon to this IP, e.g. 127.0.1.1).
 pub fn hostname_ip() -> Option<IpAddr> {
     let h = hostname()?;
     (h.as_str(), 0).to_socket_addrs().ok()?.map(|a| a.ip()).find(IpAddr::is_ipv4)
 }
 
-/// IPs donde probar rcon, por orden y sin repetir.
+/// IPs to try rcon on, in order, without repeats.
 pub fn rcon_candidates(configured: &str) -> Vec<IpAddr> {
     let mut v: Vec<IpAddr> = Vec::new();
     if let Ok(ip) = configured.parse() {
@@ -99,18 +99,18 @@ pub fn rcon_candidates(configured: &str) -> Vec<IpAddr> {
     out
 }
 
-/// IP pública (para jugadores por internet). Pregunta a api.ipify.org con curl; None sin red.
+/// Public IP (for internet players). Asks api.ipify.org with curl; None without network.
 pub fn public_ip() -> Option<IpAddr> {
     let o = std::process::Command::new("curl").args(["-fsS", "--max-time", "5", "https://api.ipify.org"]).output().ok()?;
     String::from_utf8_lossy(&o.stdout).trim().parse().ok()
 }
 
-/// Abre el puerto UDP en el router por UPnP (necesita `upnpc`, paquete miniupnpc).
+/// Opens the UDP port on the router via UPnP (needs `upnpc`, package miniupnpc).
 pub fn upnp_open(port: u16) -> crate::Result<()> {
     upnpc(&["-e", "csgo-legacy-server", "-r", &port.to_string(), "UDP"], "is redirected")
 }
 
-/// Cierra la redirección abierta con upnp_open.
+/// Closes the forward opened with upnp_open.
 pub fn upnp_close(port: u16) -> crate::Result<()> {
     upnpc(&["-d", &port.to_string(), "UDP"], "")
 }
@@ -119,15 +119,15 @@ fn upnpc(args: &[&str], ok_marker: &str) -> crate::Result<()> {
     let o = std::process::Command::new("upnpc")
         .args(args)
         .output()
-        .map_err(|_| anyhow::anyhow!("falta upnpc (paquete miniupnpc) para abrir el puerto por UPnP"))?;
+        .map_err(|_| anyhow::anyhow!("upnpc (package miniupnpc) is missing, needed to open the port via UPnP"))?;
     let out = String::from_utf8_lossy(&o.stdout);
     if !o.status.success() || !out.contains(ok_marker) || out.contains("No IGD UPnP Device") {
-        anyhow::bail!("el router no aceptó UPnP; abre el puerto UDP a mano: {}", out.lines().last().unwrap_or(""));
+        anyhow::bail!("the router rejected UPnP; open the UDP port by hand: {}", out.lines().last().unwrap_or(""));
     }
     Ok(())
 }
 
-/// Cortafuegos activo y comando para abrir el puerto UDP (y TCP para rcon remoto no: solo UDP del juego).
+/// Active firewall and the command to open the UDP port (game UDP only, not TCP for remote rcon).
 pub fn firewall_hint(port: u16) -> Option<String> {
     let active = |unit: &str| {
         std::process::Command::new("systemctl")
@@ -149,23 +149,23 @@ pub fn firewall_hint(port: u16) -> Option<String> {
 mod tests {
     use super::*;
     #[test]
-    fn candidatos_sin_repetir() {
+    fn candidates_without_repeats() {
         let v = rcon_candidates("127.0.0.1");
         assert_eq!(v[0], IpAddr::V4(Ipv4Addr::LOCALHOST));
         assert_eq!(v.iter().filter(|i| **i == v[0]).count(), 1);
     }
     #[test]
-    fn deteccion_de_vpn() {
+    fn vpn_detection() {
         assert!(is_vpn_ip("100.107.0.27"));
         assert!(is_vpn_ip("100.64.0.1"));
         assert!(!is_vpn_ip("100.128.0.1"));
         assert!(!is_vpn_ip("192.168.1.12"));
-        assert!(!is_vpn_ip("amigo.local"));
+        assert!(!is_vpn_ip("friend.local"));
         let fib = "Local:\n  +-- 0.0.0.0/0 3 0 5\n     |-- 0.0.0.0\n        /0 universe UNICAST\n     |-- 100.107.0.27\n        /32 host LOCAL\n     |-- 192.168.1.1\n        /32 link UNICAST\n     |-- 192.168.1.12\n        /32 host LOCAL\n";
         assert_eq!(parse_local_ips(fib), ["100.107.0.27", "192.168.1.12"]);
     }
     #[test]
-    fn consulta_a2s_con_reto() {
+    fn a2s_query_with_challenge() {
         let srv = UdpSocket::bind("127.0.0.1:0").unwrap();
         let addr = srv.local_addr().unwrap();
         std::thread::spawn(move || {
@@ -180,7 +180,7 @@ mod tests {
         assert_eq!(a2s_info(addr, Duration::from_secs(5)).as_deref(), Some("CS:GO Legacy"));
     }
     #[test]
-    fn puerto() {
+    fn port_in_use() {
         let s = UdpSocket::bind("0.0.0.0:0").unwrap();
         assert!(!udp_port_free(s.local_addr().unwrap().port()));
     }

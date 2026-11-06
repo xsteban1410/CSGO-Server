@@ -1,4 +1,4 @@
-// Mensajes de los plugins de csgo-legacy-server. Cada jugador los ve en el idioma de su cliente.
+// Messages of the csgo-legacy-server plugins. Each player sees them in their client's language.
 "Phrases"
 {
 	"match_starts"
@@ -163,5 +163,47 @@
 	{
 		"en"		"Regeneration"
 		"es"		"Regeneración"
+	}
+	"skins_menu_which"
+	{
+		"en"		"Skin for which weapon?"
+		"es"		"¿Skin para qué arma?"
+	}
+	"skins_menu_for"
+	{
+		"#format"	"{1:s}"
+		"en"		"Skin for {1}"
+		"es"		"Skin para {1}"
+	}
+	"skins_menu_none"
+	{
+		"en"		"No skin"
+		"es"		"Sin skin"
+	}
+	"skins_menu_other"
+	{
+		"en"		"« Other weapon"
+		"es"		"« Otra arma"
+	}
+	"skins_menu_knife"
+	{
+		"en"		"Choose knife"
+		"es"		"Elige cuchillo"
+	}
+	"skins_menu_default"
+	{
+		"en"		"Default"
+		"es"		"Por defecto"
+	}
+	"skins_menu_current"
+	{
+		"#format"	"{1:s}"
+		"en"		"{1} (current)"
+		"es"		"{1} (actual)"
+	}
+	"skins_menu_weapon"
+	{
+		"en"		"Choose weapon"
+		"es"		"Elige arma"
 	}
 }

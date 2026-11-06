@@ -1,7 +1,7 @@
-//! Puente UDP para amigos por VPN con el servidor en modo LAN (antes puente.py).
-//! Servidor: escucha en PUERTO+1 y reenvía al servidor desde la IP local, que así ve a los amigos como LAN.
-//! Amigo: escucha en su PC y reenvía al puente del servidor; él conecta a su propia IP local
-//! (Steam rechaza con STEAMAUTH código 10 a quien conecta a una IP 100.x de VPN).
+//! UDP bridge for friends over VPN while the server is in LAN mode (formerly puente.py).
+//! Server: listens on PORT+1 and forwards to the server from the local IP, so it sees friends as LAN.
+//! Friend: listens on their PC and forwards to the server bridge; they connect to their own local IP
+//! (Steam rejects with STEAMAUTH code 10 anyone connecting to a 100.x VPN IP).
 use std::collections::HashMap;
 use std::net::{IpAddr, SocketAddr, UdpSocket};
 use std::sync::{Arc, Mutex};
@@ -12,8 +12,8 @@ const NO_ANSWER: Duration = Duration::from_secs(5);
 
 type Clients = Arc<Mutex<HashMap<SocketAddr, (Arc<UdpSocket>, Instant)>>>;
 
-/// `listen_port`: dónde reciben los amigos; `target`: servidor (o puente remoto);
-/// `source_ip`: IP desde la que se reenvía (la local en el servidor, 0.0.0.0 en el amigo).
+/// `listen_port`: where friends arrive; `target`: server (or remote bridge);
+/// `source_ip`: IP to forward from (the local one on the server, 0.0.0.0 on the friend).
 pub fn run(listen_port: u16, target: SocketAddr, source_ip: IpAddr, log: impl Fn(String) + Send + Sync + 'static) -> crate::Result<()> {
     let listen = Arc::new(UdpSocket::bind(("0.0.0.0", listen_port))?);
     let log = Arc::new(log);
@@ -33,14 +33,14 @@ pub fn run(listen_port: u16, target: SocketAddr, source_ip: IpAddr, log: impl Fn
                 let s = match UdpSocket::bind((source_ip, 0)) {
                     Ok(s) => Arc::new(s),
                     Err(e) => {
-                        log(format!("Puente: no puedo abrir un socket desde {source_ip}: {e}"));
+                        log(format!("Bridge: cannot open a socket from {source_ip}: {e}"));
                         continue;
                     }
                 };
                 s.set_read_timeout(Some(NO_ANSWER))?;
                 map.insert(from, (s.clone(), Instant::now()));
-                log(format!("Puente: nuevo jugador {from}"));
-                // respuestas del servidor -> al amigo
+                log(format!("Bridge: new player {from}"));
+                // server replies -> to the friend
                 let (back, l, cl, lg) = (s.clone(), listen.clone(), clients.clone(), log.clone());
                 std::thread::spawn(move || {
                     let mut b = vec![0u8; 65535];
@@ -62,7 +62,7 @@ pub fn run(listen_port: u16, target: SocketAddr, source_ip: IpAddr, log: impl Fn
                             Err(e) if matches!(e.kind(), std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut) => {
                                 if !answered && !warned {
                                     warned = true;
-                                    lg(format!("Puente: {target} no responde a {from} (¿servidor apagado, VPN caída o sin perfil VPN?)"));
+                                    lg(format!("Bridge: {target} does not answer {from} (server off, VPN down or no VPN profile?)"));
                                 }
                                 if last.elapsed() >= IDLE {
                                     break;
@@ -78,9 +78,9 @@ pub fn run(listen_port: u16, target: SocketAddr, source_ip: IpAddr, log: impl Fn
             }
         };
         drop(map);
-        // un error puntual (VPN caída un momento) no debe tumbar el puente de todos
+        // a one-off error (VPN down for a moment) must not bring down the bridge for everyone
         if let Err(e) = sock.send_to(&buf[..n], target) {
-            log(format!("Puente: no puedo enviar a {target}: {e}"));
+            log(format!("Bridge: cannot send to {target}: {e}"));
         }
     }
 }
@@ -89,7 +89,7 @@ pub fn run(listen_port: u16, target: SocketAddr, source_ip: IpAddr, log: impl Fn
 mod tests {
     use super::*;
     #[test]
-    fn reenvia_ida_y_vuelta() {
+    fn forwards_both_ways() {
         let server = UdpSocket::bind("127.0.0.1:0").unwrap();
         let target = server.local_addr().unwrap();
         let port = UdpSocket::bind("0.0.0.0:0").unwrap().local_addr().unwrap().port();

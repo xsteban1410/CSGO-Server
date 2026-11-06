@@ -1,4 +1,4 @@
-//! Pestaña Ajustes: config.toml, mantenimiento y diagnóstico.
+//! Settings tab: config.toml, maintenance and diagnostics.
 use crate::i18n::t;
 use crate::{bg, button, AppRc};
 use adw::prelude::*;
@@ -97,10 +97,10 @@ pub fn page(a: &AppRc) -> gtk::Widget {
 
     let d = adw::PreferencesGroup::new();
     d.set_title(&t("Diagnosis"));
-    let falta = install::missing_deps();
+    let missing = install::missing_deps();
     let deps = adw::ActionRow::builder()
         .title(t("Dependencies"))
-        .subtitle(if falta.is_empty() { t("installed") } else { format!("{}: {} — {}", t("missing"), falta.join(", "), install::deps_command()) })
+        .subtitle(if missing.is_empty() { t("installed") } else { format!("{}: {} — {}", t("missing"), missing.join(", "), install::deps_command()) })
         .subtitle_selectable(true)
         .build();
     deps.add_css_class("property");

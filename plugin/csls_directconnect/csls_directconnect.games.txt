@@ -1,5 +1,5 @@
-// Firmas de engine.so (Linux, CS:GO Legacy app 740) para csls_directconnect.
-// Si Valve actualiza el motor y el plugin dice "signature not found", hay que volver a sacarlas.
+// engine.so signatures (Linux, CS:GO Legacy app 740) for csls_directconnect.
+// If Valve updates the engine and the plugin says "signature not found", they must be extracted again.
 "Games"
 {
 	"csgo"
@@ -12,7 +12,7 @@
 				"library"	"engine"
 				"linux"		"\x55\x89\xE5\x83\xEC\x08\x8B\x45\x08\x8B\x10\x8B\x52\x60\x81\xFA\x2A\x2A\x2A\x2A\x75\x3A\x0F\xB6\x80\x88\x02\x00\x00"
 			}
-			// llamada dentro de CBaseServer::ReplyChallenge que mete el id del lobby (-1, -1)
+			// call inside CBaseServer::ReplyChallenge that inserts the lobby id (-1, -1)
 			"challenge_lobby_id"
 			{
 				"library"	"engine"
@@ -43,7 +43,7 @@
 			{
 				"linux"	"31 C0 C3"
 			}
-			// push 0; push 0 en lugar de push -1; push -1
+			// push 0; push 0 instead of push -1; push -1
 			"challenge_lobby_id:bytes"
 			{
 				"linux"	"6A 00 6A 00"

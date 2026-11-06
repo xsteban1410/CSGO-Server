@@ -1,0 +1,24 @@
+name: Promote
+
+# Moves pre-releases to master once it has been quiet for three days. See tools/promote.sh for the rules.
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+  issues: write
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Promote
+        run: tools/promote.sh
+        env:
+          GH_TOKEN: ${{ github.token }}

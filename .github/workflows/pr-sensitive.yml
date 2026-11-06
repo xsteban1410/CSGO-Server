@@ -1,7 +1,7 @@
 name: Sensitive areas
 
-# Avisa en los PR que tocan zonas peligrosas. pull_request_target da permiso para comentar también en PR de forks:
-# por eso nunca debe hacer checkout ni ejecutar código del PR; solo lee la lista de archivos.
+# Flags PRs touching dangerous areas. pull_request_target gives permission to comment on fork PRs too:
+# so it must never check out or run PR code; it only reads the list of files.
 on:
   pull_request_target:
     types: [opened, synchronize, reopened]

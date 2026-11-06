@@ -1,5 +1,5 @@
-//! Genera addons/sourcemod/configs/skins.cfg desde los archivos del juego (antes tools/generar_skins.py).
-//! Lee scripts/items/items_game.txt y resource/csgo_<idioma>.txt. Orden: las más buscadas, luego rareza y nombre.
+//! Generates addons/sourcemod/configs/skins.cfg from the game files (formerly tools/generar_skins.py).
+//! Reads scripts/items/items_game.txt and resource/csgo_<lang>.txt. Order: most wanted, then rarity and name.
 use crate::kv::{self, Kv};
 use anyhow::Context;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
@@ -36,7 +36,7 @@ const VARIANTS: &[(&str, &str, &str)] = &[
     ("blackpearl", "Black Pearl", "Perla negra"), ("emerald", "Emerald", "Esmeralda"),
 ];
 
-/// Todas las secciones con este nombre, a cualquier profundidad.
+/// All sections with this name, at any depth.
 fn sections<'a>(t: &'a Kv, name: &str, out: &mut Vec<&'a Kv>) {
     for (k, v) in t.entries() {
         if let Kv::Obj(_) = v {
@@ -87,10 +87,10 @@ fn esc(s: &str) -> String {
     s.replace('"', "'")
 }
 
-/// Devuelve el texto de skins.cfg y (armas, cuchillos, skins). `lang` = "es" (nombre + original) o "en".
+/// Returns the skins.cfg text and (weapons, knives, skins). `lang` = "es" (name + original) or "en".
 pub fn generate(csgo: &Path, lang: &str) -> crate::Result<(String, (usize, usize, usize))> {
     let items_txt = std::fs::read_to_string(csgo.join("scripts/items/items_game.txt"))
-        .or_else(|_| read_text(&csgo.join("scripts/items/items_game.txt")).context("no hay texto"))
+        .or_else(|_| read_text(&csgo.join("scripts/items/items_game.txt")).context("no text"))
         .with_context(|| format!("leyendo {}/scripts/items/items_game.txt", csgo.display()))?;
     let items = kv::parse(&items_txt);
     let en = tokens(&csgo.join("resource/csgo_english.txt"));
@@ -105,7 +105,7 @@ pub fn generate(csgo: &Path, lang: &str) -> crate::Result<(String, (usize, usize
         local.get(&k).or_else(|| en.get(&k)).cloned().unwrap_or_else(|| def.to_string())
     };
 
-    // nombre interno -> (id, nombre local, nombre inglés)
+    // internal name -> (id, local name, English name)
     let mut kits: HashMap<String, (u32, String, String)> = HashMap::new();
     for sec in find(&items, "paint_kits") {
         for (pid, body) in sec.entries() {
@@ -129,7 +129,7 @@ pub fn generate(csgo: &Path, lang: &str) -> crate::Result<(String, (usize, usize
         }
     }
 
-    // arma -> skins, de las listas de botín "[skin]weapon_xxx"
+    // weapon -> skins, from the "[skin]weapon_xxx" loot lists
     let mut by_weapon: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
     fn walk(t: &Kv, kits: &HashMap<String, (u32, String, String)>, out: &mut BTreeMap<String, BTreeSet<String>>) {
         for (k, v) in t.entries() {
@@ -148,7 +148,7 @@ pub fn generate(csgo: &Path, lang: &str) -> crate::Result<(String, (usize, usize
     }
     walk(&items, &kits, &mut by_weapon);
 
-    // cuchillos: solo aparecen en iconos econ/default_generated/<arma>_<skin>_light
+    // knives: only appear in icons econ/default_generated/<weapon>_<skin>_light
     let mut known: BTreeSet<String> = BTreeSet::new();
     let mut index: HashMap<String, String> = HashMap::new();
     let mut names: HashMap<String, String> = HashMap::new();
@@ -228,7 +228,7 @@ pub fn generate(csgo: &Path, lang: &str) -> crate::Result<(String, (usize, usize
             let (id, l, e) = &kits[*k];
             let mut shown = if e.is_empty() || l == e || l.is_empty() { if l.is_empty() { e.clone() } else { l.clone() } } else { format!("{l} ({e})") };
             if locals.iter().filter(|x| **x == l).count() > 1 {
-                // las fases de Doppler comparten nombre
+                // Doppler phases share a name
                 let v = VARIANTS.iter().find(|(id, _, _)| k.contains(id)).map(|(_, en, es)| if lang == "es" { *es } else { *en }).unwrap_or(k.as_str());
                 shown += &format!(" - {v}");
             }

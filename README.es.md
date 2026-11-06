@@ -192,6 +192,11 @@ Se guarda por SteamID y se aplica cada vez que entras. Los mensajes salen en el 
   contra las normas de Valve en servidores públicos con GSLT, por eso en Ajustes se puede desactivar el plugin de skins.
 - No hay guantes. No probado en distros musl ni en SteamOS (sistema de solo lectura: usa distrobox).
 
+## Ramas
+
+`master` es la versión estable, y las releases salen de ella. Lo nuevo y las contribuciones van primero a `pre-releases`, que
+pasa sola a `master` tras tres días sin problemas. Los detalles están en [CONTRIBUTING.md](CONTRIBUTING.md#branches).
+
 ## Licencia
 
 GPL-3.0-or-later. Ver [LICENSE](LICENSE).

@@ -1,11 +1,13 @@
 name: Release
 
-# Al llegar a master una versión nueva en Cargo.toml (tools/version.sh bump): pasa el CI, crea el tag y publica la release
-# con el paquete y las notas del changelog. Sin versión nueva no hace nada.
+# When a new version in Cargo.toml reaches master (tools/version.sh bump): runs CI, creates the tag and publishes the release
+# with the package and the changelog notes. Without a new version it does nothing.
 on:
   push:
     branches: [master]
     paths: [Cargo.toml]
+  # tools/promote.sh starts it: its push to master does not trigger workflows
+  workflow_dispatch:
 
 permissions:
   contents: read

@@ -1,4 +1,4 @@
-//! Núcleo de csgo-legacy-server: todo lo que no es interfaz (lo usan el CLI y la app GTK).
+//! Core of csgo-legacy-server: everything that is not UI (used by the CLI and the GTK app).
 pub mod bridge;
 pub mod config;
 pub mod deploy;
@@ -19,7 +19,7 @@ pub mod workshop;
 
 pub use anyhow::{Error, Result};
 
-/// Idioma de la interfaz: "es" si LANG/LC_ALL empieza por es, si no "en".
+/// UI language: "es" if LANG/LC_ALL starts with es, otherwise "en".
 pub fn lang() -> &'static str {
     for v in ["LC_ALL", "LC_MESSAGES", "LANG"] {
         if let Ok(l) = std::env::var(v) {

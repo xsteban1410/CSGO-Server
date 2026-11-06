@@ -1,4 +1,4 @@
-//! Presets: opciones de partida guardadas con nombre (~/.config/csgo-legacy-server/presets.toml).
+//! Presets: named saved match options (~/.config/csgo-legacy-server/presets.toml).
 use crate::launch::LaunchOptions;
 use crate::paths;
 use anyhow::{bail, Context};
@@ -37,10 +37,10 @@ impl Presets {
         Ok(())
     }
 
-    /// Guarda (o reemplaza) un preset y escribe el archivo.
+    /// Saves (or replaces) a preset and writes the file.
     pub fn put(name: &str, o: &LaunchOptions) -> crate::Result<()> {
         if !valid_name(name) {
-            bail!("nombre de preset inválido '{name}'");
+            bail!("invalid preset name '{name}'");
         }
         let mut p = Self::load()?;
         p.0.insert(name.trim().to_string(), o.clone());
@@ -50,13 +50,13 @@ impl Presets {
     pub fn remove(name: &str) -> crate::Result<()> {
         let mut p = Self::load()?;
         if p.0.remove(name).is_none() {
-            bail!("no existe el preset '{name}'");
+            bail!("preset '{name}' does not exist");
         }
         p.save_to(&path())
     }
 
     pub fn get(&self, name: &str) -> crate::Result<&LaunchOptions> {
-        self.0.get(name).with_context(|| format!("no existe el preset '{name}'"))
+        self.0.get(name).with_context(|| format!("preset '{name}' does not exist"))
     }
 }
 
@@ -66,7 +66,7 @@ mod tests {
     use crate::launch::{parse_cvar, Site};
 
     #[test]
-    fn ida_y_vuelta() {
+    fn round_trip() {
         let mut o = LaunchOptions::from_config(&crate::config::Config::default());
         o.mode = "retake".into();
         o.bots = Some(4);

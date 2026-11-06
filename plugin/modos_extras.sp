@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Modos con reglas propias: una bala, arma aleatoria, vampiro y jefe. Lo incluye modos.sp.
+// Modes with their own rules: one bullet, random weapon, vampire and boss. Included by modos.sp.
 
 ConVar g_UnaBala, g_Aleatorio, g_Vampiro, g_VampiroMax, g_Jefe, g_Anarquia;
 
-// Anarquía: cvars que echan o banean solos y plugins de SourceMod que también lo hacen
+// Anarchy: cvars that kick or ban on their own, and SourceMod plugins that do too
 char g_AnarquiaCvars[][][] = {
 	{"mp_autokick", "0"}, {"mp_tkpunish", "0"}, {"sv_kick_ban_duration", "0"},
 	{"sv_vote_issue_kick_allowed", "0"}, {"mp_spawnprotectiontime", "0"}, {"sv_timeout", "300"},
@@ -11,7 +11,7 @@ char g_AnarquiaCvars[][][] = {
 };
 char g_AnarquiaPlugins[][] = { "basevotes", "antiflood", "reservedslots" };
 
-// Armas del modo aleatorio (la misma para todos en cada ronda)
+// Weapons of the random mode (the same for everyone each round)
 char g_Aleatorias[][] = {
 	"weapon_awp", "weapon_ssg08", "weapon_ak47", "weapon_m4a1_silencer", "weapon_sg556", "weapon_aug",
 	"weapon_famas", "weapon_galilar", "weapon_scar20", "weapon_nova", "weapon_xm1014", "weapon_mag7",
@@ -22,18 +22,18 @@ char g_Aleatorias[][] = {
 
 void Extras_Start()
 {
-	g_UnaBala    = CreateConVar("modo_unabala", "0", "1 = una bala en la pistola, cada kill da +1 y cualquier impacto mata");
-	g_Aleatorio  = CreateConVar("modo_aleatorio", "0", "1 = cada ronda se sortea un arma igual para todos");
-	g_Vampiro    = CreateConVar("modo_vampiro", "0", "Fracción del daño hecho que cura al atacante (0 = apagado)");
-	g_VampiroMax = CreateConVar("modo_vampiro_max", "200", "Vida máxima que se puede alcanzar curándose");
-	g_Jefe       = CreateConVar("modo_jefe", "0", "Vida del bot jefe gigante de cada ronda (0 = sin jefe)");
-	g_Anarquia   = CreateConVar("modo_anarquia", "0", "1 = nadie es expulsado ni baneado automáticamente (los kick/ban del admin siguen)");
+	g_UnaBala    = CreateConVar("modo_unabala", "0", "1 = one bullet in the pistol, each kill gives +1 and any hit kills");
+	g_Aleatorio  = CreateConVar("modo_aleatorio", "0", "1 = each round a weapon is drawn, the same for everyone");
+	g_Vampiro    = CreateConVar("modo_vampiro", "0", "Fraction of damage dealt that heals the attacker (0 = off)");
+	g_VampiroMax = CreateConVar("modo_vampiro_max", "200", "Maximum health reachable by healing");
+	g_Jefe       = CreateConVar("modo_jefe", "0", "Health of the giant boss bot each round (0 = no boss)");
+	g_Anarquia   = CreateConVar("modo_anarquia", "0", "1 = nobody is kicked or banned automatically (admin kick/ban still work)");
 	g_Anarquia.AddChangeHook(Extras_Anarquia);
 	HookEvent("player_death", Extras_Death);
 	HookEvent("player_hurt", Extras_Hurt);
 }
 
-// Una bala: deja la pistola con 1 bala y nada en la reserva. Se llama desde Equip.
+// One bullet: leaves the pistol with 1 bullet and no reserve. Called from Equip.
 void Extras_Equip(int c)
 {
 	if (!g_UnaBala.BoolValue)
@@ -80,7 +80,7 @@ public void Extras_Hurt(Event e, const char[] name, bool dontBroadcast)
 	SetEntityHealth(a, hp < g_VampiroMax.IntValue ? hp : g_VampiroMax.IntValue);
 }
 
-// Aleatorio: se sortea en round_prestart, antes de que aparezca nadie.
+// Random: drawn in round_prestart, before anyone spawns.
 void Extras_PreStart()
 {
 	if (!g_Aleatorio.BoolValue)
@@ -95,7 +95,7 @@ void Extras_PreStart()
 	PrintToChatAll(" \x04[Aleatorio]\x01 %t", "random_round", w[7]);
 }
 
-// Jefe: un bot T al azar se vuelve gigante, lento y con mucha vida.
+// Boss: a random T bot turns giant, slow and with lots of health.
 void Extras_FreezeEnd()
 {
 	if (g_Jefe.IntValue <= 0 || GameRules_GetProp("m_bWarmupPeriod"))
@@ -117,7 +117,7 @@ void Extras_FreezeEnd()
 	PrintToChatAll(" \x04[Jefe]\x01 %t", "boss_is", bn, g_Jefe.IntValue);
 }
 
-// --- anarquía ----------------------------------------------------------------
+// --- anarchy ----------------------------------------------------------------
 
 public void Extras_Anarquia(ConVar cv, const char[] viejo, const char[] nuevo)
 {

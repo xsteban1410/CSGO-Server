@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Zombies por oleadas: tipos de zombi, retroceso, infección y niebla. Lo incluye modos.sp.
-// Cada oleada es una ronda: los zombis (T) reaparecen sin parar y los humanos (CT) tienen que aguantar el tiempo.
-// Si ganan los CT se pasa a la siguiente oleada; si caen todos, se repite. Tras la última oleada, victoria.
+// Zombie waves: zombie types, knockback, infection and fog. Included by modos.sp.
+// Each wave is a round: zombies (T) keep respawning and humans (CT) must survive the time.
+// If the CTs win it moves to the next wave; if they all die, it repeats. After the last wave, victory.
 
 #define Z_NORMAL   0
 #define Z_CORREDOR 1
@@ -20,17 +20,17 @@ int   g_ZColor[][] = { { 80, 255, 80 }, { 255, 230, 60 }, { 170, 40, 40 } };
 
 void Zombies_Start()
 {
-	g_Z           = CreateConVar("modo_zombies", "0", "1 = modo zombies por oleadas (los T son zombis)");
-	g_ZOleadas    = CreateConVar("modo_z_oleadas", "5", "Oleadas para ganar");
-	g_ZBase       = CreateConVar("modo_z_base", "6", "Zombis en la primera oleada");
-	g_ZInc        = CreateConVar("modo_z_incremento", "2", "Zombis de más en cada oleada");
-	g_ZVida       = CreateConVar("modo_z_vida", "250", "Vida de un zombi normal en la primera oleada");
-	g_ZVidaOleada = CreateConVar("modo_z_vida_oleada", "75", "Vida extra por oleada");
-	g_ZVelocidad  = CreateConVar("modo_z_velocidad", "1.2", "Velocidad base de los zombis");
-	g_ZRetroceso  = CreateConVar("modo_z_retroceso", "1.0", "Fuerza con la que las balas empujan a los zombis (0 = nada)");
-	g_ZInfeccion  = CreateConVar("modo_z_infeccion", "1", "1 = el humano que muere por un zombi se convierte en zombi");
+	g_Z           = CreateConVar("modo_zombies", "0", "1 = zombie wave mode (Ts are zombies)");
+	g_ZOleadas    = CreateConVar("modo_z_oleadas", "5", "Waves to win");
+	g_ZBase       = CreateConVar("modo_z_base", "6", "Zombies in the first wave");
+	g_ZInc        = CreateConVar("modo_z_incremento", "2", "Extra zombies each wave");
+	g_ZVida       = CreateConVar("modo_z_vida", "250", "Health of a normal zombie in the first wave");
+	g_ZVidaOleada = CreateConVar("modo_z_vida_oleada", "75", "Extra health per wave");
+	g_ZVelocidad  = CreateConVar("modo_z_velocidad", "1.2", "Base zombie speed");
+	g_ZRetroceso  = CreateConVar("modo_z_retroceso", "1.0", "Force with which bullets push zombies (0 = none)");
+	g_ZInfeccion  = CreateConVar("modo_z_infeccion", "1", "1 = a human killed by a zombie becomes a zombie");
 	g_ZNiebla     = CreateConVar("modo_z_niebla", "1", "1 = niebla");
-	RegServerCmd("modo_estado", CmdEstado, "Muestra la oleada y la vida, velocidad y tamaño de cada jugador");
+	RegServerCmd("modo_estado", CmdEstado, "Shows the wave and the health, speed and size of each player");
 	HookEvent("round_start", Zombies_RoundStart);
 	HookEvent("round_end", Zombies_RoundEnd);
 	HookEvent("player_death", Zombies_Death);
@@ -44,7 +44,7 @@ void Zombies_MapStart()
 
 bool EsZombi(int c) { return g_Z.BoolValue && c >= 1 && c <= MaxClients && IsClientInGame(c) && GetClientTeam(c) == CS_TEAM_T; }
 
-// Se llama desde FixHumanTeam: un infectado se queda en T hasta la siguiente oleada.
+// Called from FixHumanTeam: an infected player stays on T until the next wave.
 bool Zombies_Infectado(int c) { return g_Z.BoolValue && g_Infectado[c]; }
 
 void Zombies_PreStart()
@@ -87,7 +87,7 @@ public void Zombies_RoundEnd(Event e, const char[] name, bool dontBroadcast)
 	PrintToChatAll(" \x04[Zombies]\x01 %t", "wave_cleared", g_Oleada);
 }
 
-// Tipo, vida, velocidad, tamaño y color del zombi. Se llama desde Equip (después de dar las armas).
+// Zombie type, health, speed, size and color. Called from Equip (after giving weapons).
 void Zombies_Equip(int c)
 {
 	if (!g_Z.BoolValue)
@@ -127,7 +127,7 @@ public Action Zombies_TakeDamage(int victim, int &attacker, int &inflictor, floa
 	return Plugin_Continue;
 }
 
-// Retroceso: la bala empuja al zombi en la dirección del disparo (escopetas y AWP más).
+// Knockback: the bullet pushes the zombie along the shot (shotguns and AWP more).
 public void Zombies_TakeDamagePost(int victim, int attacker, int inflictor, float damage, int damagetype)
 {
 	float k = g_ZRetroceso.FloatValue;
@@ -157,7 +157,7 @@ public void Zombies_TakeDamagePost(int victim, int attacker, int inflictor, floa
 	TeleportEntity(victim, NULL_VECTOR, NULL_VECTOR, vel);
 }
 
-// Infección: el humano que muere por un zombi pasa a ser zombi.
+// Infection: a human killed by a zombie becomes a zombie.
 public void Zombies_Death(Event e, const char[] name, bool dontBroadcast)
 {
 	if (!g_Z.BoolValue || !g_ZInfeccion.BoolValue || GameRules_GetProp("m_bWarmupPeriod"))
@@ -165,7 +165,7 @@ public void Zombies_Death(Event e, const char[] name, bool dontBroadcast)
 	int v = GetClientOfUserId(e.GetInt("userid")), a = GetClientOfUserId(e.GetInt("attacker"));
 	if (v < 1 || IsFakeClient(v) || GetClientTeam(v) != CS_TEAM_CT || !EsZombi(a))
 		return;
-	// Si era el último humano vivo la ronda ya está perdida: no hace falta convertirlo
+	// If it was the last living human the round is already lost: no need to convert
 	for (int i = 1; i <= MaxClients; i++)
 		if (i != v && IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == CS_TEAM_CT)
 		{
@@ -189,7 +189,7 @@ public Action Infectar(Handle t, any userid)
 	return Plugin_Stop;
 }
 
-// Niebla: usa el env_fog_controller del mapa o crea uno.
+// Fog: uses the map's env_fog_controller or creates one.
 void Niebla()
 {
 	if (!g_ZNiebla.BoolValue)
@@ -226,7 +226,7 @@ public Action CmdEstado(int args)
 		{
 			float p[3];
 			GetClientAbsOrigin(i, p);
-			PrintToServer("%N equipo=%d vida=%d vel=%.2f escala=%.2f tipo=%d pos=%.0f,%.0f,%.0f", i, GetClientTeam(i), GetClientHealth(i),
+			PrintToServer("%N team=%d health=%d speed=%.2f scale=%.2f type=%d pos=%.0f,%.0f,%.0f", i, GetClientTeam(i), GetClientHealth(i),
 				GetEntPropFloat(i, Prop_Send, "m_flLaggedMovementValue"), GetEntPropFloat(i, Prop_Send, "m_flModelScale"), g_ZTipo[i], p[0], p[1], p[2]);
 		}
 	return Plugin_Handled;

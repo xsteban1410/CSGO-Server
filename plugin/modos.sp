@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Modos de juego contra bots para CS:GO Legacy.
-// Al cargar el mapa ejecuta: modo_base.cfg -> modo_clasico.cfg (rondas clásicas) -> modo_tipo_<modo_tipo>.cfg -> modo_<modo_nombre>.cfg -> modo_extra
+// Game modes against bots for CS:GO Legacy.
+// On map load it runs: modo_base.cfg -> modo_clasico.cfg (classic rounds) -> modo_tipo_<modo_tipo>.cfg -> modo_<modo_nombre>.cfg -> modo_extra
 #pragma semicolon 1
 #include <sourcemod>
 #include <sdktools>
@@ -8,7 +8,7 @@
 #include <sdkhooks>
 #pragma newdecls required
 
-public Plugin myinfo = { name = "Modos", author = "xsteban1410", version = "4.0" };
+public Plugin myinfo = { name = "Modes", author = "xsteban1410", version = "4.0" };
 
 #define T_IDX 0
 #define CT_IDX 1
@@ -16,7 +16,7 @@ public Plugin myinfo = { name = "Modos", author = "xsteban1410", version = "4.0"
 ConVar g_Nombre, g_Tipo, g_GameType, g_Humanos, g_Extra, g_Retake, g_Sitio, g_Pausa, g_HumanTeam;
 ConVar g_Quitar[2], g_Arma[2], g_Pistola[2], g_Objeto[2], g_Vida[2], g_Velocidad[2], g_Color[2];
 
-int g_Site;                 // 0 = A, 1 = B en la ronda actual
+int g_Site;                 // 0 = A, 1 = B in the current round
 float g_SiteCenter[3];
 
 #include "modos_extras.sp"
@@ -26,30 +26,30 @@ public void OnPluginStart()
 {
 	LoadTranslations("csls.phrases");
 	g_Nombre  = CreateConVar("modo_nombre", "awp", "Modo activo (cfg/modo_<nombre>.cfg)");
-	g_Tipo    = CreateConVar("modo_tipo", "", "Ajustes del tipo de partida (cfg/modo_tipo_<nombre>.cfg; vacio = ninguno)");
+	g_Tipo    = CreateConVar("modo_tipo", "", "Match type settings (cfg/modo_tipo_<name>.cfg; empty = none)");
 	g_GameType = FindConVar("game_type");
-	g_Humanos = CreateConVar("modo_humanos", "2", "Humanos en equipo para acabar el calentamiento (0 = no controlar)");
-	g_Extra   = CreateConVar("modo_extra", "", "Comandos que se ejecutan despues del cfg del modo (separados por ;)");
-	g_Retake  = CreateConVar("modo_retake", "0", "1 = bomba plantada al empezar la ronda y T apareciendo en el sitio");
-	g_Sitio   = CreateConVar("modo_sitio", "random", "Sitio del retake: a, b o random");
+	g_Humanos = CreateConVar("modo_humanos", "2", "Humans on a team needed to end warmup (0 = no control)");
+	g_Extra   = CreateConVar("modo_extra", "", "Commands run after the mode cfg (separated by ;)");
+	g_Retake  = CreateConVar("modo_retake", "0", "1 = bomb planted at round start and Ts spawning on the site");
+	g_Sitio   = CreateConVar("modo_sitio", "random", "Retake site: a, b or random");
 
 	char team[2][4] = { "t", "ct" }, name[48];
 	for (int i = 0; i < 2; i++)
 	{
 		Format(name, sizeof(name), "modo_%s_quitar", team[i]);
-		g_Quitar[i] = CreateConVar(name, "0", "1 = al aparecer quitar todo menos el cuchillo y dar las armas del modo");
+		g_Quitar[i] = CreateConVar(name, "0", "1 = on spawn remove everything but the knife and give the mode weapons");
 		Format(name, sizeof(name), "modo_%s_arma", team[i]);
-		g_Arma[i] = CreateConVar(name, "", "Arma principal al aparecer");
+		g_Arma[i] = CreateConVar(name, "", "Primary weapon on spawn");
 		Format(name, sizeof(name), "modo_%s_pistola", team[i]);
-		g_Pistola[i] = CreateConVar(name, "", "Pistola al aparecer");
+		g_Pistola[i] = CreateConVar(name, "", "Pistol on spawn");
 		Format(name, sizeof(name), "modo_%s_objeto", team[i]);
-		g_Objeto[i] = CreateConVar(name, "", "Objeto extra al aparecer (granada, zeus, item_defuser...)");
+		g_Objeto[i] = CreateConVar(name, "", "Extra item on spawn (grenade, zeus, item_defuser...)");
 		Format(name, sizeof(name), "modo_%s_vida", team[i]);
-		g_Vida[i] = CreateConVar(name, "0", "Vida al aparecer (0 = normal)");
+		g_Vida[i] = CreateConVar(name, "0", "Health on spawn (0 = normal)");
 		Format(name, sizeof(name), "modo_%s_velocidad", team[i]);
-		g_Velocidad[i] = CreateConVar(name, "1.0", "Multiplicador de velocidad");
+		g_Velocidad[i] = CreateConVar(name, "1.0", "Speed multiplier");
 		Format(name, sizeof(name), "modo_%s_color", team[i]);
-		g_Color[i] = CreateConVar(name, "", "Color RGB del jugador, ej: 80,255,80 (vacio = normal)");
+		g_Color[i] = CreateConVar(name, "", "Player RGB color, e.g. 80,255,80 (empty = normal)");
 	}
 
 	Extras_Start();
@@ -64,8 +64,8 @@ public void OnPluginStart()
 	HookEvent("round_prestart", OnRoundPreStart);
 	HookEvent("round_freeze_end", OnFreezeEnd);
 	CreateTimer(1.0, CheckWarmup, _, TIMER_REPEAT);
-	RegServerCmd("modo_sitios", CmdSitios, "Muestra el centro de los sitios A/B y un punto de aparicion de prueba");
-	// modo inicial que escribe csgo-legacy-server start (solo al cargar el plugin)
+	RegServerCmd("modo_sitios", CmdSitios, "Shows the center of sites A/B and a test spawn point");
+	// initial mode written by csgo-legacy-server start (only when the plugin loads)
 	ServerCommand("exec modo_inicio");
 	ServerExecute();
 }
@@ -94,9 +94,9 @@ public void OnConfigsExecuted()
 	g_Nombre.GetString(n, sizeof(n));
 	g_Tipo.GetString(tipo, sizeof(tipo));
 	g_Extra.GetString(extra, sizeof(extra));
-	if (g_GameType.IntValue == 0)  // los demás (DM, Carrera, Guardián, Danger Zone...) traen sus propias reglas
+	if (g_GameType.IntValue == 0)  // the rest (DM, Arms Race, Guardian, Danger Zone...) bring their own rules
 		StrCat(cmd, sizeof(cmd), "; exec modo_clasico");
-	else if (g_GameType.IntValue == 4)  // las reglas de Guardián van por mapa
+	else if (g_GameType.IntValue == 4)  // Guardian's rules are per map
 	{
 		char map[64];
 		GetCurrentMap(map, sizeof(map));
@@ -105,8 +105,8 @@ public void OnConfigsExecuted()
 	if (tipo[0])
 		Format(cmd, sizeof(cmd), "%s; exec modo_tipo_%s", cmd, tipo);
 	ServerCommand("%s; exec modo_%s; %s", cmd, n, extra);
-	// Sin ServerExecute: se ejecuta en cola, despues del gamemode_*.cfg de Valve (que pisaria bot_quota etc.).
-	// Con el servidor vacio e hibernando, la cola se procesa cuando entra alguien.
+	// No ServerExecute: it is queued, after Valve's gamemode_*.cfg (which would overwrite bot_quota etc.).
+	// With the server empty and hibernating, the queue runs when someone joins.
 }
 
 int TeamIdx(int team) { return team == CS_TEAM_T ? T_IDX : CT_IDX; }
@@ -129,7 +129,7 @@ public Action CheckWarmup(Handle t)
 		return Plugin_Continue;
 	if (need <= 0)
 	{
-		g_Pausa.SetInt(0);  // sin control: calentamiento normal por tiempo
+		g_Pausa.SetInt(0);  // no control: normal timed warmup
 		return Plugin_Continue;
 	}
 	int h = CountHumans();
@@ -147,7 +147,7 @@ public Action CheckWarmup(Handle t)
 	return Plugin_Continue;
 }
 
-// --- equipamiento al aparecer -------------------------------------------------
+// --- equipment on spawn -------------------------------------------------
 
 public void OnSpawn(Event e, const char[] name, bool dontBroadcast)
 {
@@ -162,7 +162,7 @@ void Give(int c, ConVar cv)
 		GivePlayerItem(c, w);
 }
 
-// Si el modo obliga a los humanos a un equipo (mp_humanteam), los mueve.
+// If the mode forces humans onto a team (mp_humanteam), moves them.
 bool FixHumanTeam(int c)
 {
 	if (IsFakeClient(c) || Zombies_Infectado(c))
@@ -204,7 +204,7 @@ public Action Equip(Handle t, any userid)
 	if (g_Vida[i].IntValue > 0)
 		SetEntityHealth(c, g_Vida[i].IntValue);
 	SetEntPropFloat(c, Prop_Send, "m_flLaggedMovementValue", g_Velocidad[i].FloatValue);
-	SetEntPropFloat(c, Prop_Send, "m_flModelScale", 1.0);  // por si fue jefe o tanque
+	SetEntPropFloat(c, Prop_Send, "m_flModelScale", 1.0);  // in case they were a boss or tank
 
 	char col[32], rgb[3][8];
 	g_Color[i].GetString(col, sizeof(col));
@@ -227,7 +227,7 @@ public Action Equip(Handle t, any userid)
 	return Plugin_Stop;
 }
 
-// --- retakes: bomba ya plantada en A o B ----------------------------------------
+// --- retakes: bomb already planted on A or B ----------------------------------------
 
 public void OnRoundPreStart(Event e, const char[] name, bool dontBroadcast)
 {
@@ -248,7 +248,7 @@ public Action CmdSitios(int args)
 	int res = FindEntityByClassname(-1, "cs_player_manager");
 	if (res == -1)
 	{
-		PrintToServer("No hay cs_player_manager");
+		PrintToServer("No cs_player_manager");
 		return Plugin_Handled;
 	}
 	float a[3], b[3], p[3];
@@ -257,13 +257,13 @@ public Action CmdSitios(int args)
 	PrintToServer("A: %.0f %.0f %.0f | B: %.0f %.0f %.0f", a[0], a[1], a[2], b[0], b[1], b[2]);
 	g_SiteCenter = a;
 	bool ok = FindSitePoint(p);
-	PrintToServer("Punto en A: %s %.0f %.0f %.0f", ok ? "ok" : "NO", p[0], p[1], p[2]);
+	PrintToServer("Point on A: %s %.0f %.0f %.0f", ok ? "ok" : "NO", p[0], p[1], p[2]);
 	return Plugin_Handled;
 }
 
 public bool NoPlayers(int ent, int mask) { return ent > MaxClients; }
 
-// Punto de suelo libre, a la vista del centro del sitio y a menos de 350 unidades.
+// Free floor point, in sight of the site center and within 350 units.
 bool FindSitePoint(float out[3])
 {
 	float top[3], under[3], floorZ;
@@ -291,7 +291,7 @@ bool FindSitePoint(float out[3])
 		if (!TR_DidHit())
 			continue;
 		TR_GetEndPosition(f);
-		if (FloatAbs(f[2] - floorZ) > 48.0)  // mismo nivel que el sitio, no un piso de abajo
+		if (FloatAbs(f[2] - floorZ) > 48.0)  // same level as the site, not a floor below
 			continue;
 		f[2] += 2.0;
 		TR_TraceHull(f, f, view_as<float>({-16.0, -16.0, 0.0}), view_as<float>({16.0, 16.0, 72.0}), MASK_PLAYERSOLID);
@@ -311,7 +311,7 @@ public void OnFreezeEnd(Event e, const char[] name, bool dontBroadcast)
 	float p[3];
 	if (!FindSitePoint(p))
 	{
-		LogError("Retake: no encontré suelo libre en el sitio %c", g_Site == 0 ? 'A' : 'B');
+		LogError("Retake: no free floor found on site %c", g_Site == 0 ? 'A' : 'B');
 		return;
 	}
 	int planter = 0;

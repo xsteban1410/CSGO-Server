@@ -1,4 +1,4 @@
-//! Pestaña Unirse: abrir CS:GO Legacy conectando a un servidor, con puente VPN si hace falta.
+//! Join tab: open CS:GO Legacy connecting to a server, with a VPN bridge if needed.
 use crate::i18n::t;
 use crate::{bg, button, AppRc};
 use adw::prelude::*;
@@ -6,7 +6,7 @@ use csls_core::{net, server, steam_client};
 use gtk::glib;
 use std::time::Duration;
 
-/// "IP" o "IP:PUERTO" con el puerto por defecto si falta.
+/// "IP" or "IP:PORT", with the default port if absent.
 fn with_port(addr: &str) -> String {
     let a = addr.trim();
     if a.is_empty() || a.contains(':') { a.to_string() } else { format!("{a}:27030") }
@@ -18,7 +18,7 @@ pub fn page(a: &AppRc) -> gtk::Widget {
     g.set_title(&t("Join"));
     let addr = adw::EntryRow::builder().title(t("Server address")).build();
     let vpn = adw::SwitchRow::builder().title(t("Through VPN bridge")).subtitle(t("Turns on by itself with a Tailscale address (100.x). The server must use the VPN profile")).build();
-    // dirección real a la que conecta el juego: a mano en la consola si la auto-conexión falla
+    // the real address the game connects to: by hand in the console if auto-connect fails
     let target = adw::ActionRow::builder().title(t("Type in the game console")).subtitle_selectable(true).build();
     target.add_css_class("property");
     let copy = gtk::Button::from_icon_name("edit-copy-symbolic");
@@ -71,7 +71,7 @@ pub fn page(a: &AppRc) -> gtk::Widget {
         }
     }));
 
-    // Prepara la conexión: con puente lo levanta y devuelve a qué dirección conectar.
+    // Prepares the connection: with a bridge, starts it and returns the address to connect to.
     let prepare = glib::clone!(#[weak] addr, #[weak] vpn, #[weak] target, #[weak] state, #[upgrade_or] Ok(String::new()), move || -> anyhow::Result<String> {
         let dest = with_port(&addr.text());
         if dest.is_empty() {
@@ -85,7 +85,7 @@ pub fn page(a: &AppRc) -> gtk::Widget {
         Ok(connect)
     });
 
-    // A2S_INFO a través del puente: comprueba todo el camino sin abrir el juego.
+    // A2S_INFO through the bridge: checks the whole path without opening the game.
     let check = std::rc::Rc::new(glib::clone!(#[strong] a, move |connect: String| {
         let Ok(sock) = connect.parse() else { return };
         bg(move || net::a2s_info(sock, Duration::from_secs(8)), glib::clone!(#[strong] a, move |r: Option<String>| {
