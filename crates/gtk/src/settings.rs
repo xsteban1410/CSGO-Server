@@ -2,7 +2,7 @@
 use crate::i18n::t;
 use crate::{bg, button, AppRc};
 use adw::prelude::*;
-use csls_core::config::Network;
+use csls_core::config::{Language, Network};
 use csls_core::server::{self, Server};
 use csls_core::{deploy, install, net};
 use gtk::glib;
@@ -13,6 +13,8 @@ pub fn page(a: &AppRc) -> gtk::Widget {
 
     let g = adw::PreferencesGroup::new();
     g.set_title(&t("Server"));
+    let language = adw::ComboRow::builder().title(t("Language")).subtitle(t("App, command line and in-game messages")).model(&gtk::StringList::new(&["English", "Español"])).build();
+    language.set_selected(u32::from(a.cfg.borrow().language == Language::Es));
     let name = adw::EntryRow::builder().title(t("Server name")).text(&c.hostname).build();
     let pass = adw::PasswordEntryRow::builder().title(t("Password (empty = none)")).text(&c.password).build();
     let nets = [Network::Lan, Network::Vpn, Network::Internet, Network::Community];
@@ -35,7 +37,7 @@ pub fn page(a: &AppRc) -> gtk::Widget {
     let skins = adw::SwitchRow::builder().title(t("Skins plugin")).subtitle(t("Can cost the GSLT on public servers")).active(c.skins).build();
     let folder = adw::ActionRow::builder().title(t("Server folder")).subtitle(c.install_dir.display().to_string()).build();
     folder.add_css_class("property");
-    for r in [name.upcast_ref::<gtk::Widget>(), pass.upcast_ref(), net_row.upcast_ref(), upnp.upcast_ref(), port.upcast_ref(), maxp.upcast_ref(), tick.upcast_ref(), gslt.upcast_ref(), wkey.upcast_ref(), skins.upcast_ref(), folder.upcast_ref()] {
+    for r in [language.upcast_ref::<gtk::Widget>(), name.upcast_ref(), pass.upcast_ref(), net_row.upcast_ref(), upnp.upcast_ref(), port.upcast_ref(), maxp.upcast_ref(), tick.upcast_ref(), gslt.upcast_ref(), wkey.upcast_ref(), skins.upcast_ref(), folder.upcast_ref()] {
         g.add(r);
     }
     let save = button(&t("Save"), &["suggested-action"]);
@@ -46,6 +48,9 @@ pub fn page(a: &AppRc) -> gtk::Widget {
     save.connect_clicked(glib::clone!(#[strong] a, move |_| {
         let mut cfg = a.cfg.borrow().clone();
         let old = cfg.server.clone();
+        let old_language = cfg.language;
+        cfg.language = if language.selected() == 1 { Language::Es } else { Language::En };
+        let new_language = cfg.language != old_language;
         let s = &mut cfg.server;
         s.hostname = name.text().to_string();
         s.password = pass.text().to_string();
@@ -61,6 +66,10 @@ pub fn page(a: &AppRc) -> gtk::Widget {
         match cfg.save() {
             Ok(()) => {
                 *a.cfg.borrow_mut() = cfg;
+                if new_language {
+                    a.toast(&t("Restart the app to apply the language"));
+                    return;
+                }
                 a.toast(&if restart && a.live.borrow().running { t("Restart the server to apply network changes") } else { t("Saved") });
             }
             Err(e) => a.error(&e),

@@ -39,7 +39,7 @@ fn skins_dialog(a: &AppRc, title: &str, steamid64: String) {
                 Ok(v) if v.is_empty() => g.add(&adw::ActionRow::builder().title(t("Nothing saved")).build()),
                 Ok(v) => {
                     for e in v {
-                        let row = adw::ActionRow::builder().title(&e.weapon).subtitle(&e.value).build();
+                        let row = adw::ActionRow::builder().title(t(&e.weapon)).subtitle(&e.value).build();
                         row.add_css_class("property");
                         g.add(&row);
                     }

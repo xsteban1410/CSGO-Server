@@ -4,6 +4,30 @@ use std::collections::HashMap;
 use std::sync::OnceLock;
 
 static ES: &[(&str, &str)] = &[
+    ("Language", "Idioma"),
+    ("App, command line and in-game messages", "App, línea de comandos y mensajes dentro del juego"),
+    ("Restart the app to apply the language", "Reinicia la app para aplicar el idioma"),
+    ("Knife", "Cuchillo"),
+    ("Downloading SteamCMD (~20 MB)", "Descargando SteamCMD (~20 MB)"),
+    ("CS:GO server (app 740, ~33 GB)", "Servidor de CS:GO (app 740, ~33 GB)"),
+    ("Adjusting the server", "Ajustando el servidor"),
+    ("Installing Metamod:Source", "Instalando Metamod:Source"),
+    ("Installing SourceMod", "Instalando SourceMod"),
+    ("Generating the skin list", "Generando la lista de skins"),
+    ("Compiling plugins and copying configs", "Compilando plugins y copiando configuraciones"),
+    ("Done", "Listo"),
+    ("the server is already running", "el servidor ya está en marcha"),
+    ("rcon: wrong password", "rcon: contraseña incorrecta"),
+    ("at least 1 human is needed", "hace falta al menos 1 humano"),
+    ("difficulty must be 0 to 3", "la dificultad debe estar entre 0 y 3"),
+    ("could not download SteamCMD", "no se pudo descargar SteamCMD"),
+    ("could not install app 740; try again (it resumes where it stopped)", "no se pudo instalar la app 740; inténtalo de nuevo (sigue donde se quedó)"),
+    ("rcon_password cannot contain spaces", "rcon_password no puede tener espacios"),
+    ("max_players must be 1 to 64", "max_players debe estar entre 1 y 64"),
+    ("open Steam first", "abre Steam primero"),
+    ("the download is not a .bsp map", "la descarga no es un mapa .bsp"),
+    ("the zip contains no .bsp", "el zip no contiene ningún .bsp"),
+    ("cancelled", "cancelado"),
     ("Teams", "Equipos"),
     ("Humans; bots fill the empty seats", "Humanos; los bots ocupan los sitios libres"),
     ("Together", "Juntos"),
@@ -260,8 +284,24 @@ pub fn t(s: &str) -> String {
     table().get(s).copied().unwrap_or(s).to_string()
 }
 
+/// Translates a message from the core: whole, or its fixed part before ": " ("Step: details").
+/// Messages with data in the middle (paths, SteamCMD output) stay in English.
+pub fn t_msg(s: &str) -> String {
+    match s.split_once(": ") {
+        Some((head, rest)) if !table().contains_key(s) => format!("{}: {rest}", t(head)),
+        _ => t(s),
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn messages_keep_their_details() {
+        // in tests the language is English: the message comes back whole
+        assert_eq!(super::t_msg("CS:GO server (app 740, ~33 GB): downloading"), "CS:GO server (app 740, ~33 GB): downloading");
+        assert_eq!(super::t_msg("no colon here"), "no colon here");
+    }
+
     #[test]
     fn no_duplicates() {
         let mut k: Vec<&str> = super::ES.iter().map(|x| x.0).collect();
@@ -271,7 +311,7 @@ mod tests {
         assert_eq!(n, k.len());
     }
 
-    /// Todo llamada literal a t del código tiene traducción.
+    /// Every literal call to t in the code has a translation.
     #[test]
     fn everything_translated() {
         let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
@@ -279,7 +319,7 @@ mod tests {
         for e in std::fs::read_dir(dir).unwrap().flatten() {
             let txt = std::fs::read_to_string(e.path()).unwrap();
             for (i, _) in txt.match_indices("t(\"") {
-                // solo la función t, no get(, set(…
+                // only the function t, not get(, set(…
                 if txt[..i].chars().last().is_some_and(|c| c.is_alphanumeric() || c == '_' || c == '.') {
                     continue;
                 }
@@ -293,6 +333,6 @@ mod tests {
         }
         falta.sort();
         falta.dedup();
-        assert!(falta.is_empty(), "sin traducir: {falta:#?}");
+        assert!(falta.is_empty(), "untranslated: {falta:#?}");
     }
 }

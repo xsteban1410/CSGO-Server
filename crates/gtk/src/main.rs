@@ -16,7 +16,7 @@ use csls_core::modes::Modes;
 use csls_core::players::{parse_status, Status};
 use csls_core::server::{Server, State};
 use gtk::{gio, glib};
-use i18n::t;
+use i18n::{t, t_msg};
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
@@ -77,7 +77,7 @@ impl App {
     }
 
     pub fn error(&self, e: &anyhow::Error) {
-        let d = adw::AlertDialog::new(Some(&t("Error")), Some(&format!("{e:#}")));
+        let d = adw::AlertDialog::new(Some(&t("Error")), Some(&t_msg(&format!("{e:#}"))));
         d.add_response("ok", "OK");
         d.present(Some(&self.win));
     }

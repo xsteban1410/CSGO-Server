@@ -1,5 +1,5 @@
 //! First run: create a server (choose folder, dependencies, background download) or just join.
-use crate::i18n::t;
+use crate::i18n::{t, t_msg};
 use crate::{button, AppRc};
 use adw::prelude::*;
 use csls_core::install;
@@ -101,7 +101,7 @@ pub fn page(a: &AppRc, root: &gtk::Stack, tabs: &adw::ViewStack) -> gtk::Widget 
                     return glib::ControlFlow::Break;
                 }
                 "error" => {
-                    a.error(&anyhow::anyhow!("{}: {msg}", t("Installation failed")));
+                    a.error(&anyhow::anyhow!("{}: {}", t("Installation failed"), t_msg(msg)));
                     download.set_sensitive(true);
                     return glib::ControlFlow::Break;
                 }
@@ -111,7 +111,7 @@ pub fn page(a: &AppRc, root: &gtk::Stack, tabs: &adw::ViewStack) -> gtk::Widget 
                 Ok(x) => progress.set_fraction(x),
                 Err(_) => progress.pulse(),
             }
-            let label = if msg.is_empty() { t("Installing…") } else { msg.to_string() };
+            let label = if msg.is_empty() { t("Installing…") } else { t_msg(msg) };
             progress.set_text(Some(&label));
             if !server::running(server::INSTALL_UNIT) && !Server::new(&a.cfg.borrow()).is_installed() && !txt.is_empty() && f != "done" {
                 // the process died without writing the end
