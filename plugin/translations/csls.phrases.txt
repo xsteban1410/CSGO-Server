@@ -13,6 +13,62 @@
 		"en"		"Warmup: waiting for players {1}/{2}"
 		"es"		"Calentamiento: esperando humanos {1}/{2}"
 	}
+	"warmup_ready"
+	{
+		"#format"	"{1:d},{2:d}"
+		"en"		"Warmup: {1}/{2} ready. Type !ready to start"
+		"es"		"Calentamiento: {1}/{2} listos. Escribe !listo para empezar"
+	}
+	"ready_yes"
+	{
+		"en"		"You are ready. Type !ready again to cancel."
+		"es"		"Estás listo. Escribe !listo otra vez para cancelar."
+	}
+	"ready_no"
+	{
+		"en"		"You are no longer ready."
+		"es"		"Ya no estás listo."
+	}
+	"veto_start"
+	{
+		"en"		"Map bans: take turns banning maps. The last one left is played."
+		"es"		"Vetos de mapa: por turnos, cada uno veta un mapa. Se juega el último que quede."
+	}
+	"veto_title"
+	{
+		"en"		"Ban a map"
+		"es"		"Veta un mapa"
+	}
+	"veto_turn"
+	{
+		"#format"	"{1:N}"
+		"en"		"{1} bans a map."
+		"es"		"{1} veta un mapa."
+	}
+	"veto_banned"
+	{
+		"#format"	"{1:N},{2:s}"
+		"en"		"{1} banned {2}."
+		"es"		"{1} vetó {2}."
+	}
+	"veto_banned_time"
+	{
+		"#format"	"{1:s}"
+		"en"		"Out of time: {1} is banned."
+		"es"		"Se acabó el tiempo: queda vetado {1}."
+	}
+	"veto_map"
+	{
+		"#format"	"{1:s}"
+		"en"		"The match is on {1}."
+		"es"		"La partida se juega en {1}."
+	}
+	"clutch_next"
+	{
+		"#format"	"{1:d}"
+		"en"		"Next round: {1} bots."
+		"es"		"Siguiente ronda: {1} bots."
+	}
 	"bomb_planted_at"
 	{
 		"#format"	"{1:c}"

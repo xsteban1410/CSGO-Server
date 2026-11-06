@@ -196,7 +196,10 @@ void Pintar(int c, int w, const char[] arma)
 	char v[12];
 	if (!g_Prefs[c].GetString(arma, v, sizeof(v)))
 		return;
+	// a new item id each time: the client only reads the paint again when the id changes
+	static int idHigh = 16384;
 	SetEntProp(w, Prop_Send, "m_iItemIDLow", -1);
+	SetEntProp(w, Prop_Send, "m_iItemIDHigh", idHigh++);
 	SetEntProp(w, Prop_Send, "m_nFallbackPaintKit", StringToInt(v));
 	SetEntPropFloat(w, Prop_Send, "m_flFallbackWear", DESGASTE);
 	SetEntProp(w, Prop_Send, "m_nFallbackSeed", 0);
@@ -240,22 +243,39 @@ int BuscarCuchillo(int c)
 	return -1;
 }
 
-// Gives a new weapon with the skin applied (replaces 'vieja' if given).
+// Gives a new weapon with the skin applied (replaces 'vieja' if given, keeping its ammo and whether it was in hand).
 int Dar(int c, int vieja, const char[] arma)
 {
+	int clip = -1, reserva = -1;
+	bool enMano = false;
 	if (vieja != -1)
 	{
+		enMano = GetEntPropEnt(c, Prop_Send, "m_hActiveWeapon") == vieja;
+		clip = GetEntProp(vieja, Prop_Send, "m_iClip1");
+		reserva = GetEntProp(vieja, Prop_Send, "m_iPrimaryReserveAmmoCount");
 		RemovePlayerItem(c, vieja);
 		AcceptEntityInput(vieja, "Kill");
 	}
 	g_Dando[c] = true;
 	int w = GivePlayerItem(c, arma);
 	g_Dando[c] = false;
-	if (w != -1)
+	if (w == -1)
 	{
-		Pintar(c, w, arma);
-		EquipPlayerWeapon(c, w);
+		LogError("Could not give %s", arma);
+		if (EsCuchillo(arma))  // never leave a player without a knife
+			GivePlayerItem(c, GetClientTeam(c) == CS_TEAM_T ? "weapon_knife_t" : "weapon_knife");
+		return -1;
 	}
+	Pintar(c, w, arma);
+	if (EsCuchillo(arma))
+		EquipPlayerWeapon(c, w);
+	else if (clip >= 0)
+	{
+		SetEntProp(w, Prop_Send, "m_iClip1", clip);
+		SetEntProp(w, Prop_Send, "m_iPrimaryReserveAmmoCount", reserva);
+	}
+	if (enMano)
+		FakeClientCommandEx(c, "use %s", arma);
 	return w;
 }
 
@@ -274,21 +294,31 @@ public void CambiarCuchillo(int userid)
 }
 
 // Gives back the weapons of 'solo' (or all if empty) so the skin shows right away.
+// With 'solo' a chosen "no skin" has to apply too; without it only weapons with a saved skin change.
 void Refrescar(int c, const char[] solo)
 {
-	char arma[64];
-	int n = GetEntPropArraySize(c, Prop_Send, "m_hMyWeapons");
-	for (int i = 0; i < n; i++)
+	char arma[64], v[12];
+	int armas[64], n = 0;
+	int size = GetEntPropArraySize(c, Prop_Send, "m_hMyWeapons");
+	// copied first: giving a weapon changes the array
+	for (int i = 0; i < size && n < sizeof(armas); i++)
 	{
 		int w = GetEntPropEnt(c, Prop_Send, "m_hMyWeapons", i);
-		if (w == -1)
-			continue;
-		bool cuchillo = IsCuchilloBase(w) || (ClaveArma(w, arma, sizeof(arma)) && EsCuchillo(arma));
-		if (cuchillo && (!solo[0] || StrEqual(solo, CLAVE_CUCHILLO) || EsCuchillo(solo)))
-			RequestFrame(CambiarCuchillo, GetClientUserId(c));
-		else if (!cuchillo && ClaveArma(w, arma, sizeof(arma)) && (!solo[0] || StrEqual(solo, arma)))
+		if (w != -1)
+			armas[n++] = w;
+	}
+	bool cuchillo = false;
+	for (int i = 0; i < n; i++)
+	{
+		int w = armas[i];
+		bool clave = ClaveArma(w, arma, sizeof(arma));
+		if (IsCuchilloBase(w) || (clave && EsCuchillo(arma)))
+			cuchillo = true;
+		else if (clave && (solo[0] ? StrEqual(solo, arma) : g_Prefs[c].GetString(arma, v, sizeof(v))))
 			Dar(c, w, arma);
 	}
+	if (cuchillo && (solo[0] ? (StrEqual(solo, CLAVE_CUCHILLO) || EsCuchillo(solo)) : g_Prefs[c].GetString(CLAVE_CUCHILLO, v, sizeof(v))))
+		RequestFrame(CambiarCuchillo, GetClientUserId(c));
 }
 
 // --- menus -------------------------------------------------------------------
@@ -298,9 +328,13 @@ public Action CmdWs(int c, int args)
 	if (c == 0 || g_Prefs[c] == null)
 		return Plugin_Handled;
 	char arma[64];
-	int w = GetEntPropEnt(c, Prop_Send, "m_hActiveWeapon");
+	int w = IsPlayerAlive(c) ? GetEntPropEnt(c, Prop_Send, "m_hActiveWeapon") : -1;
 	if (w != -1 && IsCuchilloBase(w))
-		g_Prefs[c].GetString(CLAVE_CUCHILLO, arma, sizeof(arma));
+	{
+		// the default knife has no skins: first choose a model
+		if (!g_Prefs[c].GetString(CLAVE_CUCHILLO, arma, sizeof(arma)))
+			return CmdKnife(c, 0);
+	}
 	else if (w == -1 || !ClaveArma(w, arma, sizeof(arma)))
 		arma[0] = '\0';
 	if (arma[0])
@@ -325,6 +359,7 @@ void MenuArmasSkin(int c)
 	Menu m = new Menu(OnArmaSkin);
 	m.SetTitle("%T", "skins_menu_which", c);
 	char arma[64], nombre[64];
+	g_Kv.Rewind();
 	g_Kv.JumpToKey("armas");
 	if (g_Kv.GotoFirstSubKey())
 	{
@@ -357,6 +392,7 @@ void MenuSkins(int c, const char[] arma)
 	char nombre[64], id[12], skin[96], actual[12];
 	g_Prefs[c].GetString(arma, actual, sizeof(actual));
 	Menu m = new Menu(OnSkin);
+	g_Kv.Rewind();
 	g_Kv.JumpToKey("armas");
 	if (!g_Kv.JumpToKey(arma))
 	{
@@ -379,7 +415,7 @@ void MenuSkins(int c, const char[] arma)
 			char info[80];
 			Format(info, sizeof(info), "%s|%s", arma, id);
 			if (StrEqual(id, actual))
-				Format(nombre, sizeof(nombre), "%s (actual)", nombre);
+				Format(nombre, sizeof(nombre), "%T", "skins_menu_current", c, nombre);
 			m.AddItem(info, nombre);
 		} while (g_Kv.GotoNextKey(false));
 	}
@@ -419,6 +455,7 @@ public Action CmdKnife(int c, int args)
 	Menu m = new Menu(OnKnife);
 	m.SetTitle("%T", "skins_menu_knife", c);
 	AddOption(m, "", "skins_menu_default", c, !actual[0]);
+	g_Kv.Rewind();
 	g_Kv.JumpToKey("cuchillos");
 	if (g_Kv.GotoFirstSubKey(false))
 	{
@@ -427,7 +464,7 @@ public Action CmdKnife(int c, int args)
 			g_Kv.GetSectionName(arma, sizeof(arma));
 			g_Kv.GetString(NULL_STRING, nombre, sizeof(nombre));
 			if (StrEqual(arma, actual))
-				Format(nombre, sizeof(nombre), "%s (actual)", nombre);
+				Format(nombre, sizeof(nombre), "%T", "skins_menu_current", c, nombre);
 			m.AddItem(arma, nombre);
 		} while (g_Kv.GotoNextKey(false));
 	}
@@ -478,6 +515,7 @@ public Action CmdArmas(int c, int args)
 	Menu m = new Menu(OnArmas);
 	m.SetTitle("%T", "skins_menu_weapon", c);
 	char arma[64], nombre[64];
+	g_Kv.Rewind();
 	g_Kv.JumpToKey("armas");
 	if (g_Kv.GotoFirstSubKey())
 	{
@@ -512,12 +550,25 @@ public int OnArmas(Menu m, MenuAction a, int c, int item)
 
 public Action CmdEstado(int args)
 {
-	char id[32];
+	char id[32], clase[64];
 	for (int c = 1; c <= MaxClients; c++)
 		if (IsClientInGame(c) && !IsFakeClient(c))
 		{
 			SteamId64(c, id, sizeof(id));
-			PrintToServer("%N guardado=%s ahora=%s skins=%d", c, g_SteamId[c], id, g_Prefs[c] == null ? -1 : g_Prefs[c].Size);
+			PrintToServer("%N saved=%s now=%s skins=%d", c, g_SteamId[c], id, g_Prefs[c] == null ? -1 : g_Prefs[c].Size);
+			if (!IsPlayerAlive(c))
+				continue;
+			int n = GetEntPropArraySize(c, Prop_Send, "m_hMyWeapons");
+			for (int i = 0; i < n; i++)
+			{
+				int w = GetEntPropEnt(c, Prop_Send, "m_hMyWeapons", i);
+				if (w == -1)
+					continue;
+				GetEntityClassname(w, clase, sizeof(clase));
+				PrintToServer("  %s def=%d paint=%d wear=%.4f idlow=%d idhigh=%d quality=%d account=%d", clase, GetEntProp(w, Prop_Send, "m_iItemDefinitionIndex"),
+					GetEntProp(w, Prop_Send, "m_nFallbackPaintKit"), GetEntPropFloat(w, Prop_Send, "m_flFallbackWear"), GetEntProp(w, Prop_Send, "m_iItemIDLow"),
+					GetEntProp(w, Prop_Send, "m_iItemIDHigh"), GetEntProp(w, Prop_Send, "m_iEntityQuality"), GetEntProp(w, Prop_Send, "m_iAccountID"));
+			}
 		}
 	return Plugin_Handled;
 }
