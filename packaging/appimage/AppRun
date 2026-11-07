@@ -1,0 +1,9 @@
+#!/bin/sh
+# The app runs this AppImage again for the CLI and the agent, because each mount goes away when its process ends.
+bin="$(dirname "$(readlink -f "$0")")/usr/bin"
+case "${1:-}" in
+    "") exec "$bin/csgo-legacy-server-app" ;;
+    --agent) shift; exec "$bin/csgo-legacy-server-agent" "$@" ;;
+    --cli) shift; exec "$bin/csgo-legacy-server" "$@" ;;
+    *) exec "$bin/csgo-legacy-server" "$@" ;;
+esac

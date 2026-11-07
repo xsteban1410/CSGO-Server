@@ -1,0 +1,51 @@
+# Real sandbox: the server, the agent and scheduled tasks live only while the app is open, and the game cannot be opened from here.
+id: io.github.xsteban1410.CsgoLegacyServer
+runtime: org.freedesktop.Platform
+runtime-version: '25.08'
+sdk: org.freedesktop.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+  - org.freedesktop.Sdk.Extension.golang
+command: csgo-legacy-server-app
+finish-args:
+  - --share=network
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  # srcds and steamcmd are 32-bit
+  - --allow=multiarch
+  # the tray
+  - --talk-name=org.kde.StatusNotifierWatcher
+  - --env=CSLS_NO_SYSTEMD=1
+add-extensions:
+  org.freedesktop.Platform.Compat.i386:
+    directory: lib/i386-linux-gnu
+    version: '25.08'
+modules:
+  - name: csgo-legacy-server
+    buildsystem: simple
+    build-options:
+      append-path: /usr/lib/sdk/rust-stable/bin:/usr/lib/sdk/golang/bin
+      env:
+        CARGO_HOME: /run/build/csgo-legacy-server/cargo
+        GOPATH: /run/build/csgo-legacy-server/gopath
+        CGO_ENABLED: '0'
+      # shortcut: downloads crates while building, which Flathub refuses; generate the source lists if this goes to Flathub
+      build-args:
+        - --share=network
+    build-commands:
+      - cargo build --release --locked -p csgo-legacy-server -p csgo-legacy-server-app
+      - cd go && go build -trimpath -o ../target/release/csgo-legacy-server-agent ./cmd/agent
+      - packaging/stage.sh /app target/release
+      - mkdir -p /app/lib/i386-linux-gnu
+    sources:
+      - type: dir
+        path: ../..
+        skip:
+          - target
+          - server
+          - steamcmd
+          - dl
+          - dist
+          - .flatpak-builder

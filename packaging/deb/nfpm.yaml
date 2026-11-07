@@ -1,0 +1,30 @@
+name: csgo-legacy-server
+arch: amd64
+version: ${VERSION}
+section: games
+priority: optional
+maintainer: xsteban1410 <esteban1410dev@gmail.com>
+description: Host a CS:GO Legacy dedicated server with bots, custom modes and workshop maps
+homepage: https://github.com/xsteban1410/CSGO-Server
+license: GPL-3.0-or-later
+# srcds and steamcmd are 32-bit, without needing the i386 architecture; curl and tar download SteamCMD, SourceMod and maps
+depends:
+  - libc6-i386
+  - lib32gcc-s1
+  - curl
+  - tar
+  - libfontconfig1
+  - libfreetype6
+  - libsqlite3-0
+  - libxkbcommon0
+  - libwayland-client0
+recommends:
+  - xdg-utils
+suggests:
+  - steam
+  - miniupnpc
+contents:
+  # relative to the folder build-bundles.sh runs nfpm in
+  - src: ./usr
+    dst: /usr
+    type: tree
