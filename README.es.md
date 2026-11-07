@@ -80,6 +80,9 @@ csgo-legacy-server presets [--delete nombre]           opciones de arranque guar
 csgo-legacy-server backup create | list | restore <file> [--dry-run]   your config, modes, plugins, presets and skins
 csgo-legacy-server deploy [--force] [--watch]          compilar plugins, copiar configs
 csgo-legacy-server agent start | stop | status        optional helper: history and scheduled tasks
+csgo-legacy-server alias [name command...] [--delete] console shortcuts, also for rcon
+csgo-legacy-server plugins list|enable|disable|install|reload   plugins on the server
+csgo-legacy-server updates [--json]                   ask GitHub for the latest release
 csgo-legacy-server nav [--force]                       navegación de bots del mapa actual
 csgo-legacy-server skins                               rehacer la lista de skins tras actualizar el juego
 csgo-legacy-server rcon "comando" | play [cs2|local|IP:PUERTO] | bridge | doctor | install [--update]
@@ -170,7 +173,7 @@ aliados, votekick, flood, plazas reservadas). Los kicks y baneos que hagas desde
 ### Tus modos y plugins
 
 - Modos: `~/.config/csgo-legacy-server/modes/<id>.toml` + `<id>.cfg` (la pestaña Modos los escribe por ti).
-- Plugins: suelta un `.sp` (o `nombre/nombre.sp`) en `~/.config/csgo-legacy-server/plugins/`.
+- Complementos: coloque un `.sp` (o `name/name.sp`) en `~/.config/csgo-legacy-server/plugins/`, o use `plugins install`.
 
 Con la app abierta (o `deploy --watch`) lo nuevo o cambiado se compila y se recarga en el servidor encendido; los errores
 de compilación salen con su línea y el servidor sigue con la versión anterior. Los plugins borrados se descargan.
