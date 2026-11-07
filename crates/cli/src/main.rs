@@ -154,8 +154,28 @@ enum Cmd {
         #[arg(long)]
         port: u16,
     },
-    /// The helper that keeps history and runs scheduled tasks: agent start|stop|status
-    Agent { action: AgentAction },
+    /// The helper that keeps history and runs scheduled tasks
+    Agent {
+        #[command(subcommand)]
+        action: AgentAction,
+    },
+    /// Console aliases: list them, set one (`alias r mp_restartgame 1`) or delete one (`alias r --delete`)
+    Alias {
+        name: Option<String>,
+        command: Vec<String>,
+        #[arg(long)]
+        delete: bool,
+        #[arg(long)]
+        json: bool,
+    },
+    /// Plugins on the server
+    #[command(subcommand)]
+    Plugins(PluginCmd),
+    /// Is there a newer release? Asks GitHub, and installs nothing
+    Updates {
+        #[arg(long)]
+        json: bool,
+    },
     /// For the agent. Prints the rcon password, so it refuses to write to a terminal
     #[command(hide = true, subcommand)]
     Internal(Internal),
@@ -193,11 +213,39 @@ enum Ws {
     Import { file: std::path::PathBuf },
 }
 
-#[derive(Clone, clap::ValueEnum)]
+#[derive(Subcommand)]
 enum AgentAction {
     Start,
     Stop,
     Status,
+    /// One request to the agent (status, players, sanctions, summary, tasks, task_history...), answered in JSON
+    Rpc {
+        method: String,
+        /// The method's fields, as a JSON object
+        #[arg(default_value = "{}")]
+        fields: String,
+    },
+}
+
+#[derive(Subcommand)]
+enum PluginCmd {
+    List {
+        #[arg(long)]
+        json: bool,
+    },
+    Enable {
+        name: String,
+    },
+    Disable {
+        name: String,
+    },
+    /// Installs a .sp (compiled by `deploy`) or a .smx
+    Install {
+        file: std::path::PathBuf,
+    },
+    Reload {
+        name: String,
+    },
 }
 
 #[derive(Subcommand)]
@@ -451,8 +499,9 @@ fn main() -> Result<()> {
         Cmd::Unban { steamid } => println!("{}", srv.rcon()?.exec(&players::unban_cmd(&steamid)?)?),
         Cmd::Rcon { commands } => {
             let mut r = srv.rcon()?;
+            let aliases = csls_core::aliases::load()?;
             for c in commands {
-                print!("{}", r.exec(&c)?);
+                print!("{}", r.exec(&csls_core::aliases::expand(&aliases, &c))?);
             }
         }
         Cmd::Deploy { watch: true, .. } => watch_loop(&cfg)?,
@@ -578,7 +627,52 @@ fn main() -> Result<()> {
             AgentAction::Status => {
                 println!("{}", if csls_core::server::agent_running() { "Running." } else { "Stopped." });
             }
+            AgentAction::Rpc { method, fields } => {
+                let extra = serde_json::from_str(&fields).context("the fields must be a JSON object")?;
+                println!("{}", csls_core::agent::call(&method, extra)?);
+            }
         },
+        Cmd::Alias { name: None, json, .. } => {
+            let list = csls_core::aliases::load()?;
+            if json {
+                println!("{}", serde_json::to_string(&list)?);
+            } else {
+                for (k, v) in list {
+                    println!("{k} = {v}");
+                }
+            }
+        }
+        Cmd::Alias { name: Some(name), delete: true, .. } => csls_core::aliases::remove(&name)?,
+        Cmd::Alias { name: Some(name), command, .. } => csls_core::aliases::set(&name, &command.join(" "))?,
+        Cmd::Plugins(c) => match c {
+            PluginCmd::List { json } => {
+                let list = csls_core::plugins::list(&cfg)?;
+                if json {
+                    println!("{}", serde_json::to_string(&list)?);
+                } else {
+                    for p in list {
+                        let state = if p.enabled { "on" } else { "off" };
+                        println!("{:<28} {state:<4} {:<8} {} {}", p.name, p.origin, p.title, p.version);
+                    }
+                }
+            }
+            PluginCmd::Enable { name } => csls_core::plugins::set_enabled(&cfg, &name, true)?,
+            PluginCmd::Disable { name } => csls_core::plugins::set_enabled(&cfg, &name, false)?,
+            PluginCmd::Install { file } => println!("{}", csls_core::plugins::install(&cfg, &file)?),
+            PluginCmd::Reload { name } => print!("{}", srv.rcon()?.exec(&csls_core::plugins::reload_command(&name)?)?),
+        },
+        Cmd::Updates { json } => {
+            let r = csls_core::updates::latest()?;
+            let current = env!("CARGO_PKG_VERSION");
+            let newer = csls_core::updates::is_newer(&r.version, current);
+            if json {
+                println!("{}", serde_json::json!({ "current": current, "latest": r.version, "newer": newer, "page": r.page }));
+            } else if newer {
+                println!("{} is out (this is {current}): {}", r.version, r.page);
+            } else {
+                println!("Up to date ({current}).");
+            }
+        }
         Cmd::Internal(Internal::AgentConfig) => {
             if std::io::IsTerminal::is_terminal(&std::io::stdout()) {
                 bail!("this prints the rcon password: it is only for the agent");
