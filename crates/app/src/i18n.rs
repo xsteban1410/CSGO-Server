@@ -54,7 +54,7 @@ mod tests {
     #[test]
     fn reads_the_catalog() {
         let m = parse(ES);
-        assert_eq!(m.get("Back").map(String::as_str), Some("Atrás"));
+        assert_eq!(m.get("Cancel").map(String::as_str), Some("Cancelar"));
         assert!(m.len() > 100);
         assert!(!m.contains_key(""));
     }
