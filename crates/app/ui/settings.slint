@@ -44,16 +44,6 @@ export component SettingsPage {
                 }
             }
             Group {
-                title: @tr("Backups");
-                description: @tr("Your config, modes, plugins, presets and skins. They hold your passwords: do not share them");
-                HorizontalLayout {
-                    spacing: 8px;
-                    alignment: start;
-                    Button { text: @tr("Create backup"); clicked => { S.set-backup(); } }
-                    Button { text: @tr("Restore the latest backup"); clicked => { S.set-restore(); } }
-                }
-            }
-            Group {
                 title: @tr("Diagnosis");
                 for c in S.set-doctor: ValueRow { title: c.key; value: c.value; value-color: c.warn ? Theme.warn : Theme.dim; }
             }

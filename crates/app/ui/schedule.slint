@@ -1,0 +1,47 @@
+import { Button, ScrollView } from "std-widgets.slint";
+import { Group, ActionList, ComboRow, EntryRow, SpinRow, Theme } from "kit.slint";
+import { S } from "state.slint";
+
+export component SchedulePage {
+    ScrollView {
+        width: 100%;
+        height: 100%;
+        VerticalLayout {
+            padding: 16px;
+            spacing: Theme.page-gap;
+            alignment: start;
+            if S.sc-note != "": Text { text: S.sc-note; color: Theme.warn; wrap: word-wrap; }
+            Group {
+                title: @tr("Scheduled tasks");
+                description: @tr("They run while the agent is running. A task never overlaps with itself.");
+                ActionList { rows: S.sc-rows; empty: @tr("No tasks"); clicked(id, action) => { S.sc-action(id, action); } }
+            }
+            Group {
+                title: @tr("New task");
+                ComboRow {
+                    title: @tr("Action");
+                    model: [@tr("Restart the server"), @tr("Make a backup"), @tr("Update plugins"), @tr("Change map"), @tr("Change mode"), @tr("RCON command")];
+                    index <=> S.sc-kind;
+                }
+                if S.sc-kind >= 3: EntryRow { title: @tr("Map, mode or command"); text <=> S.sc-arg; }
+                ComboRow {
+                    title: @tr("When");
+                    model: [@tr("Every day"), @tr("Every week"), @tr("Every few hours")];
+                    index <=> S.sc-every;
+                }
+                if S.sc-every == 1: ComboRow {
+                    title: @tr("Day");
+                    model: [@tr("Sunday"), @tr("Monday"), @tr("Tuesday"), @tr("Wednesday"), @tr("Thursday"), @tr("Friday"), @tr("Saturday")];
+                    index <=> S.sc-weekday;
+                }
+                if S.sc-every < 2: EntryRow { title: @tr("Time (HH:MM)"); text <=> S.sc-at; }
+                if S.sc-every == 2: SpinRow { title: @tr("Hours"); minimum: 1; maximum: 168; value <=> S.sc-hours; }
+                HorizontalLayout { alignment: end; Button { text: @tr("Add"); primary: true; clicked => { S.sc-add(); } } }
+            }
+            Group {
+                title: @tr("Recent runs");
+                ActionList { rows: S.sc-history; empty: @tr("Nothing has run yet"); }
+            }
+        }
+    }
+}

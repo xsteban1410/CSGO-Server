@@ -69,7 +69,7 @@ pub fn init(a: &AppRc) {
     );
     let app = a.clone();
     s.on_setup_only_join(move || {
-        app.s().set_tab(5);
+        app.s().set_tab(10);
         app.s().set_setup("".into());
     });
     let app = a.clone();

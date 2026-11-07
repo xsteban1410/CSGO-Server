@@ -31,3 +31,7 @@ The app has no telemetry and no account. It sends nothing to the project.
 | Your router, through `upnpc` | Only if you turn UPnP on | The UDP port to open |
 
 The game server itself talks to Valve and to the players who join, as any Source server does. With a public profile, anyone who knows your address can see it.
+
+## Checking for updates
+
+The **Check** button in the Updates tab, and `csgo-legacy-server updates`, ask GitHub (`api.github.com`) for the latest release. GitHub sees your IP address, as with any request. It does not happen unless you ask, or turn on **Check when the app opens**, which is off by default.

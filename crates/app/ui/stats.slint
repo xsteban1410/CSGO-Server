@@ -1,0 +1,108 @@
+import { Button, ComboBox, ScrollView, Palette } from "std-widgets.slint";
+import { Group, SwitchRow, SpinRow, Theme } from "kit.slint";
+import { S, Bar } from "state.slint";
+
+// Upright thin bars over time. The value of a bar shows on hover, and the extremes are named under the axis.
+component Columns {
+    in property <[Bar]> bars;
+    property <string> hovered;
+    height: root.bars.length > 0 ? 140px : 18px;
+    if root.bars.length == 0: Text { x: 0; text: @tr("No data yet"); color: Theme.dim; }
+    if root.bars.length > 0: VerticalLayout {
+        spacing: 4px;
+        Text { text: root.hovered; font-size: Theme.small; color: Theme.dim; height: 16px; }
+        plot := HorizontalLayout {
+            vertical-stretch: 1;
+            spacing: 2px;
+            for b in root.bars: Rectangle {
+                area := TouchArea {
+                    changed has-hover => {
+                        root.hovered = self.has-hover ? b.label + ": " + b.value : "";
+                    }
+                }
+                Rectangle {
+                    x: (parent.width - self.width) / 2;
+                    y: parent.height - self.height;
+                    width: min(parent.width, 28px);
+                    // a value above zero stays visible however small it is
+                    height: b.frac > 0 ? max(2px, parent.height * b.frac) : 0;
+                    background: area.has-hover ? Theme.accent.darker(20%) : Theme.accent;
+                    border-top-left-radius: 4px;
+                    border-top-right-radius: 4px;
+                }
+            }
+        }
+        Rectangle { height: 1px; background: Theme.line; }
+        HorizontalLayout {
+            height: 14px;
+            if root.bars.length > 0: Text { text: root.bars[0].label; font-size: Theme.small; color: Theme.dim; }
+            Rectangle { horizontal-stretch: 1; }
+            if root.bars.length > 1: Text { text: root.bars[root.bars.length - 1].label; font-size: Theme.small; color: Theme.dim; }
+        }
+    }
+}
+
+// Ranked names with thin bars, each with its number.
+component Ranking {
+    in property <[Bar]> bars;
+    VerticalLayout {
+        spacing: 6px;
+        if root.bars.length == 0: Text { text: @tr("No data yet"); color: Theme.dim; }
+        for b in root.bars: HorizontalLayout {
+            spacing: 8px;
+            height: 18px;
+            Text { width: 170px; text: b.label; overflow: elide; color: Theme.text; vertical-alignment: center; font-size: Theme.small; }
+            Rectangle {
+                horizontal-stretch: 1;
+                Rectangle {
+                    x: 0;
+                    width: b.frac > 0 ? max(2px, parent.width * b.frac) : 0;
+                    height: 8px;
+                    background: Theme.accent;
+                    border-top-right-radius: 4px;
+                    border-bottom-right-radius: 4px;
+                }
+            }
+            Text { width: 44px; text: b.value; color: Theme.dim; horizontal-alignment: right; vertical-alignment: center; font-size: Theme.small; }
+        }
+    }
+}
+
+export component StatsPage {
+    ScrollView {
+        width: 100%;
+        height: 100%;
+        VerticalLayout {
+            padding: 16px;
+            spacing: Theme.page-gap;
+            alignment: start;
+            if S.ss-note != "": Text { text: S.ss-note; color: Theme.warn; wrap: word-wrap; }
+            HorizontalLayout {
+                spacing: 12px;
+                Text { text: S.ss-avg; font-size: 20px; font-weight: 700; color: Theme.text; vertical-alignment: center; horizontal-stretch: 1; }
+                ComboBox {
+                    width: 180px;
+                    model: [@tr("Last 7 days"), @tr("Last 30 days"), @tr("Last 365 days")];
+                    current-index <=> S.ss-range;
+                    selected => { S.ss-refresh(); }
+                }
+            }
+            Group { title: @tr("Players per day"); Columns { bars: S.ss-days; } }
+            Group { title: @tr("Activity by hour"); Columns { bars: S.ss-hours; } }
+            Group { title: @tr("Maps"); Ranking { bars: S.ss-maps; } }
+            Group { title: @tr("Modes"); Ranking { bars: S.ss-modes; } }
+            Group {
+                title: @tr("Privacy");
+                description: @tr("Stored only on this PC: SteamIDs, names, maps and modes. Never IP addresses.");
+                SwitchRow { title: @tr("Keep statistics"); checked <=> S.ss-on; }
+                SpinRow { title: @tr("Days to keep"); minimum: 1; maximum: 3650; value <=> S.ss-keep; }
+                HorizontalLayout {
+                    alignment: end;
+                    spacing: 8px;
+                    Button { text: @tr("Erase all"); clicked => { S.ss-erase(); } }
+                    Button { text: @tr("Save"); primary: true; clicked => { S.ss-save(); } }
+                }
+            }
+        }
+    }
+}

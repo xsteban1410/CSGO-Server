@@ -1,4 +1,5 @@
 //! Desktop app for csgo-legacy-server.
+mod backups_tab;
 mod console;
 mod headless;
 mod i18n;
@@ -6,10 +7,14 @@ mod join;
 mod modes_tab;
 mod panel;
 mod players;
+mod plugins_tab;
+mod schedule_tab;
 mod settings;
 mod setup;
 mod single;
+mod stats_tab;
 mod tray;
+mod updates_tab;
 mod wizard;
 mod workshop_tab;
 
@@ -17,7 +22,8 @@ use csls_core::config::Config;
 use csls_core::modes::Modes;
 use csls_core::players::{parse_status, Status};
 use csls_core::server::{Server, State};
-use i18n::{t, t_msg};
+pub use i18n::t;
+use i18n::t_msg;
 use slint::{ComponentHandle, ModelRc, SharedString, Timer, TimerMode, VecModel};
 use std::any::Any;
 use std::cell::{Cell, RefCell};
@@ -43,7 +49,73 @@ pub struct Live {
     pub last_error: Option<String>,
 }
 
+/// The agent already asks the server every few seconds: reading its answer spares the rcon and `/proc` work.
+fn fetch_from_agent(cfg: &Config) -> Option<Live> {
+    let v = csls_core::agent::call("status", serde_json::json!({})).ok()?;
+    let running = v["running"].as_bool()?;
+    let s = &v["server"];
+    let text = |x: &serde_json::Value| x.as_str().unwrap_or("").to_string();
+    let num = |x: &serde_json::Value| x.as_u64().unwrap_or(0) as u32;
+    let players = s["players"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .map(|p| csls_core::players::Player {
+            userid: num(&p["userid"]),
+            name: text(&p["name"]),
+            steamid: text(&p["steamid"]),
+            bot: p["bot"].as_bool().unwrap_or(false),
+            connected: text(&p["connected"]),
+            ping: num(&p["ping"]),
+            loss: 0,
+            addr: String::new(),
+        })
+        .collect();
+    Some(Live {
+        running,
+        rcon_ok: v["rcon_ok"].as_bool().unwrap_or(false),
+        status: Status {
+            hostname: text(&s["hostname"]),
+            map: text(&s["map"]),
+            humans: num(&s["humans"]),
+            bots: num(&s["bots"]),
+            max: num(&s["max"]),
+            players,
+        },
+        mode: text(&v["mode"]),
+        bridge: running && csls_core::server::bridge_running(),
+        stats: running.then(|| csls_core::server::ProcStats {
+            cpu_percent: v["cpu"].as_f64().unwrap_or(0.0) as u32,
+            rss_mb: v["rss_kb"].as_u64().unwrap_or(0) / 1024,
+            uptime_secs: v["uptime"].as_u64().unwrap_or(0),
+        }),
+        last_error: if running { csls_core::doctor::last_error(cfg) } else { None },
+    })
+}
+
+/// Starts the agent, if it is installed. Without it the app works the same, without history or tasks.
+pub fn start_agent(a: &AppRc) {
+    let app = a.clone();
+    bg(csls_core::server::start_agent, move |r| {
+        if let Err(e) = r {
+            eprintln!("agent: {e:#}");
+        }
+        app.agent_changed();
+    });
+}
+
+/// After a config change: the agent reads the config once, when it starts.
+pub fn restart_agent(a: &AppRc) {
+    if csls_core::server::agent_running() {
+        csls_core::server::stop_agent();
+        start_agent(a);
+    }
+}
+
 fn fetch(cfg: &Config) -> Live {
+    if let Some(l) = fetch_from_agent(cfg) {
+        return l;
+    }
     let srv = Server::new(cfg);
     let mut l = Live { running: srv.state() == State::Running, ..Default::default() };
     if l.running {
@@ -76,6 +148,7 @@ pub struct App {
     pub live: RefCell<Live>,
     listeners: RefCell<Vec<LiveListener>>,
     modes_listeners: RefCell<Vec<Box<dyn Fn()>>>,
+    agent_listeners: RefCell<Vec<Box<dyn Fn()>>>,
     polling: Cell<bool>,
     /// The user asked to stop, so the next stop is no surprise.
     pub stop_requested: Cell<bool>,
@@ -161,6 +234,17 @@ impl App {
                 }
             },
         );
+    }
+
+    /// Whoever reads from the agent asks again.
+    pub fn on_agent_changed(&self, f: impl Fn() + 'static) {
+        self.agent_listeners.borrow_mut().push(Box::new(f));
+    }
+
+    pub fn agent_changed(&self) {
+        for f in self.agent_listeners.borrow().iter() {
+            f();
+        }
     }
 
     pub fn on_modes_changed(&self, f: impl Fn() + 'static) {
@@ -301,6 +385,71 @@ pub fn strings(v: &[String]) -> ModelRc<SharedString> {
     model(v.iter().map(|s| SharedString::from(s.as_str())).collect())
 }
 
+/// A moment in local time. shortcut: asks `date` for the offset once, so a change of clock while the app is open shows the old one.
+pub fn when(unix: i64) -> String {
+    static OFFSET: std::sync::OnceLock<i64> = std::sync::OnceLock::new();
+    let offset = *OFFSET.get_or_init(|| {
+        let o = std::process::Command::new("date").arg("+%z").output().map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string());
+        o.ok().and_then(|z| parse_offset(&z)).unwrap_or(0)
+    });
+    if unix <= 0 {
+        return "—".into();
+    }
+    civil(unix + offset)
+}
+
+fn parse_offset(z: &str) -> Option<i64> {
+    let (sign, rest) = z.split_at_checked(1)?;
+    let (h, m) = rest.split_at_checked(2)?;
+    let secs = h.parse::<i64>().ok()? * 3600 + m.parse::<i64>().ok()? * 60;
+    Some(if sign == "-" { -secs } else { secs })
+}
+
+/// `YYYY-MM-DD HH:MM` from seconds since 1970, by the days-from-civil algorithm.
+fn civil(t: i64) -> String {
+    let (days, secs) = (t.div_euclid(86400), t.rem_euclid(86400));
+    let z = days + 719468;
+    let era = z.div_euclid(146097);
+    let doe = z.rem_euclid(146097);
+    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let (d, m) = (doy - (153 * mp + 2) / 5 + 1, if mp < 10 { mp + 3 } else { mp - 9 });
+    let y = yoe + era * 400 + i64::from(m <= 2);
+    format!("{y:04}-{m:02}-{d:02} {:02}:{:02}", secs / 3600, secs / 60 % 60)
+}
+
+pub fn duration(secs: i64) -> String {
+    if secs >= 3600 {
+        format!("{} h {} min", secs / 3600, secs / 60 % 60)
+    } else {
+        format!("{} min", secs / 60)
+    }
+}
+
+/// Bars for the charts, scaled to the largest value.
+pub fn bars(list: &[csls_core::agent::Count]) -> Vec<Bar> {
+    let max = list.iter().map(|c| c.count).max().unwrap_or(0).max(1) as f32;
+    list.iter().map(|c| Bar { label: c.name.as_str().into(), value: c.count.to_string().into(), frac: c.count as f32 / max }).collect()
+}
+
+/// Asks where to save and writes there.
+pub fn save_as(a: &AppRc, name: String, content: String) {
+    let a = a.clone();
+    bg(
+        move || -> anyhow::Result<bool> {
+            let Some(p) = rfd::FileDialog::new().set_file_name(name).save_file() else { return Ok(false) };
+            std::fs::write(p, content)?;
+            Ok(true)
+        },
+        move |r| match r {
+            Ok(true) => a.toast(&t("Saved")),
+            Ok(false) => {}
+            Err(e) => a.error(&e),
+        },
+    );
+}
+
 pub fn btn(id: &str, label: &str) -> Btn {
     Btn { id: id.into(), label: label.into(), danger: false }
 }
@@ -326,6 +475,7 @@ fn build(cfg: Config) -> anyhow::Result<AppRc> {
         live: RefCell::default(),
         listeners: RefCell::default(),
         modes_listeners: RefCell::default(),
+        agent_listeners: RefCell::default(),
         polling: Cell::new(false),
         stop_requested: Cell::new(false),
         answer: RefCell::default(),
@@ -350,6 +500,11 @@ fn build(cfg: Config) -> anyhow::Result<AppRc> {
     console::init(&a);
     join::init(&a);
     settings::init(&a);
+    plugins_tab::init(&a);
+    schedule_tab::init(&a);
+    backups_tab::init(&a);
+    stats_tab::init(&a);
+    updates_tab::init(&a);
     a.watch();
     let poll = a.clone();
     a.every(Duration::from_secs(3), move || poll.refresh());
@@ -371,7 +526,10 @@ fn debug_open(a: &AppRc) {
 }
 
 fn tab_index(name: &str) -> Option<i32> {
-    ["server", "players", "modes", "workshop", "console", "join", "settings"].iter().position(|t| *t == name).map(|i| i as i32)
+    ["server", "players", "modes", "workshop", "console", "plugins", "tasks", "backups", "stats", "updates", "join", "settings"]
+        .iter()
+        .position(|t| *t == name)
+        .map(|i| i as i32)
 }
 
 /// Debug: CSLS_SCREENSHOT=file.png draws the app after a moment, with no window on screen, and closes.
@@ -400,6 +558,7 @@ fn run() -> anyhow::Result<()> {
     // a second launch shows the first window and leaves
     let Some(listener) = single::claim()? else { return Ok(()) };
     let a = build(cfg)?;
+    start_agent(&a);
     single::serve(listener, a.ui.as_weak());
     let quit_on_close = !tray::available();
     let tray_icon = if quit_on_close { None } else { Some(tray::init(&a)?) };
@@ -432,6 +591,20 @@ mod tests {
     use slint::Model;
 
     #[test]
+    fn dates_and_bars() {
+        assert_eq!(civil(0), "1970-01-01 00:00");
+        assert_eq!(civil(1_788_739_260), "2026-09-07 00:01");
+        assert_eq!(parse_offset("-0130"), Some(-5400));
+        assert_eq!(parse_offset("+0200"), Some(7200));
+        assert_eq!(parse_offset(""), None);
+        assert_eq!(when(0), "—");
+        assert_eq!(duration(3720), "1 h 2 min");
+        let b = bars(&[csls_core::agent::Count { name: "a".into(), count: 2 }, csls_core::agent::Count { name: "b".into(), count: 1 }]);
+        assert_eq!((b[0].frac, b[1].frac), (1.0, 0.5));
+        assert!(bars(&[]).is_empty());
+    }
+
+    #[test]
     fn signature_sees_new_and_changed_sources_only() {
         let d = std::env::temp_dir().join(format!("csls-sig-{}", std::process::id()));
         std::fs::create_dir_all(d.join("sub")).unwrap();
@@ -456,7 +629,7 @@ mod tests {
         std::env::set_var("CSLS_RESOURCES", concat!(env!("CARGO_MANIFEST_DIR"), "/../../game"));
         let a = build(Config::default()).unwrap();
         let s = a.s();
-        for tab in 0..7 {
+        for tab in 0..12 {
             s.set_tab(tab);
         }
         assert_eq!(s.get_setup(), "welcome", "nothing installed yet");
@@ -525,6 +698,19 @@ mod tests {
         assert!(single::claim().unwrap().is_none());
         drop(first);
         assert!(single::claim().unwrap().is_some(), "a socket left by a crash does not block the app");
+
+        // tabs that read from the agent say it is not there, instead of failing
+        assert!(s.get_ss_note() != "", "statistics without an agent");
+        assert!(s.get_pl_note() != "", "history without an agent");
+        assert!(s.get_sc_note() != "", "tasks without an agent");
+
+        // aliases: added through the dialog and used by the console
+        s.set_con_alias_name("r".into());
+        s.set_con_alias_cmd("mp_restartgame 1".into());
+        s.invoke_con_alias_add();
+        assert_eq!(s.get_con_aliases().row_count(), 1);
+        s.invoke_con_alias_action("r".into(), "del".into());
+        assert_eq!(s.get_con_aliases().row_count(), 0);
 
         // settings persist
         s.set_set_name("Test".into());

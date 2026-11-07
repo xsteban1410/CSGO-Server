@@ -1,10 +1,13 @@
 //! Modes tab: custom modes (create, duplicate, edit, import, export, delete).
 use crate::i18n::t;
-use crate::{bg, btn, model, row, strings, AppRc, TeamEdit};
+use crate::{bg, btn, model, row, strings, AppRc, RuleEdit, TeamEdit};
 use csls_core::launch::LaunchOptions;
 use csls_core::modes::{self, CfgDoc, Localized, Mode, ModeMeta};
 use csls_core::paths;
+use csls_core::rules::{self, Rule, ACTIONS, EVENTS, MAX_RULES};
 use csls_core::server::Server;
+use slint::{Model, ModelRc, VecModel};
+use std::rc::Rc;
 
 const PRIMARIES: &[&str] = &[
     "",
@@ -79,8 +82,12 @@ fn known(k: &str) -> bool {
         "modo_anarquia",
         "modo_cheats",
         "modo_zombies",
+        "mp_roundtime",
+        "bot_quota",
+        "bot_difficulty",
     ];
     K.contains(&k)
+        || rules::rule_index(k).is_some()
         || ["modo_t_", "modo_ct_"]
             .iter()
             .any(|p| k.strip_prefix(p).is_some_and(|r| ["quitar", "arma", "pistola", "objeto", "vida", "velocidad", "color"].contains(&r)))
@@ -215,10 +222,33 @@ fn editor(a: &AppRc, from: Option<&Mode>) {
     s.set_ed_anarchy(on("modo_anarquia"));
     s.set_ed_cheats(on("modo_cheats"));
     s.set_ed_zombies(on("modo_zombies"));
+    s.set_ed_roundtime(doc.get("mp_roundtime").unwrap_or("").into());
+    s.set_ed_bots(doc.get("bot_quota").and_then(|v| v.parse().ok()).unwrap_or(-1));
+    s.set_ed_difficulty(doc.get("bot_difficulty").and_then(|v| v.parse::<i32>().ok()).filter(|d| (0..=3).contains(d)).unwrap_or(4));
+    s.set_ed_rules(ModelRc::from(Rc::new(VecModel::from(load_rules(&doc)))));
     let extra: String = doc.pairs.iter().filter(|(k, _)| !known(k)).map(|(k, v)| format!("{k} {v}\n")).collect();
     s.set_ed_extra(extra.into());
     *a.editor.borrow_mut() = State { meta, editing, t: lists_t, ct: lists_ct };
     s.set_ed_open(true);
+}
+
+fn load_rules(d: &CfgDoc) -> Vec<RuleEdit> {
+    let index = |list: &[&str], v: &str| list.iter().position(|x| *x == v).unwrap_or(0) as i32;
+    d.pairs
+        .iter()
+        .filter(|(k, _)| rules::rule_index(k).is_some())
+        .filter_map(|(_, v)| Rule::parse(v).ok())
+        .map(|r| RuleEdit { event: index(&EVENTS, &r.event), action: index(&ACTIONS, &r.action), value: r.value.into() })
+        .collect()
+}
+
+fn write_rules(d: &mut CfgDoc, list: impl Iterator<Item = RuleEdit>) -> anyhow::Result<()> {
+    for (i, r) in list.enumerate() {
+        let event = EVENTS[r.event.clamp(0, 3) as usize];
+        let action = ACTIONS[r.action.clamp(0, 4) as usize];
+        d.set(&rules::key(i), &Rule::new(event, action, &r.value)?.to_value());
+    }
+    Ok(())
 }
 
 /// Everything goes through `CfgDoc::validate`, the same as a mode written by hand.
@@ -250,6 +280,17 @@ fn build(a: &AppRc) -> anyhow::Result<(String, ModeMeta, String)> {
     put("modo_anarquia", bit(s.get_ed_anarchy()), "0");
     put("modo_cheats", bit(s.get_ed_cheats()), "0");
     put("modo_zombies", bit(s.get_ed_zombies()), "0");
+    let round = s.get_ed_roundtime();
+    if !round.trim().is_empty() {
+        put("mp_roundtime", fmt(number(&round, 0.0, &t("Round time, minutes (empty = the mode's)"))?), "");
+    }
+    if s.get_ed_bots() >= 0 {
+        put("bot_quota", s.get_ed_bots().to_string(), "");
+    }
+    if (0..=3).contains(&s.get_ed_difficulty()) {
+        put("bot_difficulty", s.get_ed_difficulty().to_string(), "");
+    }
+    write_rules(&mut d, s.get_ed_rules().iter())?;
     for l in s.get_ed_extra().lines() {
         let mut it = l.trim().splitn(2, char::is_whitespace);
         if let Some(k) = it.next().filter(|k| !k.is_empty() && !k.starts_with("//")) {
@@ -408,6 +449,33 @@ pub fn init(a: &AppRc) {
     });
     let app = a.clone();
     s.on_ed_save(move |try_it| save(&app, try_it));
+    let app = a.clone();
+    s.on_ed_show_preview(move || match build(&app) {
+        Ok((id, _, cfg)) => app.ask(&format!("modo_{id}.cfg"), &cfg, "OK", "", false, |_| {}),
+        Err(e) => app.error(&e),
+    });
+    let app = a.clone();
+    s.on_ed_rule_add(move || {
+        let list = app.s().get_ed_rules();
+        if list.row_count() >= MAX_RULES {
+            return;
+        }
+        if let Some(m) = list.as_any().downcast_ref::<VecModel<RuleEdit>>() {
+            m.push(RuleEdit { event: 0, action: 0, value: "".into() });
+        }
+    });
+    let app = a.clone();
+    s.on_ed_rule_remove(move |i| {
+        if let Some(m) = app.s().get_ed_rules().as_any().downcast_ref::<VecModel<RuleEdit>>() {
+            if (i as usize) < m.row_count() {
+                m.remove(i as usize);
+            }
+        }
+    });
+    let app = a.clone();
+    s.on_ed_rule_changed(move |i, event, action, value| {
+        app.s().get_ed_rules().set_row_data(i as usize, RuleEdit { event, action, value });
+    });
     // modes copied to the folder by hand
     let app = a.clone();
     a.on_modes_changed(move || fill(&app));
@@ -448,6 +516,19 @@ mod tests {
         assert_eq!(back.get("modo_t_arma"), Some("weapon_awp"));
         assert_eq!(back.get("modo_t_velocidad"), Some("1.5"));
         assert_eq!(back.get("modo_t_vida"), Some("200"));
+    }
+
+    #[test]
+    fn rules_go_through_the_catalog() {
+        let mut d = CfgDoc::default();
+        let good = RuleEdit { event: 1, action: 1, value: "25".into() };
+        write_rules(&mut d, [good].into_iter()).unwrap();
+        assert_eq!(d.get("modo_regla_1"), Some("kill health 25"));
+        d.validate().unwrap();
+        let back = load_rules(&d);
+        assert_eq!((back[0].event, back[0].action, back[0].value.as_str()), (1, 1, "25"));
+        let bad = RuleEdit { event: 0, action: 0, value: "weapon_;quit".into() };
+        assert!(write_rules(&mut CfgDoc::default(), [bad].into_iter()).is_err());
     }
 
     #[test]

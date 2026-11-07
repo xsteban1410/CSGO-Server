@@ -1,0 +1,42 @@
+import { Button, ScrollView } from "std-widgets.slint";
+import { Group, ValueRow, SwitchRow, Theme } from "kit.slint";
+import { S } from "state.slint";
+
+export component UpdatesPage {
+    ScrollView {
+        width: 100%;
+        height: 100%;
+        VerticalLayout {
+            padding: 16px;
+            spacing: Theme.page-gap;
+            alignment: start;
+            Group {
+                title: @tr("App");
+                description: @tr("Checking asks GitHub for the latest release. Nothing is installed without your permission.");
+                ValueRow { title: @tr("This version"); value: S.up-current; }
+                ValueRow {
+                    title: @tr("Latest release");
+                    value: S.up-latest;
+                    Button { text: @tr("Check"); clicked => { S.up-check(); } }
+                }
+                if S.up-command != "": ValueRow { title: @tr("To update, run"); value: S.up-command; }
+                if S.up-can-apply: HorizontalLayout {
+                    alignment: end;
+                    Button { text: @tr("Update"); primary: true; clicked => { S.up-apply(); } }
+                }
+                SwitchRow {
+                    title: @tr("Check when the app opens");
+                    checked <=> S.up-auto;
+                    changed checked => { S.up-auto-changed(); }
+                }
+            }
+            Group {
+                title: @tr("Server");
+                description: @tr("Only the SourceMod and Metamod builds this version was tested with. A backup is made first, and the previous build is restored if it fails.");
+                ValueRow { title: "SourceMod"; value: S.up-sourcemod; }
+                ValueRow { title: "Metamod"; value: S.up-metamod; }
+                HorizontalLayout { alignment: end; Button { text: @tr("Update server and SourceMod"); clicked => { S.up-game(); } } }
+            }
+        }
+    }
+}

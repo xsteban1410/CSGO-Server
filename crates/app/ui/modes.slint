@@ -1,4 +1,4 @@
-import { Button, ScrollView, TextEdit } from "std-widgets.slint";
+import { Button, ComboBox, LineEdit, ScrollView, TextEdit } from "std-widgets.slint";
 import { Group, Row, ActionList, Overlay, SwitchRow, SpinRow, ComboRow, EntryRow, Theme } from "kit.slint";
 import { S, TeamEdit } from "state.slint";
 
@@ -85,6 +85,7 @@ export component ModeEditor {
             spacing: 8px;
             Text { text: S.ed-title; font-size: 16px; font-weight: 700; color: Theme.text; vertical-alignment: center; horizontal-stretch: 1; }
             Button { text: @tr("Cancel"); clicked => { S.ed-open = false; } }
+            Button { text: @tr("Preview"); clicked => { S.ed-show-preview(); } }
             if S.rcon-ok: Button { text: @tr("Save and try"); clicked => { S.ed-save(true); } }
             Button { text: @tr("Save"); primary: true; clicked => { S.ed-save(false); } }
         }
@@ -115,6 +116,43 @@ export component ModeEditor {
                     ComboRow { title: @tr("Infinite ammo"); model: [@tr("No"), @tr("Yes"), @tr("Yes, without reloading")]; index <=> S.ed-ammo; }
                     SwitchRow { title: @tr("Buy anywhere"); checked <=> S.ed-buy; }
                     SpinRow { title: @tr("Air acceleration (12 = normal)"); maximum: 1000; value <=> S.ed-air; }
+                }
+                Group {
+                    title: @tr("Match");
+                    EntryRow { title: @tr("Round time, minutes (empty = the mode's)"); text <=> S.ed-roundtime; }
+                    SpinRow { title: @tr("Bots (-1 = the mode's)"); minimum: -1; maximum: 64; value <=> S.ed-bots; }
+                    ComboRow {
+                        title: @tr("Bot difficulty");
+                        model: [@tr("Easy"), @tr("Normal"), @tr("Hard"), @tr("Expert"), @tr("The mode's")];
+                        index <=> S.ed-difficulty;
+                    }
+                }
+                Group {
+                    title: @tr("Blocks");
+                    description: @tr("When something happens, do something. Up to 16, from a fixed list: they cannot run commands.");
+                    for r[i] in S.ed-rules: HorizontalLayout {
+                        spacing: 6px;
+                        ComboBox {
+                            width: 150px;
+                            model: [@tr("On spawn"), @tr("On a kill"), @tr("On a headshot"), @tr("On round start")];
+                            current-index: r.event;
+                            selected => { S.ed-rule-changed(i, self.current-index, r.action, r.value); }
+                        }
+                        ComboBox {
+                            width: 150px;
+                            model: [@tr("Give item"), @tr("Add health"), @tr("Set speed"), @tr("Add money"), @tr("Show message")];
+                            current-index: r.action;
+                            selected => { S.ed-rule-changed(i, r.event, self.current-index, r.value); }
+                        }
+                        LineEdit {
+                            horizontal-stretch: 1;
+                            text: r.value;
+                            placeholder-text: r.action == 0 ? "weapon_taser" : r.action == 4 ? @tr("Text") : "25";
+                            edited(t) => { S.ed-rule-changed(i, r.event, r.action, t); }
+                        }
+                        Button { text: "✕"; clicked => { S.ed-rule-remove(i); } }
+                    }
+                    HorizontalLayout { alignment: end; Button { text: @tr("Add block"); clicked => { S.ed-rule-add(); } } }
                 }
                 Group {
                     title: @tr("Special rules");

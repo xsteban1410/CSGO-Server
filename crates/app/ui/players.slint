@@ -1,5 +1,5 @@
 import { Button, ScrollView, LineEdit } from "std-widgets.slint";
-import { Group, Row, ActionList, Overlay, SpinRow, EntryRow, ValueRow, Theme } from "kit.slint";
+import { Group, Row, ActionList, Overlay, SpinRow, ComboRow, EntryRow, ValueRow, Theme } from "kit.slint";
 import { S } from "state.slint";
 
 export component PlayersPage {
@@ -17,7 +17,23 @@ export component PlayersPage {
             Group {
                 title: @tr("Saved skins");
                 description: @tr("Players with skins saved, also offline");
-                ActionList { rows: S.pl-saved; clicked(id, action) => { S.pl-saved-action(id, action); } }
+                ActionList { rows: S.pl-saved; empty: @tr("Nothing saved"); clicked(id, action) => { S.pl-saved-action(id, action); } }
+            }
+            Group {
+                title: @tr("History");
+                description: S.pl-note != "" ? S.pl-note : @tr("Everyone who has played on this server. Stored only on this PC.");
+                EntryRow { title: @tr("Search"); text <=> S.pl-search; changed text => { S.pl-search-changed(); } }
+                ActionList { rows: S.pl-history; empty: @tr("Nobody yet"); clicked(id, action) => { S.pl-history-action(id, action); } }
+                HorizontalLayout {
+                    alignment: end;
+                    spacing: 8px;
+                    Button { text: @tr("Export CSV"); clicked => { S.pl-export("csv"); } }
+                    Button { text: @tr("Export JSON"); clicked => { S.pl-export("json"); } }
+                }
+            }
+            Group {
+                title: @tr("Sanctions");
+                ActionList { rows: S.pl-sanctions; empty: @tr("No sanctions"); }
             }
             Group {
                 title: @tr("Bans");
@@ -59,5 +75,24 @@ export component SkinsDialog {
             }
         }
         HorizontalLayout { alignment: end; Button { text: @tr("Close"); clicked => { S.skins-open = false; } } }
+    }
+}
+
+export component SanctionDialog {
+    Overlay {
+        card-width: 520px;
+        card-height: 400px;
+        Text { text: S.san-title; font-size: 16px; font-weight: 700; color: Theme.text; }
+        ComboRow { title: @tr("Kind"); model: [@tr("Warning"), @tr("Kick"), @tr("Ban"), @tr("Note")]; index <=> S.san-kind; }
+        SpinRow { title: @tr("Minutes (0 = no time)"); minimum: 0; maximum: 525600; value <=> S.san-minutes; }
+        EntryRow { title: @tr("Reason"); text <=> S.san-reason; }
+        EntryRow { title: @tr("Notes"); text <=> S.san-notes; }
+        Text { text: @tr("This is only your record: it does not kick or ban anyone."); color: Theme.dim; font-size: Theme.small; wrap: word-wrap; vertical-stretch: 1; }
+        HorizontalLayout {
+            alignment: end;
+            spacing: 8px;
+            Button { text: @tr("Cancel"); clicked => { S.san-open = false; } }
+            Button { text: @tr("Save"); primary: true; clicked => { S.san-confirm(); } }
+        }
     }
 }

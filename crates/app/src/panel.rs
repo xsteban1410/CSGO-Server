@@ -1,6 +1,6 @@
 //! Server tab: status, connect address and Start / Change / Stop / Play.
 use crate::i18n::t;
-use crate::{bg, btn, model, row, wizard, AppRc};
+use crate::{bg, btn, model, row, strings, wizard, AppRc, ConsoleLine};
 use csls_core::config::Network;
 use csls_core::server::Server;
 use csls_core::steam_client;
@@ -51,6 +51,44 @@ fn set_addr(a: &AppRc) {
             },
         );
     }
+}
+
+/// The lines that say something happened, from the agent's log.
+fn fill_events(a: &AppRc) {
+    let app = a.clone();
+    bg(
+        || csls_core::agent::call("lines", serde_json::json!({ "since": 0, "limit": 300 })),
+        move |r: anyhow::Result<serde_json::Value>| {
+            let list = r.unwrap_or_default();
+            let events: Vec<ConsoleLine> = list
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter(|l| matches!(l["category"].as_str(), Some("player" | "error")))
+                .map(|l| ConsoleLine {
+                    text: l["text"].as_str().unwrap_or("").into(),
+                    category: l["category"].as_str().unwrap_or("").into(),
+                })
+                .collect();
+            let skip = events.len().saturating_sub(6);
+            app.s().set_st_events(model(events.into_iter().skip(skip).collect()));
+            app.s().set_st_agent(
+                if csls_core::server::agent_running() { t("Running") } else { t("Not running: no history or scheduled tasks") }.into(),
+            );
+        },
+    );
+}
+
+fn fill_warnings(a: &AppRc) {
+    let cfg = a.cfg.borrow().clone();
+    let app = a.clone();
+    bg(
+        move || csls_core::security::preflight(&cfg),
+        move |list| {
+            let v: Vec<String> = list.iter().map(|f| f.text.clone()).collect();
+            app.s().set_st_warnings(strings(&v));
+        },
+    );
 }
 
 pub fn ask_stop(a: &AppRc) {
@@ -160,6 +198,12 @@ pub fn init(a: &AppRc) {
     let app = a.clone();
     a.on_modes_changed(move || fill_presets(&app));
     set_addr(a);
+    fill_warnings(a);
+    fill_events(a);
+    let app = a.clone();
+    a.on_agent_changed(move || fill_events(&app));
+    let app = a.clone();
+    a.every(std::time::Duration::from_secs(10), move || fill_events(&app));
     let was_on = Cell::new(None);
     let app = a.clone();
     a.on_live(move |l| {
@@ -178,6 +222,16 @@ pub fn init(a: &AppRc) {
                 t("Running")
             } else {
                 t("Starting…")
+            }
+            .into(),
+        );
+        s.set_st_rcon(
+            if l.rcon_ok {
+                t("Answering")
+            } else if l.running {
+                t("Not answering yet")
+            } else {
+                String::new()
             }
             .into(),
         );

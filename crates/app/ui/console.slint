@@ -1,5 +1,5 @@
-import { Button, LineEdit, ListView, TextEdit, Switch } from "std-widgets.slint";
-import { Theme } from "kit.slint";
+import { Button, ComboBox, LineEdit, ListView, TextEdit, Switch, ScrollView } from "std-widgets.slint";
+import { Theme, Overlay, Group, ActionList, EntryRow } from "kit.slint";
 import { S } from "state.slint";
 
 export component ConsolePage {
@@ -17,9 +17,17 @@ export component ConsolePage {
                 placeholder-text: @tr("Search");
                 edited => { S.con-filter-changed(); }
             }
+            ComboBox {
+                width: 130px;
+                model: [@tr("Everything"), @tr("Errors"), @tr("Warnings"), @tr("Plugins"), @tr("Players"), @tr("Chat"), @tr("Commands")];
+                current-index <=> S.con-category;
+                selected => { S.con-filter-changed(); }
+            }
             Switch { text: @tr("Follow"); checked <=> S.con-follow; }
             Switch { text: @tr("Select text"); checked <=> S.con-select; }
             Button { text: @tr("Copy"); clicked => { S.con-copy(); } }
+            Button { text: @tr("Save"); clicked => { S.con-download(); } }
+            Button { text: @tr("Aliases"); clicked => { S.con-alias-open = true; } }
         }
         if S.con-select: TextEdit { vertical-stretch: 1; read-only: true; wrap: no-wrap; text: S.con-text; font-size: 12px; }
         if !S.con-select: list := ListView {
@@ -39,15 +47,48 @@ export component ConsolePage {
                 }
             }
         }
-        LineEdit {
+        if S.con-favorites.length > 0 || S.con-suggest.length > 0: HorizontalLayout {
+            spacing: 6px;
+            alignment: start;
+            for f in S.con-suggest: Button { text: f; clicked => { S.con-use(f + " "); } }
+            for f in S.con-favorites: Button { text: "★ " + f; clicked => { S.con-use(f); } }
+        }
+        HorizontalLayout {
+          spacing: 8px;
+          Button { text: "★"; clicked => { S.con-favorite(); } }
+          LineEdit {
             text <=> S.con-entry;
             placeholder-text: @tr("Send command");
             accepted => { S.con-send(); }
+            edited => { S.con-entry-edited(); }
             key-pressed(event) => {
                 if event.text == Key.UpArrow { S.con-history(-1); return accept; }
                 if event.text == Key.DownArrow { S.con-history(1); return accept; }
                 return reject;
             }
+          }
         }
+    }
+}
+
+export component AliasDialog {
+    Overlay {
+        card-width: 560px;
+        card-height: 480px;
+        HorizontalLayout {
+            Text { text: @tr("Aliases"); font-size: 16px; font-weight: 700; color: Theme.text; vertical-alignment: center; horizontal-stretch: 1; }
+            Button { text: @tr("Close"); clicked => { S.con-alias-open = false; } }
+        }
+        Text { text: @tr("A short word for a longer command. What you type after it goes at the end."); color: Theme.dim; wrap: word-wrap; font-size: Theme.small; }
+        ScrollView {
+            vertical-stretch: 1;
+            VerticalLayout {
+                alignment: start;
+                ActionList { rows: S.con-aliases; empty: @tr("No aliases"); clicked(id, action) => { S.con-alias-action(id, action); } }
+            }
+        }
+        EntryRow { title: @tr("Alias"); text <=> S.con-alias-name; }
+        EntryRow { title: @tr("Command"); text <=> S.con-alias-cmd; }
+        HorizontalLayout { alignment: end; Button { text: @tr("Add"); primary: true; clicked => { S.con-alias-add(); } } }
     }
 }

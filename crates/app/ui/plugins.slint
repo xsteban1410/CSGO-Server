@@ -1,0 +1,26 @@
+import { Button, ScrollView } from "std-widgets.slint";
+import { Group, ActionList, Theme } from "kit.slint";
+import { S } from "state.slint";
+
+export component PluginsPage {
+    ScrollView {
+        width: 100%;
+        height: 100%;
+        VerticalLayout {
+            padding: 16px;
+            spacing: Theme.page-gap;
+            alignment: start;
+            HorizontalLayout {
+                alignment: end;
+                spacing: 8px;
+                Button { text: @tr("Refresh"); clicked => { S.pg-refresh(); } }
+                Button { text: @tr("Install"); primary: true; clicked => { S.pg-install(); } }
+            }
+            Group {
+                title: @tr("Plugins");
+                description: @tr("Plugins turned off stay off after a deploy. A .sp is compiled when installed, and its errors are shown here.");
+                ActionList { rows: S.pg-rows; empty: @tr("No plugins"); clicked(id, action) => { S.pg-action(id, action); } }
+            }
+        }
+    }
+}

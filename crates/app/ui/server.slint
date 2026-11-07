@@ -17,6 +17,8 @@ export component ServerPage {
                 ValueRow { title: @tr("Map"); value: S.st-map; }
                 ValueRow { title: @tr("Players"); value: S.st-players; }
                 ValueRow { title: @tr("Resources"); value: S.st-resources; }
+                ValueRow { title: "RCON"; value: S.st-rcon; }
+                ValueRow { title: @tr("Agent"); value: S.st-agent; }
                 if S.st-error != "": ValueRow { title: @tr("Last SourceMod error"); value: S.st-error; value-color: Theme.bad; }
                 ValueRow {
                     title: @tr("Connect address");
@@ -60,6 +62,19 @@ export component ServerPage {
                     Button { text: @tr("End warmup"); clicked => { S.quick("warmup"); } }
                     Button { text: @tr("+ Bot"); clicked => { S.quick("bot+"); } }
                     Button { text: @tr("− Bot"); clicked => { S.quick("bot-"); } }
+                }
+            }
+            if S.st-warnings.length > 0: Group {
+                title: @tr("Warnings");
+                for w in S.st-warnings: Text { text: w; color: Theme.warn; wrap: word-wrap; font-size: Theme.small; }
+            }
+            if S.st-events.length > 0: Group {
+                title: @tr("Recent events");
+                for e in S.st-events: Text {
+                    text: e.text;
+                    color: e.category == "error" ? Theme.bad : Theme.text;
+                    font-size: Theme.small;
+                    overflow: elide;
                 }
             }
             if S.presets.length > 0: Group {

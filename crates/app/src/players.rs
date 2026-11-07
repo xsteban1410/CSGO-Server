@@ -1,9 +1,9 @@
 //! Players tab: connected (kick, ban, skins), saved skins and bans.
 use crate::i18n::t;
 use crate::{bg, btn, model, row, ActionRow, AppRc, KeyValue};
-use csls_core::players;
 use csls_core::server::Server;
 use csls_core::skins;
+use csls_core::{agent, players};
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
@@ -68,9 +68,116 @@ fn reload_offline(a: &AppRc) {
     );
 }
 
+const KINDS: [&str; 4] = ["warning", "kick", "ban", "note"];
+
+fn history_rows(list: &[agent::Player], query: &str) -> Vec<ActionRow> {
+    let q = query.to_lowercase();
+    list.iter()
+        .filter(|p| q.is_empty() || p.name.to_lowercase().contains(&q) || p.steamid.to_lowercase().contains(&q))
+        .map(|p| {
+            let sub = format!(
+                "{} · {} {} · {} · {}: {}",
+                p.steamid,
+                p.connections,
+                t("connections"),
+                crate::duration(p.seconds),
+                t("last seen"),
+                crate::when(p.last_seen)
+            );
+            row(&p.steamid, &p.name, &sub, vec![btn("sanction", &t("Sanction"))])
+        })
+        .collect()
+}
+
+#[derive(Default)]
+struct History {
+    players: Vec<agent::Player>,
+    sanctions: Vec<agent::Sanction>,
+}
+
+fn reload_history(a: &AppRc, h: &Rc<RefCell<History>>) {
+    let (a, h) = (a.clone(), h.clone());
+    bg(
+        || agent::players().and_then(|p| Ok((p, agent::sanctions()?))),
+        move |r| {
+            let s = a.s();
+            match r {
+                Ok((players, sanctions)) => {
+                    s.set_pl_note("".into());
+                    s.set_pl_history(model(history_rows(&players, &s.get_pl_search())));
+                    let rows = sanctions.iter().map(|x| {
+                        let sub = format!("{} · {} · {} · {} min · {}", x.steamid, t(&x.kind), x.reason, x.minutes, crate::when(x.time));
+                        row("", &x.name, &sub, vec![])
+                    });
+                    s.set_pl_sanctions(model(rows.collect()));
+                    *h.borrow_mut() = History { players, sanctions };
+                }
+                Err(_) => s.set_pl_note(t("No history: the agent is not running, or statistics are off").into()),
+            }
+        },
+    );
+}
+
 pub fn init(a: &AppRc) {
     let s = a.s();
     reload_offline(a);
+    let history: Rc<RefCell<History>> = Rc::default();
+    reload_history(a, &history);
+    s.set_pl_note(t("No history: the agent is not running, or statistics are off").into());
+    let (app, h) = (a.clone(), history.clone());
+    a.on_agent_changed(move || reload_history(&app, &h));
+    let (app, h) = (a.clone(), history.clone());
+    s.on_pl_search_changed(move || {
+        let rows = history_rows(&h.borrow().players, &app.s().get_pl_search());
+        app.s().set_pl_history(model(rows));
+    });
+    let (app, h) = (a.clone(), history.clone());
+    s.on_pl_export(move |format| {
+        let h = h.borrow();
+        let (players, sanctions) = (&h.players, &h.sanctions);
+        let (name, text) = if format == "csv" {
+            ("players.csv", format!("{}\n{}", agent::players_csv(players), agent::sanctions_csv(sanctions)))
+        } else {
+            ("players.json", serde_json::json!({ "players": players, "sanctions": sanctions }).to_string())
+        };
+        crate::save_as(&app, name.to_string(), text);
+    });
+    let target: Rc<RefCell<(String, String)>> = Rc::default();
+    let (app, h, tg) = (a.clone(), history.clone(), target.clone());
+    s.on_pl_history_action(move |id, _| {
+        let name = h.borrow().players.iter().find(|p| p.steamid == id.as_str()).map(|p| p.name.clone()).unwrap_or_default();
+        let s = app.s();
+        s.set_san_title(format!("{} · {name}", t("Sanction")).into());
+        s.set_san_kind(0);
+        s.set_san_minutes(0);
+        s.set_san_reason("".into());
+        s.set_san_notes("".into());
+        *tg.borrow_mut() = (id.to_string(), name);
+        s.set_san_open(true);
+    });
+    let (app, h) = (a.clone(), history.clone());
+    s.on_san_confirm(move || {
+        let s = app.s();
+        let (steamid, name) = target.borrow().clone();
+        let x = agent::Sanction {
+            steamid,
+            name,
+            kind: KINDS[s.get_san_kind().clamp(0, 3) as usize].into(),
+            reason: s.get_san_reason().to_string(),
+            notes: s.get_san_notes().to_string(),
+            minutes: s.get_san_minutes().max(0) as u32,
+            time: 0,
+        };
+        s.set_san_open(false);
+        let (a2, h2) = (app.clone(), h.clone());
+        bg(
+            move || agent::add_sanction(&x),
+            move |r| match r {
+                Ok(()) => reload_history(&a2, &h2),
+                Err(e) => a2.error(&e),
+            },
+        );
+    });
     let app = a.clone();
     s.on_pl_refresh(move || reload_offline(&app));
     let app = a.clone();

@@ -969,3 +969,417 @@ msgstr "El servidor está en marcha. ¿Pararlo también?"
 
 msgid "No bans"
 msgstr "Sin baneos"
+
+msgid "A backup is made first. The download can take a while."
+msgstr "Primero se hace una copia. La descarga puede tardar."
+
+msgid "A short word for a longer command. What you type after it goes at the end."
+msgstr "Una palabra corta para un comando largo. Lo que escribas después se añade al final."
+
+msgid "Action"
+msgstr "Acción"
+
+msgid "Activity by hour"
+msgstr "Actividad por hora"
+
+msgid "Add"
+msgstr "Añadir"
+
+msgid "Add block"
+msgstr "Añadir bloque"
+
+msgid "Add health"
+msgstr "Sumar vida"
+
+msgid "Add money"
+msgstr "Sumar dinero"
+
+msgid "Agent"
+msgstr "Agente"
+
+msgid "Alias"
+msgstr "Alias"
+
+msgid "Aliases"
+msgstr "Alias"
+
+msgid "Answering"
+msgstr "Responde"
+
+msgid "App"
+msgstr "Aplicación"
+
+msgid "Automatic backups to keep"
+msgstr "Copias automáticas que se conservan"
+
+msgid "Average players"
+msgstr "Media de jugadores"
+
+msgid "Blocks"
+msgstr "Bloques"
+
+msgid "Bots (-1 = the mode's)"
+msgstr "Bots (-1 = los del modo)"
+
+msgid "Built-in"
+msgstr "Incluido"
+
+msgid "Change map"
+msgstr "Cambiar de mapa"
+
+msgid "Change mode"
+msgstr "Cambiar de modo"
+
+msgid "Chat"
+msgstr "Chat"
+
+msgid "Check"
+msgstr "Comprobar"
+
+msgid "Check when the app opens"
+msgstr "Comprobar al abrir la aplicación"
+
+msgid "Checking asks GitHub for the latest release. Nothing is installed without your permission."
+msgstr "Al comprobar se pregunta a GitHub por la última versión. No se instala nada sin tu permiso."
+
+msgid "Checking…"
+msgstr "Comprobando…"
+
+msgid "Command"
+msgstr "Comando"
+
+msgid "Commands"
+msgstr "Comandos"
+
+msgid "Day"
+msgstr "Día"
+
+msgid "Days to keep"
+msgstr "Días que se conservan"
+
+msgid "Erase all"
+msgstr "Borrar todo"
+
+msgid "Erased"
+msgstr "Borrado"
+
+msgid "Errors"
+msgstr "Errores"
+
+msgid "Every day"
+msgstr "Cada día"
+
+msgid "Every few hours"
+msgstr "Cada pocas horas"
+
+msgid "Every week"
+msgstr "Cada semana"
+
+msgid "Everyone who has played on this server. Stored only on this PC."
+msgstr "Todos los que han jugado en este servidor. Se guarda solo en este PC."
+
+msgid "Everything"
+msgstr "Todo"
+
+msgid "Export CSV"
+msgstr "Exportar CSV"
+
+msgid "Export JSON"
+msgstr "Exportar JSON"
+
+msgid "Failed"
+msgstr "Ha fallado"
+
+msgid "Friday"
+msgstr "Viernes"
+
+msgid "Give item"
+msgstr "Dar objeto"
+
+msgid "History"
+msgstr "Historial"
+
+msgid "Hours"
+msgstr "Horas"
+
+msgid "Keep statistics"
+msgstr "Guardar estadísticas"
+
+msgid "Kind"
+msgstr "Tipo"
+
+msgid "Last 30 days"
+msgstr "Últimos 30 días"
+
+msgid "Last 365 days"
+msgstr "Últimos 365 días"
+
+msgid "Last 7 days"
+msgstr "Últimos 7 días"
+
+msgid "Latest release"
+msgstr "Última versión"
+
+msgid "Make a backup"
+msgstr "Hacer una copia"
+
+msgid "Map, mode or command"
+msgstr "Mapa, modo o comando"
+
+msgid "Maps"
+msgstr "Mapas"
+
+msgid "Minutes (0 = no time)"
+msgstr "Minutos (0 = sin tiempo)"
+
+msgid "Missing"
+msgstr "Falta"
+
+msgid "Monday"
+msgstr "Lunes"
+
+msgid "New"
+msgstr "Nueva"
+
+msgid "New task"
+msgstr "Tarea nueva"
+
+msgid "No aliases"
+msgstr "Sin alias"
+
+msgid "No data yet"
+msgstr "Aún no hay datos"
+
+msgid "No history: the agent is not running, or statistics are off"
+msgstr "Sin historial: el agente no está en marcha o las estadísticas están desactivadas"
+
+msgid "No plugins"
+msgstr "Sin plugins"
+
+msgid "No sanctions"
+msgstr "Sin sanciones"
+
+msgid "No statistics: the agent is not running, or they are off"
+msgstr "Sin estadísticas: el agente no está en marcha o están desactivadas"
+
+msgid "No tasks"
+msgstr "Sin tareas"
+
+msgid "Nobody yet"
+msgstr "Nadie todavía"
+
+msgid "Not answering yet"
+msgstr "Aún no responde"
+
+msgid "Not running: no history or scheduled tasks"
+msgstr "Parado: sin historial ni tareas programadas"
+
+msgid "Note"
+msgstr "Nota"
+
+msgid "Notes"
+msgstr "Notas"
+
+msgid "Nothing has run yet"
+msgstr "Aún no se ha ejecutado nada"
+
+msgid "OK"
+msgstr "Correcto"
+
+msgid "Off"
+msgstr "Desactivado"
+
+msgid "On"
+msgstr "Activado"
+
+msgid "On a headshot"
+msgstr "Al hacer un tiro a la cabeza"
+
+msgid "On a kill"
+msgstr "Al matar"
+
+msgid "On round start"
+msgstr "Al empezar la ronda"
+
+msgid "On spawn"
+msgstr "Al reaparecer"
+
+msgid "On the server"
+msgstr "En el servidor"
+
+msgid "Only the SourceMod and Metamod builds this version was tested with. A backup is made first, and the previous build is restored if it fails."
+msgstr "Solo las versiones de SourceMod y Metamod con las que se probó esta versión. Primero se hace una copia, y si falla se restaura la anterior."
+
+msgid "Players per day"
+msgstr "Jugadores por día"
+
+msgid "Plugins turned off stay off after a deploy. A .sp is compiled when installed, and its errors are shown here."
+msgstr "Los plugins desactivados siguen así tras desplegar. Un .sp se compila al instalarlo y sus errores se muestran aquí."
+
+msgid "Preview"
+msgstr "Vista previa"
+
+msgid "Previous version"
+msgstr "Versión anterior"
+
+msgid "Privacy"
+msgstr "Privacidad"
+
+msgid "RCON command"
+msgstr "Comando RCON"
+
+msgid "Recent events"
+msgstr "Últimos eventos"
+
+msgid "Recent runs"
+msgstr "Últimas ejecuciones"
+
+msgid "Reload"
+msgstr "Recargar"
+
+msgid "Restart the server"
+msgstr "Reiniciar el servidor"
+
+msgid "Retention"
+msgstr "Retención"
+
+msgid "Round time, minutes (empty = the mode's)"
+msgstr "Tiempo de ronda, en minutos (vacío = el del modo)"
+
+msgid "Run now"
+msgstr "Ejecutar ahora"
+
+msgid "Same name as"
+msgstr "Mismo nombre que"
+
+msgid "Sanction"
+msgstr "Sancionar"
+
+msgid "Sanctions"
+msgstr "Sanciones"
+
+msgid "Saturday"
+msgstr "Sábado"
+
+msgid "Scheduled tasks"
+msgstr "Tareas programadas"
+
+msgid "Set speed"
+msgstr "Fijar velocidad"
+
+msgid "Show message"
+msgstr "Mostrar mensaje"
+
+msgid "Started"
+msgstr "Iniciada"
+
+msgid "Statistics"
+msgstr "Estadísticas"
+
+msgid "Stop the server before updating it"
+msgstr "Para el servidor antes de actualizarlo"
+
+msgid "Stored only on this PC: SteamIDs, names, maps and modes. Never IP addresses."
+msgstr "Se guarda solo en este PC: SteamID, nombres, mapas y modos. Nunca direcciones IP."
+
+msgid "Sunday"
+msgstr "Domingo"
+
+msgid "Tasks"
+msgstr "Tareas"
+
+msgid "Tasks need the agent, and it is not running"
+msgstr "Las tareas necesitan el agente, y no está en marcha"
+
+msgid "Tested with"
+msgstr "Probado con"
+
+msgid "Text"
+msgstr "Texto"
+
+msgid "The app will download and check version"
+msgstr "La aplicación descargará y comprobará la versión"
+
+msgid "The mode's"
+msgstr "La del modo"
+
+msgid "They run while the agent is running. A task never overlaps with itself."
+msgstr "Se ejecutan mientras el agente esté en marcha. Una tarea nunca se solapa consigo misma."
+
+msgid "This deletes the history of players, maps and modes, and cannot be undone."
+msgstr "Esto borra el historial de jugadores, mapas y modos, y no se puede deshacer."
+
+msgid "This is only your record: it does not kick or ban anyone."
+msgstr "Es solo tu registro: no expulsa ni banea a nadie."
+
+msgid "This version"
+msgstr "Esta versión"
+
+msgid "Thursday"
+msgstr "Jueves"
+
+msgid "Time (HH:MM)"
+msgstr "Hora (HH:MM)"
+
+msgid "To update, run"
+msgstr "Para actualizar, ejecuta"
+
+msgid "Tuesday"
+msgstr "Martes"
+
+msgid "Turn off"
+msgstr "Desactivar"
+
+msgid "Turn on"
+msgstr "Activar"
+
+msgid "Up to date"
+msgstr "Al día"
+
+msgid "Update"
+msgstr "Actualizar"
+
+msgid "Update plugins"
+msgstr "Actualizar plugins"
+
+msgid "Updated: restart the app"
+msgstr "Actualizada: reinicia la aplicación"
+
+msgid "Updates"
+msgstr "Actualizaciones"
+
+msgid "Warnings"
+msgstr "Avisos"
+
+msgid "Wednesday"
+msgstr "Miércoles"
+
+msgid "When"
+msgstr "Cuándo"
+
+msgid "When something happens, do something. Up to 16, from a fixed list: they cannot run commands."
+msgstr "Cuando pase algo, haz algo. Hasta 16, de una lista cerrada: no pueden ejecutar comandos."
+
+msgid "Your config, modes, plugins, presets and skins, never the game. They hold your passwords: do not share them. Restoring shows what changes first. To make them regularly, add a task in Tasks."
+msgstr "Tu configuración, modos, plugins, presets y skins, nunca el juego. Contienen tus contraseñas: no las compartas. Al restaurar se muestra antes qué cambia. Para hacerlas con regularidad, añade una tarea en Tareas."
+
+msgid "Yours"
+msgstr "Tuyo"
+
+msgid "connections"
+msgstr "conexiones"
+
+msgid "ban"
+msgstr "baneo"
+
+msgid "kick"
+msgstr "expulsión"
+
+msgid "last seen"
+msgstr "última vez"
+
+msgid "note"
+msgstr "nota"
+
+msgid "warning"
+msgstr "aviso"

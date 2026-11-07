@@ -6,6 +6,8 @@ export struct ConsoleLine { text: string, category: string }
 export struct Card { id: string, title: string, badge: string, kind: string, can: bool, installed: bool, thumb: image, tip: string }
 export struct KeyValue { key: string, value: string, warn: bool }
 export struct ModeItem { id: string, title: string, subtitle: string, heading: bool }
+export struct RuleEdit { event: int, action: int, value: string }
+export struct Bar { label: string, value: string, frac: float }
 export struct TeamEdit { strip: bool, weapon: int, pistol: int, item: int, health: int, speed: string, color: string }
 
 export global S {
@@ -36,6 +38,10 @@ export global S {
     in-out property <bool> st-is-vpn;
     in-out property <bool> st-bridge;
     in-out property <[ActionRow]> presets;
+    in-out property <string> st-rcon;
+    in-out property <string> st-agent;
+    in-out property <[string]> st-warnings;
+    in-out property <[ConsoleLine]> st-events;
     callback copy-addr();
     callback copy-vpn();
     callback bridge-start();
@@ -105,6 +111,20 @@ export global S {
     callback pl-saved-action(string, string);
     callback pl-bans-action(string, string);
     callback pl-refresh();
+    in-out property <[ActionRow]> pl-history;
+    in-out property <[ActionRow]> pl-sanctions;
+    in-out property <string> pl-search;
+    in-out property <string> pl-note;
+    callback pl-search-changed();
+    callback pl-history-action(string, string);
+    callback pl-export(string);
+    in-out property <bool> san-open;
+    in-out property <string> san-title;
+    in-out property <int> san-kind;
+    in-out property <int> san-minutes;
+    in-out property <string> san-reason;
+    in-out property <string> san-notes;
+    callback san-confirm();
     in-out property <bool> ban-open;
     in-out property <string> ban-title;
     in-out property <int> ban-minutes: 60;
@@ -151,6 +171,14 @@ export global S {
     in-out property <bool> ed-cheats;
     in-out property <bool> ed-zombies;
     in-out property <string> ed-extra;
+    in-out property <string> ed-roundtime;
+    in-out property <int> ed-bots: -1;
+    in-out property <int> ed-difficulty: 4;
+    in-out property <[RuleEdit]> ed-rules;
+    callback ed-rule-add();
+    callback ed-rule-remove(int);
+    callback ed-rule-changed(int, int, int, string);
+    callback ed-show-preview();
     callback ed-save(bool);
 
     // workshop
@@ -181,6 +209,19 @@ export global S {
     callback con-history(int);
     callback con-filter-changed();
     callback con-copy();
+    in-out property <int> con-category;
+    in-out property <[string]> con-suggest;
+    in-out property <[string]> con-favorites;
+    in-out property <bool> con-alias-open;
+    in-out property <[ActionRow]> con-aliases;
+    in-out property <string> con-alias-name;
+    in-out property <string> con-alias-cmd;
+    callback con-entry-edited();
+    callback con-use(string);
+    callback con-favorite();
+    callback con-download();
+    callback con-alias-add();
+    callback con-alias-action(string, string);
 
     // join
     in-out property <string> jn-addr;
@@ -211,6 +252,57 @@ export global S {
     callback set-save();
     callback set-redeploy();
     callback set-update();
-    callback set-backup();
-    callback set-restore();
+
+    // plugins
+    in-out property <[ActionRow]> pg-rows;
+    callback pg-refresh();
+    callback pg-action(string, string);
+    callback pg-install();
+
+    // scheduled tasks
+    in-out property <[ActionRow]> sc-rows;
+    in-out property <[ActionRow]> sc-history;
+    in-out property <string> sc-note;
+    in-out property <int> sc-kind;
+    in-out property <string> sc-arg;
+    in-out property <int> sc-every;
+    in-out property <string> sc-at: "05:00";
+    in-out property <int> sc-weekday;
+    in-out property <int> sc-hours: 6;
+    callback sc-action(string, string);
+    callback sc-add();
+
+    // backups
+    in-out property <[ActionRow]> bk-rows;
+    in-out property <int> bk-keep: 5;
+    callback bk-action(string, string);
+    callback bk-create();
+    callback bk-keep-changed();
+
+    // statistics
+    in-out property <string> ss-note;
+    in-out property <int> ss-range;
+    in-out property <string> ss-avg;
+    in-out property <[Bar]> ss-days;
+    in-out property <[Bar]> ss-hours;
+    in-out property <[Bar]> ss-maps;
+    in-out property <[Bar]> ss-modes;
+    in-out property <bool> ss-on;
+    in-out property <int> ss-keep: 365;
+    callback ss-refresh();
+    callback ss-save();
+    callback ss-erase();
+
+    // updates
+    in-out property <string> up-current;
+    in-out property <string> up-latest;
+    in-out property <string> up-command;
+    in-out property <bool> up-can-apply;
+    in-out property <string> up-sourcemod;
+    in-out property <string> up-metamod;
+    in-out property <bool> up-auto;
+    callback up-check();
+    callback up-apply();
+    callback up-auto-changed();
+    callback up-game();
 }

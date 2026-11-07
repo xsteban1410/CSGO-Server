@@ -3,7 +3,7 @@ use crate::i18n::{t, t_msg};
 use crate::{bg, model, AppRc, KeyValue};
 use csls_core::config::{Language, Network};
 use csls_core::server;
-use csls_core::{backup, deploy, doctor};
+use csls_core::{deploy, doctor};
 
 const NETS: [Network; 4] = [Network::Lan, Network::Vpn, Network::Internet, Network::Community];
 
@@ -53,6 +53,7 @@ fn save(a: &AppRc) {
     match cfg.save() {
         Ok(()) => {
             *a.cfg.borrow_mut() = cfg;
+            crate::restart_agent(a);
             if new_language {
                 a.toast(&t("Restart the app to apply the language"));
                 return;
@@ -61,43 +62,6 @@ fn save(a: &AppRc) {
         }
         Err(e) => a.error(&e),
     }
-}
-
-/// Restores the latest backup after seeing how many files it changes.
-fn restore(a: &AppRc) {
-    let Some(file) = backup::list().ok().and_then(|l| l.into_iter().next()) else {
-        a.toast(&t("There are no backups"));
-        return;
-    };
-    let cfg = a.cfg.borrow().clone();
-    let name = file.file_name().unwrap_or_default().to_string_lossy().into_owned();
-    let f = file.clone();
-    let a = a.clone();
-    bg(
-        move || backup::preview(&cfg, &f),
-        move |r: anyhow::Result<Vec<backup::Change>>| match r {
-            Ok(c) if c.is_empty() => a.toast(&t("Nothing to restore: the files are the same")),
-            Ok(c) => {
-                let app = a.clone();
-                let text = format!("{name}\n{}: {}", t("Files that will change"), c.len());
-                a.ask(&t("Restore the latest backup"), &text, &t("Restore"), &t("Cancel"), true, move |yes| {
-                    if !yes {
-                        return;
-                    }
-                    let cfg = app.cfg.borrow().clone();
-                    let a = app.clone();
-                    bg(
-                        move || backup::restore(&cfg, &file),
-                        move |r: anyhow::Result<Vec<backup::Change>>| match r {
-                            Ok(_) => a.toast(&t("Backup restored; restart the app")),
-                            Err(e) => a.error(&e),
-                        },
-                    );
-                });
-            }
-            Err(e) => a.error(&e),
-        },
-    );
 }
 
 pub fn init(a: &AppRc) {
@@ -131,18 +95,4 @@ pub fn init(a: &AppRc) {
             Err(e) => app.error(&e),
         }
     });
-    let app = a.clone();
-    s.on_set_backup(move || {
-        let cfg = app.cfg.borrow().clone();
-        let a = app.clone();
-        bg(
-            move || backup::create(&cfg),
-            move |r: anyhow::Result<std::path::PathBuf>| match r {
-                Ok(p) => a.toast(&format!("{}: {}", t("Backup saved"), p.file_name().unwrap_or_default().to_string_lossy())),
-                Err(e) => a.error(&e),
-            },
-        );
-    });
-    let app = a.clone();
-    s.on_set_restore(move || restore(&app));
 }
