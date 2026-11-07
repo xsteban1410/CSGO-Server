@@ -27,7 +27,7 @@ float g_SiteCenter[3];
 public void OnPluginStart()
 {
 	LoadTranslations("csls.phrases");
-	g_Nombre  = CreateConVar("modo_nombre", "awp", "Modo activo (cfg/modo_<nombre>.cfg)");
+	g_Nombre  = CreateConVar("modo_nombre", "awp", "Active mode (cfg/modo_<name>.cfg)");
 	g_Tipo    = CreateConVar("modo_tipo", "", "Match type settings (cfg/modo_tipo_<name>.cfg; empty = none)");
 	g_GameType = FindConVar("game_type");
 	g_Humanos = CreateConVar("modo_humanos", "0", "Humans on a team needed to end warmup (0 = Valve's timed warmup)");
