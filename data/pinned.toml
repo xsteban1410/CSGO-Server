@@ -1,0 +1,12 @@
+# SourceMod and Metamod builds this version was tested with. Bumping one means testing the plugins again.
+[metamod]
+version = "1.12.0-git1229"
+base = "https://mms.alliedmods.net/mmsdrop/1.12"
+file = "mmsource-1.12.0-git1229-linux.tar.gz"
+sha256 = "df2f8723741d90aea730e06103e57844bac970225be9fd4137ed1d2b753bedb2"
+
+[sourcemod]
+version = "1.12.0-git7260"
+base = "https://sm.alliedmods.net/smdrop/1.12"
+file = "sourcemod-1.12.0-git7260-linux.tar.gz"
+sha256 = "b01719e6143bc7d5bb63aae8086d031574da6ef838f041ba4b8ab72c8c75b888"
