@@ -26,6 +26,7 @@ modules:
   - name: csgo-legacy-server
     buildsystem: simple
     build-options:
+      no-debuginfo: true
       append-path: /usr/lib/sdk/rust-stable/bin:/usr/lib/sdk/golang/bin
       env:
         CARGO_HOME: /run/build/csgo-legacy-server/cargo
