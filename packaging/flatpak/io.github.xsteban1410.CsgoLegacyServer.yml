@@ -7,6 +7,8 @@ sdk-extensions:
   - org.freedesktop.Sdk.Extension.rust-stable
   - org.freedesktop.Sdk.Extension.golang
 command: csgo-legacy-server-app
+# shortcut: compose fails with the builder on Ubuntu, and only stores need its output; turn it back on if this goes to Flathub
+appstream-compose: false
 finish-args:
   - --share=network
   - --share=ipc
