@@ -88,7 +88,7 @@ mod tests {
     use super::*;
     #[test]
     fn catalog_and_database() {
-        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/skins.en.cfg");
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../game/data/skins.en.cfg");
         let cat = Catalog::load(&root).unwrap();
         assert_eq!(cat.weapon_name("weapon_ak47"), "AK-47");
         assert_eq!(cat.weapons["weapon_ak47"].1["801"], "Asiimov");

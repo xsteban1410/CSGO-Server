@@ -2,4 +2,4 @@
 *.png binary
 *.smx binary
 # Repository language on GitHub: cfgs are not code
-cfg/** linguist-documentation
+game/cfg/** linguist-documentation

@@ -291,7 +291,7 @@ mod tests {
 
     #[test]
     fn finds_repo_plugins() {
-        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../plugin");
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../game/plugin");
         let n: Vec<String> = find_plugins(&root).into_iter().map(|p| p.name).collect();
         assert!(n.contains(&"modos".into()) && n.contains(&"skins".into()) && n.contains(&"csls_directconnect".into()));
         assert!(!n.contains(&"modos_extras".into()), "includes are not compiled on their own");

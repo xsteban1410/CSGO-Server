@@ -129,7 +129,7 @@ func (e *env) run(args ...string) (string, error) {
 		"XDG_RUNTIME_DIR="+filepath.Join(e.root, "run"),
 		"HOME="+e.root,
 		"CSLS_NO_SYSTEMD=1",
-		"CSLS_RESOURCES="+repo,
+		"CSLS_RESOURCES="+filepath.Join(repo, "game"),
 	)
 	c.Env = append(c.Env, e.extra...)
 	o, err := c.CombinedOutput()

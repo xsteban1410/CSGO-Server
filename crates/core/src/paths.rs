@@ -48,7 +48,7 @@ fn is_resources(p: &Path) -> bool {
 }
 
 /// Folder with cfg/, modes/, plugin/ and data/: $CSLS_RESOURCES, the package's
-/// (<prefix>/share/csgo-legacy-server) or, in development, the repo root.
+/// (<prefix>/share/csgo-legacy-server) or, in development, the repo's game/.
 pub fn resources_dir() -> crate::Result<PathBuf> {
     let mut cand: Vec<PathBuf> = Vec::new();
     if let Some(p) = std::env::var_os("CSLS_RESOURCES") {
@@ -59,14 +59,14 @@ pub fn resources_dir() -> crate::Result<PathBuf> {
             cand.push(prefix.join("share").join(APP));
             // built in the repo: <repo>/target/{debug,release}/<exe>
             if let Some(repo) = prefix.parent() {
-                cand.push(repo.to_path_buf());
+                cand.push(repo.join("game"));
             }
         }
     }
     cand.push(PathBuf::from("/usr/share").join(APP));
-    // in development (cargo run / tests) the repo root; not embedded in release binaries
+    // in development (cargo run / tests) the repo's game/; not embedded in release binaries
     #[cfg(debug_assertions)]
-    cand.push(Path::new(env!("CARGO_MANIFEST_DIR")).join("../.."));
+    cand.push(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../game"));
     cand.into_iter()
         .find(|p| is_resources(p))
         .map(|p| p.canonicalize().unwrap_or(p))

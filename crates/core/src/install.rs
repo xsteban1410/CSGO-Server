@@ -33,7 +33,7 @@ pub fn pinned() -> crate::Result<PinnedSet> {
     if let Some(p) = std::env::var_os("CSLS_PINNED") {
         return Ok(toml::from_str(&std::fs::read_to_string(p)?)?);
     }
-    Ok(toml::from_str(include_str!("../../../data/pinned.toml"))?)
+    Ok(toml::from_str(include_str!("../../../game/data/pinned.toml"))?)
 }
 
 /// What is installed, in the data folder because `steamcmd validate` must not remove it.

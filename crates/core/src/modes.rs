@@ -190,7 +190,7 @@ mod tests {
 
     #[test]
     fn official_have_toml_and_cfg() {
-        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../game");
         let m = Modes::load_from(&root.join("modes"), &root.join("cfg"), Path::new("/nonexistent")).unwrap();
         assert!(m.0.len() >= 30);
         for mode in m.0.values() {
@@ -212,7 +212,7 @@ mod tests {
         std::fs::create_dir_all(&d).unwrap();
         std::fs::write(d.join("mine.cfg"), "sv_gravity 200\n").unwrap();
         save_user_mode(&d, "awp", &ModeMeta { name: Localized::same("Mi AWP"), ..Default::default() }, "x").unwrap();
-        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../game");
         let m = Modes::load_from(&root.join("modes"), &root.join("cfg"), &d).unwrap();
         assert!(m.get("mine").unwrap().custom);
         assert_eq!(m.get("mine").unwrap().name("es"), "mine");

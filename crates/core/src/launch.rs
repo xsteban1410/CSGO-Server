@@ -274,7 +274,7 @@ mod tests {
     use super::*;
 
     fn setup() -> (Modes, Config, std::path::PathBuf) {
-        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../game");
         let m = Modes::load_from(&root.join("modes"), &root.join("cfg"), Path::new("/nonexistent")).unwrap();
         // tests run at once and each removes its folder at the end
         static NEXT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
@@ -336,7 +336,7 @@ mod tests {
             assert_eq!(Kind::parse(&format!("{k:?}").to_lowercase()), Some(k));
             let cfg = k.tipo_cfg();
             assert!(
-                cfg.is_empty() || Path::new(env!("CARGO_MANIFEST_DIR")).join(format!("../../cfg/modo_tipo_{cfg}.cfg")).is_file(),
+                cfg.is_empty() || Path::new(env!("CARGO_MANIFEST_DIR")).join(format!("../../game/cfg/modo_tipo_{cfg}.cfg")).is_file(),
                 "{cfg}"
             );
         }
