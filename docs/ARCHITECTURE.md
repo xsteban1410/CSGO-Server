@@ -6,13 +6,14 @@
 |---|---|
 | `crates/core` | Library with all the logic: config, modes, rcon, deploy, install, server, bridge, Workshop, launching the game |
 | `crates/cli` | `csgo-legacy-server`, a thin layer over `core` |
-| `crates/gtk` | `csgo-legacy-server-gtk`, the GTK 4 and libadwaita app, also over `core` |
+| `crates/gtk` | `csgo-legacy-server-gtk`, the GTK 4 and libadwaita app, also over `core`. The one that ships for now |
+| `crates/app` | The Slint app that will replace it, also over `core`. Not packaged yet |
 | `game/plugin/` | SourceMod plugins, compiled at deploy time on the user's PC |
 | `game/cfg/` | Server configs. `modo_<id>.cfg` is a mode; `modo_base`, `modo_clasico` and `modo_tipo_*` are helpers |
 | `game/modes/` | Metadata of each mode: name, category, description, game type and maps |
 | `game/data/` | Data files installed with the app |
 | `packaging/` | Desktop entry, metainfo, icons, PKGBUILDs and the package build script |
-| `tools/` | Developer scripts: release versions and the mode test |
+| `tools/` | Developer scripts: release versions and promotion |
 
 The server runs as a `systemd --user` transient unit (`csgo-legacy-server`), so it survives closing the app. Without systemd
 it falls back to a process group with a PID file.
@@ -87,3 +88,11 @@ its secrets from `internal agent-config` through a pipe, never in arguments or t
   name or in chat. Each port has its own file, so test instances do not count as play.
 - **Tasks:** `schedule.json` holds a closed list of actions that run the CLI without a shell. Tasks never overlap, and runs missed
   while the agent was off are not made up.
+- **Clients:** `core::agent` is the Rust client, and `agent rpc METHOD [JSON]` the same from a script. The Slint app reads status from
+  the agent when it is running and polls rcon itself only when it is not, so only one thing polls the server.
+
+## Rule blocks
+
+A mode can have up to 16 rules, "when a kill happens, add 25 health". They are stored as `modo_regla_N` in the mode's cfg, reset in
+`modo_base.cfg` and run by `game/plugin/modos_reglas.sp`. The events and actions are a closed catalog (`core::rules`), and
+`CfgDoc::validate` checks each value, because an imported mode comes from someone else: a rule never runs code or a free command.

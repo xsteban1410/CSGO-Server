@@ -80,6 +80,9 @@ csgo-legacy-server presets [--delete name]            saved start options
 csgo-legacy-server backup create | list | restore <file> [--dry-run]   your config, modes, plugins, presets and skins
 csgo-legacy-server deploy [--force] [--watch]         compile plugins, copy configs
 csgo-legacy-server agent start | stop | status        optional helper: history and scheduled tasks
+csgo-legacy-server alias [name command...] [--delete] console shortcuts, also for rcon
+csgo-legacy-server plugins list|enable|disable|install|reload   plugins on the server
+csgo-legacy-server updates [--json]                   ask GitHub for the latest release
 csgo-legacy-server nav [--force]                      bot navigation for the current map
 csgo-legacy-server skins                              rebuild the skins list after a game update
 csgo-legacy-server rcon "command" | play [cs2|local|IP:PORT] | bridge | doctor | install [--update]
@@ -170,7 +173,7 @@ reserved slots). Kicks and bans you make from the app still work.
 ### Your own modes and plugins
 
 - Modes: `~/.config/csgo-legacy-server/modes/<id>.toml` + `<id>.cfg` (the Modes tab writes them for you).
-- Plugins: drop a `.sp` (or `name/name.sp`) into `~/.config/csgo-legacy-server/plugins/`.
+- Plugins: drop a `.sp` (or `name/name.sp`) into `~/.config/csgo-legacy-server/plugins/`, or use `plugins install`.
 
 With the app open (or `deploy --watch`) new or changed files are compiled and reloaded in the running server; compile
 errors are shown with their line and the server keeps the previous version. Deleted plugins are unloaded.
