@@ -61,7 +61,7 @@ To build the `.deb` and the AppImage: `packaging/build-bundles.sh` (see `bundles
 cargo test
 cargo fmt --all
 cargo clippy --all-targets
-shellcheck tools/*.sh packaging/*.sh packaging/aur/*.sh
+shellcheck tools/*.sh packaging/*.sh packaging/aur/*.sh packaging/appimage/AppRun
 ```
 
 CI runs these, compiles the plugins and builds the package. To test modes on a real server, without players:

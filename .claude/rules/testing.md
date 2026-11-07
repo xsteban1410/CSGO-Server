@@ -5,7 +5,8 @@ Run what applies before saying a change works, and report what you ran and what 
 | Changed | Run |
 |---|---|
 | Rust | `cargo fmt --all`, `cargo test` and `cargo clippy --all-targets` (no warnings) |
-| Shell scripts | `shellcheck tools/*.sh packaging/*.sh packaging/aur/*.sh` |
+| Shell scripts | `shellcheck tools/*.sh packaging/*.sh packaging/aur/*.sh packaging/appimage/AppRun` |
+| `packaging/` | The `package`, `bundles` and `flatpak` jobs in CI build and try every package; `packaging/build-bundles.sh` builds the `.deb` and the AppImage locally |
 | `tools/promote.sh` | `tools/test-promote.sh` |
 | `tools/sync_readme.py` | `python3 tools/test_sync_readme.py` |
 | Version or changelog | `tools/version.sh check` |
