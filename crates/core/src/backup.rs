@@ -20,11 +20,7 @@ struct Roots {
 
 impl Roots {
     fn new(cfg: &Config) -> Roots {
-        Roots {
-            config: paths::config_dir(),
-            skins: skins::db_path(&cfg.install_dir().join("csgo")),
-            backups: backups_dir(),
-        }
+        Roots { config: paths::config_dir(), skins: skins::db_path(&cfg.install_dir().join("csgo")), backups: backups_dir() }
     }
 }
 
@@ -136,7 +132,8 @@ pub fn create_auto(cfg: &Config) -> crate::Result<PathBuf> {
 }
 
 fn prune(dir: &Path) -> crate::Result<()> {
-    let mut auto: Vec<PathBuf> = list_in(dir)?.into_iter().filter(|p| p.file_name().is_some_and(|n| n.to_string_lossy().starts_with("auto-"))).collect();
+    let mut auto: Vec<PathBuf> =
+        list_in(dir)?.into_iter().filter(|p| p.file_name().is_some_and(|n| n.to_string_lossy().starts_with("auto-"))).collect();
     // list_in gives the newest first
     for old in auto.drain(KEEP_AUTO.min(auto.len())..) {
         std::fs::remove_file(old)?;
@@ -310,7 +307,8 @@ mod tests {
         std::fs::create_dir_all(&r.backups).unwrap();
         std::fs::write(d.join("a"), "x").unwrap();
         let evil = d.join("evil.tar.gz");
-        let tar = |args: &[&str]| assert!(Command::new("tar").current_dir(&d).arg("-czPf").arg(&evil).args(args).status().unwrap().success());
+        let tar =
+            |args: &[&str]| assert!(Command::new("tar").current_dir(&d).arg("-czPf").arg(&evil).args(args).status().unwrap().success());
 
         tar(&["--transform", "s,^a,config/../../evil,", "a"]);
         assert!(preview_in(&r, &evil).is_err());
@@ -332,7 +330,8 @@ mod tests {
         }
         std::fs::write(r.backups.join("backup-20200101-000000.tar.gz"), "").unwrap();
         prune(&r.backups).unwrap();
-        let left: Vec<String> = list_in(&r.backups).unwrap().iter().map(|p| p.file_name().unwrap().to_string_lossy().into_owned()).collect();
+        let left: Vec<String> =
+            list_in(&r.backups).unwrap().iter().map(|p| p.file_name().unwrap().to_string_lossy().into_owned()).collect();
         assert_eq!(left.len(), KEEP_AUTO + 1);
         assert_eq!(left[0], "auto-20260101-000007.tar.gz");
         assert!(left.contains(&"backup-20200101-000000.tar.gz".to_string()));

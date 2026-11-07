@@ -19,7 +19,11 @@ pub struct Localized {
 impl Localized {
     pub fn get(&self, lang: &str) -> &str {
         let (a, b) = if lang == "es" { (&self.es, &self.en) } else { (&self.en, &self.es) };
-        if a.is_empty() { b } else { a }
+        if a.is_empty() {
+            b
+        } else {
+            a
+        }
     }
     pub fn same(s: &str) -> Localized {
         Localized { en: s.into(), es: s.into() }
@@ -56,7 +60,11 @@ pub struct Mode {
 impl Mode {
     pub fn name(&self, lang: &str) -> String {
         let n = self.meta.name.get(lang);
-        if n.is_empty() { self.id.clone() } else { n.to_string() }
+        if n.is_empty() {
+            self.id.clone()
+        } else {
+            n.to_string()
+        }
     }
 
     pub fn has_option(&self, o: &str) -> bool {
@@ -81,7 +89,12 @@ impl Mode {
 }
 
 pub fn valid_id(id: &str) -> bool {
-    !id.is_empty() && id.len() <= 31 && id != "base" && id != "inicio" && id != "clasico" && !id.starts_with("tipo_")
+    !id.is_empty()
+        && id.len() <= 31
+        && id != "base"
+        && id != "inicio"
+        && id != "clasico"
+        && !id.starts_with("tipo_")
         && id.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
 }
 
@@ -100,14 +113,18 @@ impl Modes {
         // oficiales: modes/<id>.toml + cfg/modo_<id>.cfg
         for e in read_dir_sorted(official_cfg) {
             let Some(id) = file_id(&e, "modo_", ".cfg") else { continue };
-            if !valid_id(&id) { continue }
+            if !valid_id(&id) {
+                continue;
+            }
             let meta = read_meta(&official_meta.join(format!("{id}.toml")))?;
             m.insert(id.clone(), Mode { id, meta, cfg: e, custom: false });
         }
         // user's: <id>.toml + <id>.cfg
         for e in read_dir_sorted(user) {
             let Some(id) = file_id(&e, "", ".cfg") else { continue };
-            if !valid_id(&id) { continue }
+            if !valid_id(&id) {
+                continue;
+            }
             let mut meta = read_meta(&user.join(format!("{id}.toml")))?;
             if meta.category.is_empty() {
                 meta.category = "custom".into();
@@ -283,10 +300,36 @@ impl CfgDoc {
 }
 
 const BLOCKED: &[&str] = &[
-    "quit", "exit", "exec", "alias", "rcon_password", "sv_password", "sv_setsteamaccount", "sm", "meta",
-    "plugin_load", "plugin_unload", "changelevel", "map", "host_workshop_map", "kick", "kickid", "banid", "banip",
-    "addip", "writeid", "writeip", "killserver", "restart", "_restart", "host_writeconfig", "log", "logaddress_add",
-    "sv_downloadurl", "con_logfile", "rcon",
+    "quit",
+    "exit",
+    "exec",
+    "alias",
+    "rcon_password",
+    "sv_password",
+    "sv_setsteamaccount",
+    "sm",
+    "meta",
+    "plugin_load",
+    "plugin_unload",
+    "changelevel",
+    "map",
+    "host_workshop_map",
+    "kick",
+    "kickid",
+    "banid",
+    "banip",
+    "addip",
+    "writeid",
+    "writeip",
+    "killserver",
+    "restart",
+    "_restart",
+    "host_writeconfig",
+    "log",
+    "logaddress_add",
+    "sv_downloadurl",
+    "con_logfile",
+    "rcon",
 ];
 
 /// File for sharing a mode: metadata + id + cfg in one TOML.
@@ -351,7 +394,8 @@ mod editor_tests {
     #[test]
     fn export_import() {
         let d = std::env::temp_dir().join(format!("csls-exp-{}", std::process::id()));
-        let cfg = save_user_mode(&d, "mine", &ModeMeta { name: Localized::same("Mine"), ..Default::default() }, "sv_gravity 200\n").unwrap();
+        let cfg =
+            save_user_mode(&d, "mine", &ModeMeta { name: Localized::same("Mine"), ..Default::default() }, "sv_gravity 200\n").unwrap();
         let m = Mode { id: "mine".into(), meta: ModeMeta { name: Localized::same("Mine"), ..Default::default() }, cfg, custom: true };
         let txt = export_mode(&m).unwrap();
         let d2 = d.join("otro");

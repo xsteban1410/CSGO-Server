@@ -199,7 +199,9 @@ fn watch_loop(cfg: &Config) -> Result<()> {
         let r = deploy::deploy(cfg, false, true)?;
         let msg = match r.error_text() {
             Some(e) => format!("compile errors:\n{e}"),
-            None if !r.compiled.is_empty() => format!("Compiled{}: {}", if r.reloaded { " and reloaded" } else { "" }, r.compiled.join(", ")),
+            None if !r.compiled.is_empty() => {
+                format!("Compiled{}: {}", if r.reloaded { " and reloaded" } else { "" }, r.compiled.join(", "))
+            }
             None if !r.removed.is_empty() => format!("Removed: {}", r.removed.join(", ")),
             None => String::new(),
         };
@@ -226,7 +228,8 @@ fn options(g: &Game, cfg: &Config) -> Result<LaunchOptions> {
         o.map = g.map.clone();
     }
     if let Some(k) = &g.kind {
-        o.kind = Kind::parse(k).context("--type is competitive, short, casual, wingman, dm, ffa, tdm, armsrace, demolition, guardian or dz")?;
+        o.kind =
+            Kind::parse(k).context("--type is competitive, short, casual, wingman, dm, ffa, tdm, armsrace, demolition, guardian or dz")?;
     }
     if let Some(d) = g.difficulty {
         o.difficulty = d;
@@ -439,7 +442,11 @@ fn main() -> Result<()> {
             match w {
                 Ws::Search { text } => {
                     for it in workshop::search(&text.join(" "), None, workshop::Sort::Trend, 1)? {
-                        let c = match it.compat() { workshop::Compat::Csgo => "csgo", workshop::Compat::Cs2 => "CS2!", _ => "?" };
+                        let c = match it.compat() {
+                            workshop::Compat::Csgo => "csgo",
+                            workshop::Compat::Cs2 => "CS2!",
+                            _ => "?",
+                        };
                         println!("{:>11}  {c:<4}  {:>6} MB  {}", it.id, it.file_size >> 20, it.title);
                     }
                 }
@@ -456,7 +463,13 @@ fn main() -> Result<()> {
                 }
                 Ws::List => {
                     for i in workshop::installed(&maps) {
-                        println!("{:<40} {:<12} {}{}", i.map, i.dir, i.title, if i.has_nav { "" } else { "  (no .nav: load it and run `nav`)" });
+                        println!(
+                            "{:<40} {:<12} {}{}",
+                            i.map,
+                            i.dir,
+                            i.title,
+                            if i.has_nav { "" } else { "  (no .nav: load it and run `nav`)" }
+                        );
                     }
                 }
                 Ws::Remove { dir } => workshop::remove(&maps, &dir)?,
@@ -493,7 +506,11 @@ fn main() -> Result<()> {
         }
         Cmd::Bots { delta } => println!("bot_quota {}", srv.add_bots(delta)?),
         Cmd::Round { warmup } => {
-            if warmup { srv.end_warmup()? } else { srv.restart_round()? }
+            if warmup {
+                srv.end_warmup()?
+            } else {
+                srv.restart_round()?
+            }
             println!("OK");
         }
         Cmd::Presets { delete } => match delete {

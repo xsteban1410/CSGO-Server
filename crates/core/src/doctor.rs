@@ -30,7 +30,12 @@ fn info(name: &'static str, detail: impl Into<String>) -> Check {
 /// Newest SourceMod error log.
 fn latest_error_log(cfg: &Config) -> Option<PathBuf> {
     let logs = cfg.install_dir().join("csgo/addons/sourcemod/logs");
-    let mut v: Vec<PathBuf> = std::fs::read_dir(logs).ok()?.flatten().map(|e| e.path()).filter(|p| p.file_name().is_some_and(|n| n.to_string_lossy().starts_with("errors_"))).collect();
+    let mut v: Vec<PathBuf> = std::fs::read_dir(logs)
+        .ok()?
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| p.file_name().is_some_and(|n| n.to_string_lossy().starts_with("errors_")))
+        .collect();
     v.sort();
     v.pop()
 }
@@ -38,7 +43,15 @@ fn latest_error_log(cfg: &Config) -> Option<PathBuf> {
 /// The errors of the last server run in a log: older runs may be fixed already.
 fn last_run_errors(log: &str) -> Vec<&str> {
     let start = log.rfind("SourceMod error session started").unwrap_or(0);
-    log[start..].lines().filter(|l| l.contains("Exception reported") || l.contains("signature not found") || l.contains("Failed to load plugin") || l.contains("[SM] Unable to load plugin")).collect()
+    log[start..]
+        .lines()
+        .filter(|l| {
+            l.contains("Exception reported")
+                || l.contains("signature not found")
+                || l.contains("Failed to load plugin")
+                || l.contains("[SM] Unable to load plugin")
+        })
+        .collect()
 }
 
 /// Newest error of the last session in the log, with its date.
@@ -69,7 +82,11 @@ pub fn run(cfg: &Config) -> Vec<Check> {
     let mut v = Vec::new();
 
     let missing = install::missing_deps();
-    v.push(if missing.is_empty() { check(true, "Dependencies", "installed") } else { check(false, "Dependencies", format!("missing: {} ({})", missing.join(", "), install::deps_command())) });
+    v.push(if missing.is_empty() {
+        check(true, "Dependencies", "installed")
+    } else {
+        check(false, "Dependencies", format!("missing: {} ({})", missing.join(", "), install::deps_command()))
+    });
 
     let dir = cfg.install_dir();
     v.push(if srv.is_installed() {
@@ -85,10 +102,16 @@ pub fn run(cfg: &Config) -> Vec<Check> {
     }
 
     let systemd = server::systemd_available();
-    v.push(check(systemd, "systemd --user", if systemd { "the server keeps running after closing the app" } else { "missing: the server stops with the app" }));
+    v.push(check(
+        systemd,
+        "systemd --user",
+        if systemd { "the server keeps running after closing the app" } else { "missing: the server stops with the app" },
+    ));
     if systemd {
         match linger() {
-            Some(false) => v.push(check(false, "After logging out", "the server stops when you log out; to keep it: loginctl enable-linger")),
+            Some(false) => {
+                v.push(check(false, "After logging out", "the server stops when you log out; to keep it: loginctl enable-linger"))
+            }
             Some(true) => v.push(check(true, "After logging out", "the server keeps running")),
             None => {}
         }
@@ -102,7 +125,11 @@ pub fn run(cfg: &Config) -> Vec<Check> {
     if running {
         let exposed = net::tcp_exposed(port);
         let ips: Vec<String> = exposed.iter().map(ToString::to_string).collect();
-        v.push(if exposed.is_empty() { check(true, "Rcon", "only on this PC") } else { check(false, "Rcon", format!("other machines can reach it on {}", ips.join(", "))) });
+        v.push(if exposed.is_empty() {
+            check(true, "Rcon", "only on this PC")
+        } else {
+            check(false, "Rcon", format!("other machines can reach it on {}", ips.join(", ")))
+        });
     }
     if let Some(h) = net::firewall_hint(port) {
         v.push(info("Firewall", format!("active; for internet players: {h}")));
@@ -127,7 +154,11 @@ pub fn run(cfg: &Config) -> Vec<Check> {
     let path = crate::config::config_path();
     v.push(check(config_private(&path), "Config", path.display().to_string()));
     match steam_client::find_steam() {
-        Some(s) => v.push(check(s.game_dir().is_some(), "CS:GO Legacy client", s.game_dir().map_or("not installed".to_string(), |d| d.display().to_string()))),
+        Some(s) => v.push(check(
+            s.game_dir().is_some(),
+            "CS:GO Legacy client",
+            s.game_dir().map_or("not installed".to_string(), |d| d.display().to_string()),
+        )),
         None => v.push(info("CS:GO Legacy client", "Steam not found (only needed to play on this PC)")),
     }
     v
@@ -197,7 +228,12 @@ fn id_len(s: &str) -> Option<usize> {
 /// Text to paste in an issue. Read it first anyway: it is meant to be safe, not proven safe.
 pub fn report(cfg: &Config) -> String {
     let (os, version) = install::os_release();
-    let mut t = format!("csgo-legacy-server {}\n{os} {version}\nlanguage: {}\nnetwork: {:?}\n\n", env!("CARGO_PKG_VERSION"), cfg.language.as_str(), cfg.server.network);
+    let mut t = format!(
+        "csgo-legacy-server {}\n{os} {version}\nlanguage: {}\nnetwork: {:?}\n\n",
+        env!("CARGO_PKG_VERSION"),
+        cfg.language.as_str(),
+        cfg.server.network
+    );
     for c in run(cfg) {
         let mark = match c.status {
             Status::Ok => "ok",

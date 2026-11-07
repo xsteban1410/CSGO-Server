@@ -37,7 +37,11 @@ fn tokens(s: &str) -> Vec<String> {
                     match c {
                         '\\' => {
                             if let Some(n) = it.next() {
-                                t.push(match n { 'n' => '\n', 't' => '\t', o => o });
+                                t.push(match n {
+                                    'n' => '\n',
+                                    't' => '\t',
+                                    o => o,
+                                });
                             }
                         }
                         '"' => break,

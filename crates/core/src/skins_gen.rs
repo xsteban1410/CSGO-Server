@@ -6,15 +6,65 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::path::Path;
 
 const POPULAR: &[&str] = &[
-    "Dragon Lore", "Howl", "Fire Serpent", "Fade", "Doppler", "Gamma Doppler", "Marble Fade",
-    "Tiger Tooth", "Lore", "Autotronic", "Crimson Web", "Case Hardened", "Slaughter", "Asiimov",
-    "Printstream", "Hyper Beast", "Neo-Noir", "Vulcan", "Redline", "Bloodsport", "The Empress",
-    "Wild Lotus", "Gungnir", "Medusa", "Kill Confirmed", "Fever Dream", "Neon Rider", "Blaze",
-    "Hot Rod", "Golden Coil", "Hydroponic", "Fuel Injector", "Gold Arabesque", "Lightning Strike",
-    "Cyrex", "Oni Taiji", "Damascus Steel", "Ultraviolet", "Bright Water", "Blue Steel", "Night",
-    "Stained", "Black Laminate", "Emerald Pinstripe", "Aquamarine Revenge", "Jaguar", "Head Shot",
-    "Code Red", "Mecha Industries", "Desolate Space", "Hellfire", "Orion",
-    "Cortex", "Bullet Rain", "Nightmare", "Chantico's Fire", "Icarus Fell", "Atheris", "The Prince",
+    "Dragon Lore",
+    "Howl",
+    "Fire Serpent",
+    "Fade",
+    "Doppler",
+    "Gamma Doppler",
+    "Marble Fade",
+    "Tiger Tooth",
+    "Lore",
+    "Autotronic",
+    "Crimson Web",
+    "Case Hardened",
+    "Slaughter",
+    "Asiimov",
+    "Printstream",
+    "Hyper Beast",
+    "Neo-Noir",
+    "Vulcan",
+    "Redline",
+    "Bloodsport",
+    "The Empress",
+    "Wild Lotus",
+    "Gungnir",
+    "Medusa",
+    "Kill Confirmed",
+    "Fever Dream",
+    "Neon Rider",
+    "Blaze",
+    "Hot Rod",
+    "Golden Coil",
+    "Hydroponic",
+    "Fuel Injector",
+    "Gold Arabesque",
+    "Lightning Strike",
+    "Cyrex",
+    "Oni Taiji",
+    "Damascus Steel",
+    "Ultraviolet",
+    "Bright Water",
+    "Blue Steel",
+    "Night",
+    "Stained",
+    "Black Laminate",
+    "Emerald Pinstripe",
+    "Aquamarine Revenge",
+    "Jaguar",
+    "Head Shot",
+    "Code Red",
+    "Mecha Industries",
+    "Desolate Space",
+    "Hellfire",
+    "Orion",
+    "Cortex",
+    "Bullet Rain",
+    "Nightmare",
+    "Chantico's Fire",
+    "Icarus Fell",
+    "Atheris",
+    "The Prince",
 ];
 
 fn rarity(r: &str) -> i32 {
@@ -31,9 +81,14 @@ fn rarity(r: &str) -> i32 {
 }
 
 const VARIANTS: &[(&str, &str, &str)] = &[
-    ("phase1", "Phase 1", "Fase 1"), ("phase2", "Phase 2", "Fase 2"), ("phase3", "Phase 3", "Fase 3"),
-    ("phase4", "Phase 4", "Fase 4"), ("ruby", "Ruby", "Rubí"), ("sapphire", "Sapphire", "Zafiro"),
-    ("blackpearl", "Black Pearl", "Perla negra"), ("emerald", "Emerald", "Esmeralda"),
+    ("phase1", "Phase 1", "Fase 1"),
+    ("phase2", "Phase 2", "Fase 2"),
+    ("phase3", "Phase 3", "Fase 3"),
+    ("phase4", "Phase 4", "Fase 4"),
+    ("ruby", "Ruby", "Rubí"),
+    ("sapphire", "Sapphire", "Zafiro"),
+    ("blackpearl", "Black Pearl", "Perla negra"),
+    ("emerald", "Emerald", "Esmeralda"),
 ];
 
 /// All sections with this name, at any depth.
@@ -58,7 +113,8 @@ fn read_text(p: &Path) -> Option<String> {
     let raw = std::fs::read(p).ok()?;
     if raw.len() >= 2 && (raw[..2] == [0xff, 0xfe] || raw[..2] == [0xfe, 0xff]) {
         let le = raw[0] == 0xff;
-        let u: Vec<u16> = raw[2..].as_chunks::<2>().0.iter().map(|c| if le { u16::from_le_bytes(*c) } else { u16::from_be_bytes(*c) }).collect();
+        let u: Vec<u16> =
+            raw[2..].as_chunks::<2>().0.iter().map(|c| if le { u16::from_le_bytes(*c) } else { u16::from_be_bytes(*c) }).collect();
         return Some(String::from_utf16_lossy(&u));
     }
     Some(String::from_utf8_lossy(&raw).into_owned())
@@ -113,7 +169,11 @@ pub fn generate(csgo: &Path, lang: &str) -> crate::Result<(String, (usize, usize
     let en = tokens(&csgo.join("resource/csgo_english.txt"));
     let local = if lang == "es" {
         let l = tokens(&csgo.join("resource/csgo_latam.txt"));
-        if l.is_empty() { tokens(&csgo.join("resource/csgo_spanish.txt")) } else { l }
+        if l.is_empty() {
+            tokens(&csgo.join("resource/csgo_spanish.txt"))
+        } else {
+            l
+        }
     } else {
         HashMap::new()
     };
@@ -153,7 +213,10 @@ pub fn generate(csgo: &Path, lang: &str) -> crate::Result<(String, (usize, usize
             if let Some(rest) = k.strip_prefix('[') {
                 if let Some((skin, w)) = rest.split_once(']') {
                     let sk = skin.to_lowercase();
-                    if w.starts_with("weapon_") && w[7..].bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_') && kits.contains_key(&sk) {
+                    if w.starts_with("weapon_")
+                        && w[7..].bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
+                        && kits.contains_key(&sk)
+                    {
                         out.entry(w.to_string()).or_default().insert(sk);
                     }
                 }
@@ -187,7 +250,12 @@ pub fn generate(csgo: &Path, lang: &str) -> crate::Result<(String, (usize, usize
             }
         }
     }
-    fn icons(t: &Kv, known: &BTreeSet<String>, kits: &HashMap<String, (u32, String, String)>, out: &mut BTreeMap<String, BTreeSet<String>>) {
+    fn icons(
+        t: &Kv,
+        known: &BTreeSet<String>,
+        kits: &HashMap<String, (u32, String, String)>,
+        out: &mut BTreeMap<String, BTreeSet<String>>,
+    ) {
         for (k, v) in t.entries() {
             match v {
                 Kv::Obj(_) => icons(v, known, kits, out),
@@ -243,10 +311,22 @@ pub fn generate(csgo: &Path, lang: &str) -> crate::Result<(String, (usize, usize
         let locals: Vec<&str> = list.iter().map(|k| kits[*k].1.as_str()).collect();
         for k in &list {
             let (id, l, e) = &kits[*k];
-            let mut shown = if e.is_empty() || l == e || l.is_empty() { if l.is_empty() { e.clone() } else { l.clone() } } else { format!("{l} ({e})") };
+            let mut shown = if e.is_empty() || l == e || l.is_empty() {
+                if l.is_empty() {
+                    e.clone()
+                } else {
+                    l.clone()
+                }
+            } else {
+                format!("{l} ({e})")
+            };
             if locals.iter().filter(|x| **x == l).count() > 1 {
                 // Doppler phases share a name
-                let v = VARIANTS.iter().find(|(id, _, _)| k.contains(id)).map(|(_, en, es)| if lang == "es" { *es } else { *en }).unwrap_or(k.as_str());
+                let v = VARIANTS
+                    .iter()
+                    .find(|(id, _, _)| k.contains(id))
+                    .map(|(_, en, es)| if lang == "es" { *es } else { *en })
+                    .unwrap_or(k.as_str());
                 shown += &format!(" - {v}");
             }
             out.push(format!("\t\t\t\t\"{id}\"\t\"{}\"", esc(&shown)));
@@ -263,7 +343,11 @@ pub fn generate(csgo: &Path, lang: &str) -> crate::Result<(String, (usize, usize
     knives.sort();
     let shown: Vec<String> = knives.iter().map(|k| name_of(k)).collect();
     for (k, v) in knives.iter().zip(&shown) {
-        let v = if shown.iter().filter(|x| *x == v).count() == 1 { v.clone() } else { format!("{v} ({})", k.trim_start_matches("weapon_knife_")) };
+        let v = if shown.iter().filter(|x| *x == v).count() == 1 {
+            v.clone()
+        } else {
+            format!("{v} ({})", k.trim_start_matches("weapon_knife_"))
+        };
         out.push(format!("\t\t\"{k}\"\t\"{}\"", esc(&v)));
     }
     out.push("\t}".into());

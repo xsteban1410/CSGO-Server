@@ -90,7 +90,10 @@ pub fn parse_details(json: &str) -> crate::Result<Vec<Item>> {
             file_url: x["file_url"].as_str().unwrap_or("").to_string(),
             file_size: num(&x["file_size"]),
             preview_url: x["preview_url"].as_str().unwrap_or("").to_string(),
-            tags: x["tags"].as_array().map(|t| t.iter().filter_map(|t| t["tag"].as_str().map(str::to_string)).collect()).unwrap_or_default(),
+            tags: x["tags"]
+                .as_array()
+                .map(|t| t.iter().filter_map(|t| t["tag"].as_str().map(str::to_string)).collect())
+                .unwrap_or_default(),
             subscriptions: num(&x["lifetime_subscriptions"]),
             time_updated: num(&x["time_updated"]),
             // file_type 2 = collection
@@ -207,7 +210,8 @@ pub fn installed(maps_dir: &Path) -> Vec<Installed> {
     let base = maps_dir.join(MAPS_SUBDIR);
     for d in std::fs::read_dir(&base).into_iter().flatten().flatten() {
         let dir = d.file_name().to_string_lossy().into_owned();
-        let item: Option<Item> = std::fs::read_to_string(cache_dir().join(format!("{dir}.json"))).ok().and_then(|t| serde_json::from_str(&t).ok());
+        let item: Option<Item> =
+            std::fs::read_to_string(cache_dir().join(format!("{dir}.json"))).ok().and_then(|t| serde_json::from_str(&t).ok());
         for f in std::fs::read_dir(d.path()).into_iter().flatten().flatten() {
             let n = f.file_name().to_string_lossy().into_owned();
             let Some(stem) = n.strip_suffix(".bsp") else { continue };
@@ -249,7 +253,8 @@ pub fn install(maps_dir: &Path, it: &Item) -> crate::Result<String> {
             .status()
             .context("running SteamCMD")?;
         let got = root.join(format!("steamapps/workshop/content/730/{}", it.id));
-        let bsp = std::fs::read_dir(&got).into_iter().flatten().flatten().map(|e| e.path()).find(|p| p.extension().is_some_and(|x| x == "bsp"));
+        let bsp =
+            std::fs::read_dir(&got).into_iter().flatten().flatten().map(|e| e.path()).find(|p| p.extension().is_some_and(|x| x == "bsp"));
         match bsp {
             Some(b) if st.success() => {
                 std::fs::copy(b, &tmp)?;

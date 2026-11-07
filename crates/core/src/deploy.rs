@@ -28,9 +28,7 @@ pub struct Report {
 
 impl Report {
     pub fn error_text(&self) -> Option<String> {
-        (!self.errors.is_empty()).then(|| {
-            self.errors.iter().map(|(n, e)| format!("{n}:\n{e}")).collect::<Vec<_>>().join("\n")
-        })
+        (!self.errors.is_empty()).then(|| self.errors.iter().map(|(n, e)| format!("{n}:\n{e}")).collect::<Vec<_>>().join("\n"))
     }
 }
 
@@ -50,9 +48,7 @@ pub fn find_plugins(dir: &Path) -> Vec<Plugin> {
             if main.is_file() {
                 v.push(Plugin { name: stem, main, dir: p });
             }
-        } else if p.extension().is_some_and(|e| e == "sp")
-            && std::fs::read_to_string(&p).is_ok_and(|t| t.contains("myinfo"))
-        {
+        } else if p.extension().is_some_and(|e| e == "sp") && std::fs::read_to_string(&p).is_ok_and(|t| t.contains("myinfo")) {
             v.push(Plugin { name: stem, main: p, dir: dir.to_path_buf() });
         }
     }
@@ -89,7 +85,11 @@ fn stamp_path(smx: &Path) -> PathBuf {
 pub fn stale_plugins(cfg: &Config) -> crate::Result<Vec<String>> {
     let sm = sourcemod_dir(cfg);
     let plugins = all_plugins(cfg)?;
-    Ok(plugins.iter().filter(|p| (cfg.server.skins || p.name != "skins") && needs_compile(p, &sm.join("plugins").join(format!("{}.smx", p.name)))).map(|p| p.name.clone()).collect())
+    Ok(plugins
+        .iter()
+        .filter(|p| (cfg.server.skins || p.name != "skins") && needs_compile(p, &sm.join("plugins").join(format!("{}.smx", p.name))))
+        .map(|p| p.name.clone())
+        .collect())
 }
 
 pub fn needs_compile(p: &Plugin, smx: &Path) -> bool {

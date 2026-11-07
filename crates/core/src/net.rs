@@ -68,9 +68,7 @@ pub fn udp_port_free(port: u16) -> bool {
 }
 
 pub fn hostname() -> Option<String> {
-    let h = std::fs::read_to_string("/proc/sys/kernel/hostname")
-        .or_else(|_| std::fs::read_to_string("/etc/hostname"))
-        .ok()?;
+    let h = std::fs::read_to_string("/proc/sys/kernel/hostname").or_else(|_| std::fs::read_to_string("/etc/hostname")).ok()?;
     let h = h.trim();
     (!h.is_empty()).then(|| h.to_string())
 }
@@ -148,11 +146,7 @@ fn upnpc(args: &[&str], ok_marker: &str) -> crate::Result<()> {
 /// Active firewall and the command to open the UDP port (game UDP only, not TCP for remote rcon).
 pub fn firewall_hint(port: u16) -> Option<String> {
     let active = |unit: &str| {
-        std::process::Command::new("systemctl")
-            .args(["is-active", "--quiet", unit])
-            .status()
-            .map(|s| s.success())
-            .unwrap_or(false)
+        std::process::Command::new("systemctl").args(["is-active", "--quiet", unit]).status().map(|s| s.success()).unwrap_or(false)
     };
     if active("ufw") {
         Some(format!("sudo ufw allow {port}/udp"))

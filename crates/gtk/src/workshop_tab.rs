@@ -41,17 +41,21 @@ fn install(a: &AppRc, items: Vec<Item>, done: Rc<dyn Fn()>) {
             }
             out
         },
-        glib::clone!(#[strong] a, move |res: Vec<Result<String, String>>| {
-            let ok: Vec<String> = res.iter().filter_map(|r| r.as_ref().ok().cloned()).collect();
-            let err: Vec<String> = res.iter().filter_map(|r| r.as_ref().err().cloned()).collect();
-            if !ok.is_empty() {
-                a.toast(&format!("{}: {}", t("Installed"), ok.join(", ")));
+        glib::clone!(
+            #[strong]
+            a,
+            move |res: Vec<Result<String, String>>| {
+                let ok: Vec<String> = res.iter().filter_map(|r| r.as_ref().ok().cloned()).collect();
+                let err: Vec<String> = res.iter().filter_map(|r| r.as_ref().err().cloned()).collect();
+                if !ok.is_empty() {
+                    a.toast(&format!("{}: {}", t("Installed"), ok.join(", ")));
+                }
+                if !err.is_empty() {
+                    a.error(&anyhow::anyhow!(err.join("\n")));
+                }
+                done();
             }
-            if !err.is_empty() {
-                a.error(&anyhow::anyhow!(err.join("\n")));
-            }
-            done();
-        }),
+        ),
     );
 }
 
@@ -63,11 +67,18 @@ fn card(a: &AppRc, it: &Item, installed: bool, refresh: Rc<dyn Fn()>) -> gtk::Wi
     pic.set_overflow(gtk::Overflow::Hidden);
     bx.append(&pic);
     let it2 = it.clone();
-    bg(move || workshop::thumbnail(&it2), glib::clone!(#[weak] pic, move |r| {
-        if let Ok(p) = r {
-            pic.set_filename(Some(&p));
-        }
-    }));
+    bg(
+        move || workshop::thumbnail(&it2),
+        glib::clone!(
+            #[weak]
+            pic,
+            move |r| {
+                if let Ok(p) = r {
+                    pic.set_filename(Some(&p));
+                }
+            }
+        ),
+    );
     let inner = gtk::Box::new(gtk::Orientation::Vertical, 4);
     inner.set_margin_start(10);
     inner.set_margin_end(10);
@@ -90,10 +101,14 @@ fn card(a: &AppRc, it: &Item, installed: bool, refresh: Rc<dyn Fn()>) -> gtk::Wi
     b.set_sensitive(can && !installed);
     b.set_margin_top(4);
     let it3 = it.clone();
-    b.connect_clicked(glib::clone!(#[strong] a, move |b| {
-        b.set_sensitive(false);
-        install(&a, vec![it3.clone()], refresh.clone());
-    }));
+    b.connect_clicked(glib::clone!(
+        #[strong]
+        a,
+        move |b| {
+            b.set_sensitive(false);
+            install(&a, vec![it3.clone()], refresh.clone());
+        }
+    ));
     inner.append(&b);
     bx.append(&inner);
     bx.set_tooltip_text(Some(&format!("{} · {}", it.id, it.tags.join(", "))));
@@ -122,12 +137,22 @@ pub fn page(a: &AppRc) -> gtk::Widget {
     let tag_names: Vec<String> = TAGS.iter().map(|x| if x.is_empty() { t("Any type") } else { x.to_string() }).collect();
     let tag_refs: Vec<&str> = tag_names.iter().map(String::as_str).collect();
     let tag = adw::ComboRow::builder().title(t("Type")).model(&gtk::StringList::new(&tag_refs)).build();
-    let sort = adw::ComboRow::builder().title(t("Order")).model(&gtk::StringList::new(&[&t("Trending"), &t("Most popular"), &t("Most recent")])).build();
+    let sort = adw::ComboRow::builder()
+        .title(t("Order"))
+        .model(&gtk::StringList::new(&[&t("Trending"), &t("Most popular"), &t("Most recent")]))
+        .build();
     let by_id = adw::EntryRow::builder().title(t("Install by ID or link (map or collection)")).show_apply_button(true).build();
     for w in [search.upcast_ref::<gtk::Widget>(), tag.upcast_ref(), sort.upcast_ref(), by_id.upcast_ref()] {
         sg.add(w);
     }
-    let flow = gtk::FlowBox::builder().selection_mode(gtk::SelectionMode::None).column_spacing(12).row_spacing(12).homogeneous(true).max_children_per_line(3).min_children_per_line(2).build();
+    let flow = gtk::FlowBox::builder()
+        .selection_mode(gtk::SelectionMode::None)
+        .column_spacing(12)
+        .row_spacing(12)
+        .homogeneous(true)
+        .max_children_per_line(3)
+        .min_children_per_line(2)
+        .build();
     let more = button(&t("More results"), &["pill"]);
     more.set_halign(gtk::Align::Center);
     more.set_visible(false);
@@ -147,169 +172,294 @@ pub fn page(a: &AppRc) -> gtk::Widget {
     // fill the library
     let fill_lib: crate::LateFn = Rc::default();
     let fl = fill_lib.clone();
-    let refill: Rc<dyn Fn()> = Rc::new(glib::clone!(#[strong] a, #[weak] lib_list, #[strong] installed_ids, move || {
-        let me = fl.borrow().clone().unwrap();
-        let srv_maps = Server::new(&a.cfg.borrow()).maps_dir();
-        let list = workshop::installed(&srv_maps);
-        *installed_ids.borrow_mut() = list.iter().filter_map(|i| i.dir.parse().ok()).collect();
-        lib_list.remove_all();
-        if list.is_empty() {
-            lib_list.append(&adw::ActionRow::builder().title(t("No workshop maps installed")).build());
-        }
-        let running = a.live.borrow().rcon_ok;
-        for i in list {
-            let sub = format!("{} · {}", i.map, if i.has_nav { t("bots ready") } else { t("no .nav for bots") });
-            let row = adw::ActionRow::builder().title(glib::markup_escape_text(&i.title)).subtitle(sub).build();
-            let mk = |label: &str, class: &[&str]| {
-                let b = button(label, class);
-                b.add_css_class("flat");
-                b.set_valign(gtk::Align::Center);
-                row.add_suffix(&b);
-                b
-            };
-            if running {
-                let m = i.map.clone();
-                mk(&t("Load"), &[]).connect_clicked(glib::clone!(#[strong] a, move |_| {
-                    let (cfg, m) = (a.cfg.borrow().clone(), m.clone());
-                    bg(move || Server::new(&cfg).rcon()?.exec(&format!("changelevel {m}")), glib::clone!(#[strong] a, move |r| {
-                        if let Err(e) = r {
-                            a.error(&e);
-                        }
-                        a.refresh();
-                    }));
-                }));
-                if !i.has_nav {
-                    let m = i.map.clone();
-                    let me2 = me.clone();
-                    mk(&t("Generate .nav"), &[]).connect_clicked(glib::clone!(#[strong] a, move |b| {
-                        b.set_sensitive(false);
-                        a.toast(&t("Generating .nav (seconds to minutes)…"));
-                        let (cfg, m) = (a.cfg.borrow().clone(), m.clone());
-                        let me3 = me2.clone();
-                        bg(
-                            move || -> anyhow::Result<String> {
-                                let srv = Server::new(&cfg);
-                                let mut r = srv.rcon()?;
-                                if Server::current_map(&mut r).as_deref() != Some(m.as_str()) {
-                                    r.exec(&format!("changelevel {m}"))?;
-                                    drop(r);
-                                    std::thread::sleep(Duration::from_secs(8));
-                                    srv.wait_rcon(Duration::from_secs(60))?;
-                                }
-                                srv.generate_nav(Duration::from_secs(600), false)
-                            },
-                            glib::clone!(#[strong] a, move |r| {
-                                match r {
-                                    Ok(m) => a.toast(&format!("{}: {m}", t("Bots ready"))),
-                                    Err(e) => a.error(&e),
-                                }
-                                me3();
-                            }),
-                        );
-                    }));
-                }
+    let refill: Rc<dyn Fn()> = Rc::new(glib::clone!(
+        #[strong]
+        a,
+        #[weak]
+        lib_list,
+        #[strong]
+        installed_ids,
+        move || {
+            let me = fl.borrow().clone().unwrap();
+            let srv_maps = Server::new(&a.cfg.borrow()).maps_dir();
+            let list = workshop::installed(&srv_maps);
+            *installed_ids.borrow_mut() = list.iter().filter_map(|i| i.dir.parse().ok()).collect();
+            lib_list.remove_all();
+            if list.is_empty() {
+                lib_list.append(&adw::ActionRow::builder().title(t("No workshop maps installed")).build());
             }
-            let dir = i.dir.clone();
-            let me2 = me.clone();
-            mk(&t("Delete"), &["error"]).connect_clicked(glib::clone!(#[strong] a, move |_| {
-                match workshop::remove(&Server::new(&a.cfg.borrow()).maps_dir(), &dir) {
-                    Ok(()) => me2(),
-                    Err(e) => a.error(&e),
+            let running = a.live.borrow().rcon_ok;
+            for i in list {
+                let sub = format!("{} · {}", i.map, if i.has_nav { t("bots ready") } else { t("no .nav for bots") });
+                let row = adw::ActionRow::builder().title(glib::markup_escape_text(&i.title)).subtitle(sub).build();
+                let mk = |label: &str, class: &[&str]| {
+                    let b = button(label, class);
+                    b.add_css_class("flat");
+                    b.set_valign(gtk::Align::Center);
+                    row.add_suffix(&b);
+                    b
+                };
+                if running {
+                    let m = i.map.clone();
+                    mk(&t("Load"), &[]).connect_clicked(glib::clone!(
+                        #[strong]
+                        a,
+                        move |_| {
+                            let (cfg, m) = (a.cfg.borrow().clone(), m.clone());
+                            bg(
+                                move || Server::new(&cfg).rcon()?.exec(&format!("changelevel {m}")),
+                                glib::clone!(
+                                    #[strong]
+                                    a,
+                                    move |r| {
+                                        if let Err(e) = r {
+                                            a.error(&e);
+                                        }
+                                        a.refresh();
+                                    }
+                                ),
+                            );
+                        }
+                    ));
+                    if !i.has_nav {
+                        let m = i.map.clone();
+                        let me2 = me.clone();
+                        mk(&t("Generate .nav"), &[]).connect_clicked(glib::clone!(
+                            #[strong]
+                            a,
+                            move |b| {
+                                b.set_sensitive(false);
+                                a.toast(&t("Generating .nav (seconds to minutes)…"));
+                                let (cfg, m) = (a.cfg.borrow().clone(), m.clone());
+                                let me3 = me2.clone();
+                                bg(
+                                    move || -> anyhow::Result<String> {
+                                        let srv = Server::new(&cfg);
+                                        let mut r = srv.rcon()?;
+                                        if Server::current_map(&mut r).as_deref() != Some(m.as_str()) {
+                                            r.exec(&format!("changelevel {m}"))?;
+                                            drop(r);
+                                            std::thread::sleep(Duration::from_secs(8));
+                                            srv.wait_rcon(Duration::from_secs(60))?;
+                                        }
+                                        srv.generate_nav(Duration::from_secs(600), false)
+                                    },
+                                    glib::clone!(
+                                        #[strong]
+                                        a,
+                                        move |r| {
+                                            match r {
+                                                Ok(m) => a.toast(&format!("{}: {m}", t("Bots ready"))),
+                                                Err(e) => a.error(&e),
+                                            }
+                                            me3();
+                                        }
+                                    ),
+                                );
+                            }
+                        ));
+                    }
                 }
-            }));
-            lib_list.append(&row);
+                let dir = i.dir.clone();
+                let me2 = me.clone();
+                mk(&t("Delete"), &["error"]).connect_clicked(glib::clone!(
+                    #[strong]
+                    a,
+                    move |_| {
+                        match workshop::remove(&Server::new(&a.cfg.borrow()).maps_dir(), &dir) {
+                            Ok(()) => me2(),
+                            Err(e) => a.error(&e),
+                        }
+                    }
+                ));
+                lib_list.append(&row);
+            }
         }
-    }));
+    ));
     *fill_lib.borrow_mut() = Some(refill.clone());
     refill();
     // the Load / .nav buttons depend on the server answering: only rebuilt when that changes
     let was = Cell::new(a.live.borrow().rcon_ok);
-    a.on_live(glib::clone!(#[strong] refill, move |l| {
-        if was.replace(l.rcon_ok) != l.rcon_ok {
-            refill();
-        }
-    }));
-
-    // search
-    let run_search: Rc<dyn Fn(bool)> = Rc::new(glib::clone!(#[strong] a, #[weak] flow, #[weak] more, #[weak] spinner, #[weak] search, #[weak] tag, #[weak] sort, #[strong] page_n, #[strong] installed_ids, #[strong] refill, move |append: bool| {
-        if !append {
-            page_n.set(1);
-            while let Some(c) = flow.first_child() {
-                flow.remove(&c);
+    a.on_live(glib::clone!(
+        #[strong]
+        refill,
+        move |l| {
+            if was.replace(l.rcon_ok) != l.rcon_ok {
+                refill();
             }
         }
-        let (text, tg) = (search.text().to_string(), TAGS[tag.selected().min(TAGS.len() as u32 - 1) as usize]);
-        let s = [Sort::Trend, Sort::Popular, Sort::Recent][sort.selected().min(2) as usize];
-        let p = page_n.get();
-        spinner.set_visible(true);
-        more.set_visible(false);
-        let tg = (!tg.is_empty()).then(|| tg.to_string());
-        bg(move || workshop::search(&text, tg.as_deref(), s, p), glib::clone!(#[strong] a, #[strong] installed_ids, #[strong] refill, #[strong] page_n, move |r: anyhow::Result<Vec<Item>>| {
-            spinner.set_visible(false);
-            match r {
-                Ok(items) => {
-                    more.set_visible(!items.is_empty());
-                    for it in items {
-                        let inst = installed_ids.borrow().contains(&it.id);
-                        flow.insert(&card(&a, &it, inst, refill.clone()), -1);
+    ));
+
+    // search
+    let run_search: Rc<dyn Fn(bool)> = Rc::new(glib::clone!(
+        #[strong]
+        a,
+        #[weak]
+        flow,
+        #[weak]
+        more,
+        #[weak]
+        spinner,
+        #[weak]
+        search,
+        #[weak]
+        tag,
+        #[weak]
+        sort,
+        #[strong]
+        page_n,
+        #[strong]
+        installed_ids,
+        #[strong]
+        refill,
+        move |append: bool| {
+            if !append {
+                page_n.set(1);
+                while let Some(c) = flow.first_child() {
+                    flow.remove(&c);
+                }
+            }
+            let (text, tg) = (search.text().to_string(), TAGS[tag.selected().min(TAGS.len() as u32 - 1) as usize]);
+            let s = [Sort::Trend, Sort::Popular, Sort::Recent][sort.selected().min(2) as usize];
+            let p = page_n.get();
+            spinner.set_visible(true);
+            more.set_visible(false);
+            let tg = (!tg.is_empty()).then(|| tg.to_string());
+            bg(
+                move || workshop::search(&text, tg.as_deref(), s, p),
+                glib::clone!(
+                    #[strong]
+                    a,
+                    #[strong]
+                    installed_ids,
+                    #[strong]
+                    refill,
+                    #[strong]
+                    page_n,
+                    move |r: anyhow::Result<Vec<Item>>| {
+                        spinner.set_visible(false);
+                        match r {
+                            Ok(items) => {
+                                more.set_visible(!items.is_empty());
+                                for it in items {
+                                    let inst = installed_ids.borrow().contains(&it.id);
+                                    flow.insert(&card(&a, &it, inst, refill.clone()), -1);
+                                }
+                                page_n.set(p + 1);
+                            }
+                            Err(e) => a.error(&e),
+                        }
                     }
-                    page_n.set(p + 1);
+                ),
+            );
+        }
+    ));
+    search.connect_apply(glib::clone!(
+        #[strong]
+        run_search,
+        move |_| run_search(false)
+    ));
+    tag.connect_selected_notify(glib::clone!(
+        #[strong]
+        run_search,
+        move |_| run_search(false)
+    ));
+    sort.connect_selected_notify(glib::clone!(
+        #[strong]
+        run_search,
+        move |_| run_search(false)
+    ));
+    more.connect_clicked(glib::clone!(
+        #[strong]
+        run_search,
+        move |_| run_search(true)
+    ));
+    // lazy first load: when the tab is shown
+    let loaded = Rc::new(Cell::new(false));
+    page.connect_map(glib::clone!(
+        #[strong]
+        run_search,
+        move |_| {
+            if !loaded.replace(true) {
+                run_search(false);
+            }
+        }
+    ));
+
+    by_id.connect_apply(glib::clone!(
+        #[strong]
+        a,
+        #[strong]
+        refill,
+        move |e| {
+            // accepts the number or a ...?id=123 link
+            let txt = e.text().to_string();
+            let digits: String = txt.rsplit("id=").next().unwrap_or(&txt).chars().take_while(char::is_ascii_digit).collect();
+            let Ok(id) = digits.parse::<u64>() else {
+                e.add_css_class("error");
+                return;
+            };
+            e.remove_css_class("error");
+            bg(
+                move || workshop::details(&[id]),
+                glib::clone!(
+                    #[strong]
+                    a,
+                    #[strong]
+                    refill,
+                    move |r: anyhow::Result<Vec<Item>>| match r {
+                        Ok(items) if !items.is_empty() => install(&a, items, refill.clone()),
+                        Ok(_) => a.error(&anyhow::anyhow!("{} {id}", t("Not found:"))),
+                        Err(e) => a.error(&e),
+                    }
+                ),
+            );
+        }
+    ));
+
+    // import .bsp (button or drag)
+    let import_file = Rc::new(glib::clone!(
+        #[strong]
+        a,
+        #[strong]
+        refill,
+        move |p: std::path::PathBuf| {
+            match workshop::import_local(&Server::new(&a.cfg.borrow()).maps_dir(), &p) {
+                Ok(m) => {
+                    a.toast(&format!("{}: {m}", t("Installed")));
+                    refill();
                 }
                 Err(e) => a.error(&e),
             }
-        }));
-    }));
-    search.connect_apply(glib::clone!(#[strong] run_search, move |_| run_search(false)));
-    tag.connect_selected_notify(glib::clone!(#[strong] run_search, move |_| run_search(false)));
-    sort.connect_selected_notify(glib::clone!(#[strong] run_search, move |_| run_search(false)));
-    more.connect_clicked(glib::clone!(#[strong] run_search, move |_| run_search(true)));
-    // lazy first load: when the tab is shown
-    let loaded = Rc::new(Cell::new(false));
-    page.connect_map(glib::clone!(#[strong] run_search, move |_| {
-        if !loaded.replace(true) {
-            run_search(false);
         }
-    }));
-
-    by_id.connect_apply(glib::clone!(#[strong] a, #[strong] refill, move |e| {
-        // accepts the number or a ...?id=123 link
-        let txt = e.text().to_string();
-        let digits: String = txt.rsplit("id=").next().unwrap_or(&txt).chars().take_while(char::is_ascii_digit).collect();
-        let Ok(id) = digits.parse::<u64>() else {
-            e.add_css_class("error");
-            return;
-        };
-        e.remove_css_class("error");
-        bg(move || workshop::details(&[id]), glib::clone!(#[strong] a, #[strong] refill, move |r: anyhow::Result<Vec<Item>>| match r {
-            Ok(items) if !items.is_empty() => install(&a, items, refill.clone()),
-            Ok(_) => a.error(&anyhow::anyhow!("{} {id}", t("Not found:"))),
-            Err(e) => a.error(&e),
-        }));
-    }));
-
-    // import .bsp (button or drag)
-    let import_file = Rc::new(glib::clone!(#[strong] a, #[strong] refill, move |p: std::path::PathBuf| {
-        match workshop::import_local(&Server::new(&a.cfg.borrow()).maps_dir(), &p) {
-            Ok(m) => {
-                a.toast(&format!("{}: {m}", t("Installed")));
-                refill();
-            }
-            Err(e) => a.error(&e),
+    ));
+    import.connect_clicked(glib::clone!(
+        #[strong]
+        a,
+        #[strong]
+        import_file,
+        move |_| {
+            let f = gtk::FileFilter::new();
+            f.add_pattern("*.bsp");
+            f.set_name(Some("BSP"));
+            let filters = gio::ListStore::new::<gtk::FileFilter>();
+            filters.append(&f);
+            let fd = gtk::FileDialog::builder().title(t("Import .bsp")).filters(&filters).modal(true).build();
+            fd.open(
+                Some(&a.win),
+                None::<&gio::Cancellable>,
+                glib::clone!(
+                    #[strong]
+                    import_file,
+                    move |r| {
+                        if let Some(p) = r.ok().and_then(|f| f.path()) {
+                            import_file(p);
+                        }
+                    }
+                ),
+            );
         }
-    }));
-    import.connect_clicked(glib::clone!(#[strong] a, #[strong] import_file, move |_| {
-        let f = gtk::FileFilter::new();
-        f.add_pattern("*.bsp");
-        f.set_name(Some("BSP"));
-        let filters = gio::ListStore::new::<gtk::FileFilter>();
-        filters.append(&f);
-        let fd = gtk::FileDialog::builder().title(t("Import .bsp")).filters(&filters).modal(true).build();
-        fd.open(Some(&a.win), None::<&gio::Cancellable>, glib::clone!(#[strong] import_file, move |r| {
-            if let Some(p) = r.ok().and_then(|f| f.path()) {
-                import_file(p);
-            }
-        }));
-    }));
+    ));
     let drop = gtk::DropTarget::new(gdk::FileList::static_type(), gdk::DragAction::COPY);
     drop.connect_drop(move |_, v, _, _| {
         if let Ok(list) = v.get::<gdk::FileList>() {

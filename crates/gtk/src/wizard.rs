@@ -86,10 +86,14 @@ fn modes_page(w: &Wr) -> adw::NavigationPage {
             let row = adw::ActionRow::builder().title(m.name(lang)).subtitle(m.meta.description.get(lang)).activatable(true).build();
             row.add_suffix(&gtk::Image::from_icon_name("go-next-symbolic"));
             let id = m.id.clone();
-            row.connect_activated(glib::clone!(#[strong] w, move |_| {
-                w.opts.borrow_mut().mode = id.clone();
-                w.nav.push(&map_page(&w));
-            }));
+            row.connect_activated(glib::clone!(
+                #[strong]
+                w,
+                move |_| {
+                    w.opts.borrow_mut().mode = id.clone();
+                    w.nav.push(&map_page(&w));
+                }
+            ));
             g.add(&row);
         }
         page.add(&g);
@@ -109,30 +113,42 @@ fn map_page(w: &Wr) -> adw::NavigationPage {
 
     let page = adw::PreferencesPage::new();
     let g = adw::PreferencesGroup::new();
-    let def = adw::ActionRow::builder().title(t("Default map for this mode")).subtitle(t("Keep the current one or use the mode's default")).activatable(true).build();
+    let def = adw::ActionRow::builder()
+        .title(t("Default map for this mode"))
+        .subtitle(t("Keep the current one or use the mode's default"))
+        .activatable(true)
+        .build();
     def.add_suffix(&gtk::Image::from_icon_name("go-next-symbolic"));
-    def.connect_activated(glib::clone!(#[strong] w, move |_| {
-        let mut o = w.opts.borrow_mut();
-        o.map = None;
-        o.workshop = None;
-        drop(o);
-        w.nav.push(&options_page(&w));
-    }));
+    def.connect_activated(glib::clone!(
+        #[strong]
+        w,
+        move |_| {
+            let mut o = w.opts.borrow_mut();
+            o.map = None;
+            o.workshop = None;
+            drop(o);
+            w.nav.push(&options_page(&w));
+        }
+    ));
     g.add(&def);
     let ws = adw::EntryRow::builder().title(t("Workshop map ID")).show_apply_button(true).build();
     ws.set_input_purpose(gtk::InputPurpose::Digits);
-    ws.connect_apply(glib::clone!(#[strong] w, move |e| {
-        match e.text().trim().parse::<u64>() {
-            Ok(id) => {
-                let mut o = w.opts.borrow_mut();
-                o.workshop = Some(id);
-                o.map = None;
-                drop(o);
-                w.nav.push(&options_page(&w));
+    ws.connect_apply(glib::clone!(
+        #[strong]
+        w,
+        move |e| {
+            match e.text().trim().parse::<u64>() {
+                Ok(id) => {
+                    let mut o = w.opts.borrow_mut();
+                    o.workshop = Some(id);
+                    o.map = None;
+                    drop(o);
+                    w.nav.push(&options_page(&w));
+                }
+                Err(_) => e.add_css_class("error"),
             }
-            Err(_) => e.add_css_class("error"),
         }
-    }));
+    ));
     g.add(&ws);
     page.add(&g);
 
@@ -145,7 +161,11 @@ fn map_page(w: &Wr) -> adw::NavigationPage {
     let mut groups: Vec<(String, adw::PreferencesGroup)> = Vec::new();
     let rows: Rc<RefCell<Vec<(String, adw::ActionRow)>>> = Rc::default();
     for m in maps {
-        let pre = if m.starts_with("workshop/") || m.starts_with("csls/") { "Workshop".to_string() } else { m.split('_').next().unwrap_or("").to_string() + "_" };
+        let pre = if m.starts_with("workshop/") || m.starts_with("csls/") {
+            "Workshop".to_string()
+        } else {
+            m.split('_').next().unwrap_or("").to_string() + "_"
+        };
         let grp = match groups.iter().find(|(p, _)| *p == pre) {
             Some((_, g)) => g.clone(),
             None => {
@@ -158,22 +178,30 @@ fn map_page(w: &Wr) -> adw::NavigationPage {
         };
         let row = adw::ActionRow::builder().title(&m).activatable(true).build();
         let mm = m.clone();
-        row.connect_activated(glib::clone!(#[strong] w, move |_| {
-            let mut o = w.opts.borrow_mut();
-            o.map = Some(mm.clone());
-            o.workshop = None;
-            drop(o);
-            w.nav.push(&options_page(&w));
-        }));
+        row.connect_activated(glib::clone!(
+            #[strong]
+            w,
+            move |_| {
+                let mut o = w.opts.borrow_mut();
+                o.map = Some(mm.clone());
+                o.workshop = None;
+                drop(o);
+                w.nav.push(&options_page(&w));
+            }
+        ));
         grp.add(&row);
         rows.borrow_mut().push((m, row));
     }
-    search.connect_search_changed(glib::clone!(#[strong] rows, move |s| {
-        let q = s.text().to_lowercase();
-        for (m, r) in rows.borrow().iter() {
-            r.set_visible(m.contains(&q));
+    search.connect_search_changed(glib::clone!(
+        #[strong]
+        rows,
+        move |s| {
+            let q = s.text().to_lowercase();
+            for (m, r) in rows.borrow().iter() {
+                r.set_visible(m.contains(&q));
+            }
         }
-    }));
+    ));
     wrap(&t("Choose a map"), &page, None)
 }
 
@@ -193,25 +221,45 @@ fn options_page(w: &Wr) -> adw::NavigationPage {
     bots.set_title(&t("Number of bots"));
     bots.set_value(5.0);
     bots_on.bind_property("active", &bots, "sensitive").sync_create().build();
-    let diff = adw::ComboRow::builder().title(t("Bot difficulty")).model(&gtk::StringList::new(&[&t("Easy"), &t("Normal"), &t("Hard"), &t("Expert")])).selected(o.difficulty as u32).build();
+    let diff = adw::ComboRow::builder()
+        .title(t("Bot difficulty"))
+        .model(&gtk::StringList::new(&[&t("Easy"), &t("Normal"), &t("Hard"), &t("Expert")]))
+        .selected(o.difficulty as u32)
+        .build();
     let rounds = adw::SpinRow::with_range(0.0, 99.0, 1.0);
     rounds.set_title(&t("Max rounds (0 = default)"));
     // only the types that fit the chosen mode
     let kinds: Vec<Kind> = Kind::ALL.into_iter().filter(|k| mode.allows_kind(*k)).collect();
     let kind_names: Vec<String> = kinds.iter().map(|k| t(k.label())).collect();
-    let kind = adw::ComboRow::builder().title(t("Match type")).subtitle(t("Arms Race, Guardian and Danger Zone use their own maps")).model(&gtk::StringList::new(&kind_names.iter().map(String::as_str).collect::<Vec<_>>())).build();
+    let kind = adw::ComboRow::builder()
+        .title(t("Match type"))
+        .subtitle(t("Arms Race, Guardian and Danger Zone use their own maps"))
+        .model(&gtk::StringList::new(&kind_names.iter().map(String::as_str).collect::<Vec<_>>()))
+        .build();
     kind.set_selected(kinds.iter().position(|k| *k == o.kind).unwrap_or(0) as u32);
     kind.set_visible(mode.meta.game_type.is_none());
     let site = adw::ComboRow::builder().title(t("Bomb site")).model(&gtk::StringList::new(&[&t("Random"), "A", "B"])).build();
     site.set_visible(mode.has_option("site"));
-    let teams = adw::ComboRow::builder().title(t("Teams")).subtitle(t("Humans; bots fill the empty seats")).model(&gtk::StringList::new(&[&t("Together"), &t("Against each other"), &t("Each one chooses")])).build();
+    let teams = adw::ComboRow::builder()
+        .title(t("Teams"))
+        .subtitle(t("Humans; bots fill the empty seats"))
+        .model(&gtk::StringList::new(&[&t("Together"), &t("Against each other"), &t("Each one chooses")]))
+        .build();
     teams.set_visible(mode.has_option("teams"));
     let precision = adw::SwitchRow::builder().title(t("Infinite accuracy")).subtitle(t("No spread and no recoil for everyone")).build();
     let anarchy = adw::SwitchRow::builder().title(t("Anarchy")).subtitle(t("Nobody is kicked or banned automatically")).build();
     let extra = adw::EntryRow::builder().title(t("Extra variables")).build();
     extra.set_tooltip_text(Some(&t("cvar=value separated by spaces")));
     let preset = adw::EntryRow::builder().title(t("Save as preset (name, optional)")).build();
-    for r in [humans.upcast_ref::<gtk::Widget>(), teams.upcast_ref(), diff.upcast_ref(), site.upcast_ref(), bots_on.upcast_ref(), bots.upcast_ref(), preset.upcast_ref()] {
+    for r in [
+        humans.upcast_ref::<gtk::Widget>(),
+        teams.upcast_ref(),
+        diff.upcast_ref(),
+        site.upcast_ref(),
+        bots_on.upcast_ref(),
+        bots.upcast_ref(),
+        preset.upcast_ref(),
+    ] {
         g.add(r);
     }
     page.add(&g);
@@ -226,48 +274,56 @@ fn options_page(w: &Wr) -> adw::NavigationPage {
 
     let mode_game_type = mode.meta.game_type;
     let next = button(&if w.live { t("Apply") } else { t("Next") }, &["suggested-action", "pill"]);
-    next.connect_clicked(glib::clone!(#[strong] w, move |_| {
-        {
-            let mut o = w.opts.borrow_mut();
-            o.humans = humans.value() as u32;
-            o.bots = bots_on.is_active().then(|| bots.value() as u32);
-            o.difficulty = diff.selected() as u8;
-            o.rounds = (rounds.value() > 0.0).then(|| rounds.value() as u32);
-            o.kind = kinds.get(kind.selected() as usize).copied().unwrap_or_default();
-            // the type is chosen after the map: if the map does not suit it, its own is used
-            if let (Some((prefix, _)), None) = (o.kind.own_maps(), mode_game_type) {
-                if o.map.as_deref().is_some_and(|m| !m.starts_with(prefix)) {
-                    o.map = None;
+    next.connect_clicked(glib::clone!(
+        #[strong]
+        w,
+        move |_| {
+            {
+                let mut o = w.opts.borrow_mut();
+                o.humans = humans.value() as u32;
+                o.bots = bots_on.is_active().then(|| bots.value() as u32);
+                o.difficulty = diff.selected() as u8;
+                o.rounds = (rounds.value() > 0.0).then(|| rounds.value() as u32);
+                o.kind = kinds.get(kind.selected() as usize).copied().unwrap_or_default();
+                // the type is chosen after the map: if the map does not suit it, its own is used
+                if let (Some((prefix, _)), None) = (o.kind.own_maps(), mode_game_type) {
+                    if o.map.as_deref().is_some_and(|m| !m.starts_with(prefix)) {
+                        o.map = None;
+                    }
                 }
-            }
-            o.site = site.is_visible().then(|| [Site::Random, Site::A, Site::B][site.selected().min(2) as usize]);
-            o.teams = teams.is_visible().then(|| [Teams::Together, Teams::Versus, Teams::Free][teams.selected().min(2) as usize]);
-            o.precision = precision.is_active();
-            o.anarchy = anarchy.is_active();
-            o.cvars.clear();
-            for p in extra.text().split_whitespace() {
-                match parse_cvar(p) {
-                    Ok(c) => o.cvars.push(c),
-                    Err(e) => {
+                o.site = site.is_visible().then(|| [Site::Random, Site::A, Site::B][site.selected().min(2) as usize]);
+                o.teams = teams.is_visible().then(|| [Teams::Together, Teams::Versus, Teams::Free][teams.selected().min(2) as usize]);
+                o.precision = precision.is_active();
+                o.anarchy = anarchy.is_active();
+                o.cvars.clear();
+                for p in extra.text().split_whitespace() {
+                    match parse_cvar(p) {
+                        Ok(c) => o.cvars.push(c),
+                        Err(e) => {
+                            drop(o);
+                            w.a.error(&e);
+                            return;
+                        }
+                    }
+                }
+                let name = preset.text();
+                if !name.trim().is_empty() {
+                    if let Err(e) = csls_core::presets::Presets::put(&name, &o) {
                         drop(o);
                         w.a.error(&e);
                         return;
                     }
+                    w.a.toast(&t("Preset saved"));
+                    w.a.modes_changed();
                 }
             }
-            let name = preset.text();
-            if !name.trim().is_empty() {
-                if let Err(e) = csls_core::presets::Presets::put(&name, &o) {
-                    drop(o);
-                    w.a.error(&e);
-                    return;
-                }
-                w.a.toast(&t("Preset saved"));
-                w.a.modes_changed();
+            if w.live {
+                apply(&w)
+            } else {
+                w.nav.push(&server_page(&w))
             }
         }
-        if w.live { apply(&w) } else { w.nav.push(&server_page(&w)) }
-    }));
+    ));
     wrap(&t("Options"), &page, Some(&next))
 }
 
@@ -279,7 +335,12 @@ fn server_page(w: &Wr) -> adw::NavigationPage {
     let nets = [Network::Lan, Network::Vpn, Network::Internet, Network::Community];
     let net = adw::ComboRow::builder()
         .title(t("Network"))
-        .model(&gtk::StringList::new(&[&t("LAN only"), &t("Friends over VPN"), &t("Internet (open port)"), &t("Community (Steam server list)")]))
+        .model(&gtk::StringList::new(&[
+            &t("LAN only"),
+            &t("Friends over VPN"),
+            &t("Internet (open port)"),
+            &t("Community (Steam server list)"),
+        ]))
         .selected(nets.iter().position(|n| *n == c.network).unwrap_or(0) as u32)
         .build();
     let name = adw::EntryRow::builder().title(t("Server name")).text(&c.hostname).build();
@@ -294,20 +355,24 @@ fn server_page(w: &Wr) -> adw::NavigationPage {
     }
     page.add(&g);
     let go = button(&t("Start"), &["suggested-action", "pill"]);
-    go.connect_clicked(glib::clone!(#[strong] w, move |_| {
-        let mut cfg = w.a.cfg.borrow().clone();
-        cfg.server.network = nets[net.selected().min(3) as usize];
-        cfg.server.hostname = name.text().to_string();
-        cfg.server.password = pass.text().to_string();
-        cfg.server.max_players = maxp.value() as u32;
-        cfg.server.gslt = gslt.text().trim().to_string();
-        if let Err(e) = cfg.save() {
-            w.a.error(&e);
-            return;
+    go.connect_clicked(glib::clone!(
+        #[strong]
+        w,
+        move |_| {
+            let mut cfg = w.a.cfg.borrow().clone();
+            cfg.server.network = nets[net.selected().min(3) as usize];
+            cfg.server.hostname = name.text().to_string();
+            cfg.server.password = pass.text().to_string();
+            cfg.server.max_players = maxp.value() as u32;
+            cfg.server.gslt = gslt.text().trim().to_string();
+            if let Err(e) = cfg.save() {
+                w.a.error(&e);
+                return;
+            }
+            *w.a.cfg.borrow_mut() = cfg;
+            apply(&w);
         }
-        *w.a.cfg.borrow_mut() = cfg;
-        apply(&w);
-    }));
+    ));
     wrap(&t("Server"), &page, Some(&go))
 }
 

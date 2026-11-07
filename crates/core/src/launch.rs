@@ -162,7 +162,11 @@ impl LaunchOptions {
 
     /// Value of modo_tipo. Modes that set their own game_type ignore the chosen type.
     pub fn tipo_cfg(&self, mode: &Mode) -> &'static str {
-        if mode.meta.game_type.is_some() { "" } else { self.kind.tipo_cfg() }
+        if mode.meta.game_type.is_some() {
+            ""
+        } else {
+            self.kind.tipo_cfg()
+        }
     }
 
     pub fn game_type_mode(&self, mode: &Mode) -> (u8, u8) {
@@ -324,7 +328,10 @@ mod tests {
         for k in Kind::ALL {
             assert_eq!(Kind::parse(&format!("{k:?}").to_lowercase()), Some(k));
             let cfg = k.tipo_cfg();
-            assert!(cfg.is_empty() || Path::new(env!("CARGO_MANIFEST_DIR")).join(format!("../../cfg/modo_tipo_{cfg}.cfg")).is_file(), "{cfg}");
+            assert!(
+                cfg.is_empty() || Path::new(env!("CARGO_MANIFEST_DIR")).join(format!("../../cfg/modo_tipo_{cfg}.cfg")).is_file(),
+                "{cfg}"
+            );
         }
         std::fs::remove_dir_all(maps).ok();
     }
@@ -337,7 +344,10 @@ mod tests {
         o.bots = Some(5);
         o.site = Some(Site::A);
         o.cvars.push(parse_cvar("sv_gravity=300").unwrap());
-        assert_eq!(o.extra(m.get("awp").unwrap()), "bot_difficulty 3; weapon_accuracy_nospread 1; weapon_recoil_scale 0; bot_quota 5; modo_sitio a; sv_gravity 300");
+        assert_eq!(
+            o.extra(m.get("awp").unwrap()),
+            "bot_difficulty 3; weapon_accuracy_nospread 1; weapon_recoil_scale 0; bot_quota 5; modo_sitio a; sv_gravity 300"
+        );
         assert_eq!(o.game_type_mode(m.get("awp").unwrap()), (0, 1));
         assert_eq!(o.game_type_mode(m.get("dm").unwrap()), (1, 2));
         assert!(parse_cvar("sv_gravity=1;quit").is_err());
@@ -362,7 +372,8 @@ mod tests {
         assert_eq!(Teams::parse("JUNTOS"), Some(Teams::Together));
         assert_eq!(Teams::parse("x"), None);
         // presets saved before the option existed still load
-        let old = "[p]\nmode = \"awp\"\nhumans = 2\ndifficulty = 3\nkind = \"competitive\"\nprecision = false\nanarchy = false\ncvars = []\n";
+        let old =
+            "[p]\nmode = \"awp\"\nhumans = 2\ndifficulty = 3\nkind = \"competitive\"\nprecision = false\nanarchy = false\ncvars = []\n";
         let p: crate::presets::Presets = toml::from_str(old).unwrap();
         assert_eq!(p.0["p"].teams, None);
         std::fs::remove_dir_all(maps).ok();

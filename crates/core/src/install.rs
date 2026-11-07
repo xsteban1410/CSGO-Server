@@ -63,12 +63,8 @@ pub fn which(cmd: &str) -> Option<PathBuf> {
 /// (ID, ID_LIKE) from /etc/os-release.
 pub fn os_release() -> (String, String) {
     let t = std::fs::read_to_string("/etc/os-release").unwrap_or_default();
-    let get = |k: &str| {
-        t.lines()
-            .find_map(|l| l.strip_prefix(&format!("{k}=")))
-            .map(|v| v.trim_matches('"').to_string())
-            .unwrap_or_default()
-    };
+    let get =
+        |k: &str| t.lines().find_map(|l| l.strip_prefix(&format!("{k}="))).map(|v| v.trim_matches('"').to_string()).unwrap_or_default();
     (get("ID"), get("ID_LIKE"))
 }
 
@@ -112,9 +108,7 @@ pub fn free_bytes(dir: &Path) -> Option<u64> {
 fn run_logged(cmd: &mut Command, cancel: &AtomicBool, mut line: impl FnMut(&str)) -> crate::Result<bool> {
     let mut child = cmd.stdout(Stdio::piped()).stderr(Stdio::piped()).stdin(Stdio::null()).spawn()?;
     let err = child.stderr.take().unwrap();
-    let errt = std::thread::spawn(move || {
-        BufReader::new(err).lines().map_while(Result::ok).collect::<Vec<_>>().join("\n")
-    });
+    let errt = std::thread::spawn(move || BufReader::new(err).lines().map_while(Result::ok).collect::<Vec<_>>().join("\n"));
     for l in BufReader::new(child.stdout.take().unwrap()).split(b'\n').map_while(Result::ok) {
         // steamcmd sometimes separates with \r
         for part in String::from_utf8_lossy(&l).split('\r') {
@@ -176,7 +170,10 @@ fn ensure_steamcmd(cancel: &AtomicBool, cb: &mut dyn FnMut(Progress)) -> crate::
     std::fs::create_dir_all(&tmp)?;
     let tgz = tmp.join("steamcmd_linux.tar.gz");
     let ok = run_logged(
-        Command::new("curl").args(["-fsSL", "--retry", "5", "-o"]).arg(&tgz).arg("https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz"),
+        Command::new("curl")
+            .args(["-fsSL", "--retry", "5", "-o"])
+            .arg(&tgz)
+            .arg("https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz"),
         cancel,
         |_| {},
     )?;
@@ -249,7 +246,11 @@ fn fetch(p: &Pinned, dl: &Path, cancel: &AtomicBool) -> crate::Result<PathBuf> {
         return Ok(f);
     }
     let tmp = dl.join(format!("{}.part", p.file));
-    if !run_logged(Command::new("curl").args(["-fsSL", "--retry", "5", "-o"]).arg(&tmp).arg(format!("{}/{}", p.base, p.file)), cancel, |_| {})? {
+    if !run_logged(
+        Command::new("curl").args(["-fsSL", "--retry", "5", "-o"]).arg(&tmp).arg(format!("{}/{}", p.base, p.file)),
+        cancel,
+        |_| {},
+    )? {
         bail!("could not download {}", p.file);
     }
     if sha256(&tmp)? != p.sha256 {
@@ -335,7 +336,14 @@ pub fn install(cfg: &Config, update: bool, cancel: &AtomicBool, cb: &mut dyn FnM
         // do not overwrite configs, data or the skins database when reinstalling
         tar(&["--skip-old-files"], &f, &csgo)?;
         tar(
-            &["--overwrite", "--wildcards", "addons/sourcemod/bin/*", "addons/sourcemod/scripting/*", "addons/sourcemod/gamedata/*", "addons/sourcemod/extensions/*"],
+            &[
+                "--overwrite",
+                "--wildcards",
+                "addons/sourcemod/bin/*",
+                "addons/sourcemod/scripting/*",
+                "addons/sourcemod/gamedata/*",
+                "addons/sourcemod/extensions/*",
+            ],
             &f,
             &csgo,
         )?;
@@ -379,7 +387,11 @@ mod tests {
     }
 
     fn pinned(base: &str, sha: &str) -> Pinned {
-        Pinned { base: Box::leak(format!("file://{base}").into_boxed_str()), file: "a.tar.gz", sha256: Box::leak(sha.to_string().into_boxed_str()) }
+        Pinned {
+            base: Box::leak(format!("file://{base}").into_boxed_str()),
+            file: "a.tar.gz",
+            sha256: Box::leak(sha.to_string().into_boxed_str()),
+        }
     }
 
     #[test]
@@ -412,7 +424,14 @@ mod tests {
         let d = tmp("lock");
         let p = d.join("install.lock");
         // another test starting a process holds a copy of the file for an instant, until its exec
-        let lock_soon = || (0..50).find_map(|_| try_lock(&p).ok().or_else(|| { std::thread::sleep(std::time::Duration::from_millis(10)); None }));
+        let lock_soon = || {
+            (0..50).find_map(|_| {
+                try_lock(&p).ok().or_else(|| {
+                    std::thread::sleep(std::time::Duration::from_millis(10));
+                    None
+                })
+            })
+        };
         let first = lock_soon().unwrap();
         assert!(try_lock(&p).is_err());
         drop(first);

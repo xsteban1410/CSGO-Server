@@ -74,9 +74,11 @@ impl Steam {
 
 /// Is a "steam" process running?
 pub fn steam_running() -> bool {
-    std::fs::read_dir("/proc").into_iter().flatten().flatten().any(|e| {
-        std::fs::read_to_string(e.path().join("comm")).is_ok_and(|c| c.trim() == "steam")
-    })
+    std::fs::read_dir("/proc")
+        .into_iter()
+        .flatten()
+        .flatten()
+        .any(|e| std::fs::read_to_string(e.path().join("comm")).is_ok_and(|c| c.trim() == "steam"))
 }
 
 /// A `+connect` arrives before the engine is ready: the game prints "Deferring connect command!" and the command
@@ -102,7 +104,15 @@ fn log_since(log: &Path, from: u64) -> String {
 
 /// Waits for the menu and asks to connect until the console confirms. `alive` = the game is still open
 /// (without it, steam://connect would open CS2). `true` if it has started connecting.
-fn connect_when_ready(log: &Path, from: u64, mut alive: impl FnMut() -> bool, mut send: impl FnMut(), timeout: Duration, retry: Duration, ready_after: Duration) -> bool {
+fn connect_when_ready(
+    log: &Path,
+    from: u64,
+    mut alive: impl FnMut() -> bool,
+    mut send: impl FnMut(),
+    timeout: Duration,
+    retry: Duration,
+    ready_after: Duration,
+) -> bool {
     let t = Instant::now();
     let mut sent: Option<Instant> = None;
     while t.elapsed() < timeout && alive() {
@@ -132,7 +142,9 @@ pub fn launch_csgo(connect: Option<&str>) -> crate::Result<Option<JoinHandle<boo
         bail!("open Steam first");
     }
     let game = s.game_dir().context("CS:GO Legacy is not installed: select the csgo_legacy beta in Steam > CS2 > Properties > Betas")?;
-    let soldier = s.find_common("SteamLinuxRuntime_soldier").context("SteamLinuxRuntime_soldier is missing (Steam installs it when CS2 is opened once)")?;
+    let soldier = s
+        .find_common("SteamLinuxRuntime_soldier")
+        .context("SteamLinuxRuntime_soldier is missing (Steam installs it when CS2 is opened once)")?;
     let scout = s.find_common("SteamLinuxRuntime").context("SteamLinuxRuntime is missing (Steam installs it when CS2 is opened once)")?;
     // Steam always opens CS2; CS:GO is launched with its csgo.sh inside the Steam Linux Runtime, as Steam would
     let args: Vec<String> = vec![
@@ -168,7 +180,8 @@ pub fn launch_csgo(connect: Option<&str>) -> crate::Result<Option<JoinHandle<boo
         }
     };
     use std::os::unix::process::CommandExt;
-    let mut child = cmd.current_dir(&game)
+    let mut child = cmd
+        .current_dir(&game)
         .env("SteamAppId", "730")
         .env("SteamGameId", "730")
         .stdin(Stdio::null())
@@ -236,18 +249,29 @@ mod tests {
         let (ms, long) = (Duration::from_millis(1), Duration::from_secs(20));
         // the game opens without writing "ready": nothing is sent, and when it closes it gives up (without opening CS2)
         let polls = Cell::new(0);
-        let alive = || { polls.set(polls.get() + 1); polls.get() < 3 };
+        let alive = || {
+            polls.set(polls.get() + 1);
+            polls.get() < 3
+        };
         assert!(!connect_when_ready(&log, from, alive, || sent_count.set(sent_count.get() + 1), long, ms, long));
         assert_eq!(sent_count.get(), 0);
         // ready: sends until the console confirms
         let append = |t: &str| std::fs::OpenOptions::new().append(true).open(&log).unwrap().write_all(t.as_bytes()).unwrap();
         append("SDR RelayNetworkStatus: ...\n");
-        let ok = connect_when_ready(&log, from, || true, || {
-            sent_count.set(sent_count.get() + 1);
-            if sent_count.get() == 2 {
-                append("Connecting to 1.2.3.4:27030\n");
-            }
-        }, long, ms, long);
+        let ok = connect_when_ready(
+            &log,
+            from,
+            || true,
+            || {
+                sent_count.set(sent_count.get() + 1);
+                if sent_count.get() == 2 {
+                    append("Connecting to 1.2.3.4:27030\n");
+                }
+            },
+            long,
+            ms,
+            long,
+        );
         assert!(ok);
         assert_eq!(sent_count.get(), 2);
         std::fs::remove_file(log).ok();

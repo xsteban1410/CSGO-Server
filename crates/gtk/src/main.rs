@@ -110,18 +110,21 @@ impl App {
         }
         let cfg = self.cfg.borrow().clone();
         let app = self.clone();
-        bg(move || fetch(&cfg), move |l| {
-            app.polling.set(false);
-            if app.live.borrow().running && !l.running && !app.stop_requested.replace(false) {
-                app.toast(&t("The server has stopped. The Console tab may say why"));
-            }
-            if *app.live.borrow() != l {
-                *app.live.borrow_mut() = l;
-                for f in app.listeners.borrow().iter() {
-                    f(&app.live.borrow());
+        bg(
+            move || fetch(&cfg),
+            move |l| {
+                app.polling.set(false);
+                if app.live.borrow().running && !l.running && !app.stop_requested.replace(false) {
+                    app.toast(&t("The server has stopped. The Console tab may say why"));
                 }
-            }
-        });
+                if *app.live.borrow() != l {
+                    *app.live.borrow_mut() = l;
+                    for f in app.listeners.borrow().iter() {
+                        f(&app.live.borrow());
+                    }
+                }
+            },
+        );
     }
 
     pub fn on_modes_changed(&self, f: impl Fn() + 'static) {
@@ -147,7 +150,13 @@ impl App {
             let Ok(m) = gio::File::for_path(&d).monitor_directory(gio::FileMonitorFlags::NONE, None::<&gio::Cancellable>) else { continue };
             let app = Rc::downgrade(self);
             m.connect_changed(move |_, f, _, ev| {
-                if !matches!(ev, gio::FileMonitorEvent::ChangesDoneHint | gio::FileMonitorEvent::Deleted | gio::FileMonitorEvent::MovedIn | gio::FileMonitorEvent::Created) {
+                if !matches!(
+                    ev,
+                    gio::FileMonitorEvent::ChangesDoneHint
+                        | gio::FileMonitorEvent::Deleted
+                        | gio::FileMonitorEvent::MovedIn
+                        | gio::FileMonitorEvent::Created
+                ) {
                     return;
                 }
                 let n = f.basename().map(|b| b.to_string_lossy().into_owned()).unwrap_or_default();
@@ -177,18 +186,25 @@ impl App {
             if !Server::new(&cfg).is_installed() {
                 return;
             }
-            bg(move || csls_core::deploy::deploy(&cfg, false, true), move |r| match r {
-                Ok(r) => {
-                    if let Some(e) = r.error_text() {
-                        a.error(&anyhow::anyhow!("{}\n{e}", t("Plugins that do not compile (the server keeps the previous version):")));
-                    } else if !r.compiled.is_empty() {
-                        a.toast(&format!("{}: {}", if r.reloaded { t("Compiled and reloaded") } else { t("Compiled") }, r.compiled.join(", ")));
-                    } else if !r.removed.is_empty() {
-                        a.toast(&format!("{}: {}", t("Removed"), r.removed.join(", ")));
+            bg(
+                move || csls_core::deploy::deploy(&cfg, false, true),
+                move |r| match r {
+                    Ok(r) => {
+                        if let Some(e) = r.error_text() {
+                            a.error(&anyhow::anyhow!("{}\n{e}", t("Plugins that do not compile (the server keeps the previous version):")));
+                        } else if !r.compiled.is_empty() {
+                            a.toast(&format!(
+                                "{}: {}",
+                                if r.reloaded { t("Compiled and reloaded") } else { t("Compiled") },
+                                r.compiled.join(", ")
+                            ));
+                        } else if !r.removed.is_empty() {
+                            a.toast(&format!("{}: {}", t("Removed"), r.removed.join(", ")));
+                        }
                     }
-                }
-                Err(e) => a.error(&e),
-            });
+                    Err(e) => a.error(&e),
+                },
+            );
         });
         *self.deploy_pending.borrow_mut() = Some(id);
     }
@@ -226,7 +242,14 @@ fn build(app: &adw::Application) {
             let w = adw::ApplicationWindow::builder().application(app).build();
             let d = adw::AlertDialog::new(Some(&t("Error")), Some(&format!("{e:#}")));
             d.add_response("ok", "OK");
-            d.connect_response(None, glib::clone!(#[weak] w, move |_, _| w.close()));
+            d.connect_response(
+                None,
+                glib::clone!(
+                    #[weak]
+                    w,
+                    move |_, _| w.close()
+                ),
+            );
             w.present();
             d.present(Some(&w));
             return;
@@ -234,7 +257,8 @@ fn build(app: &adw::Application) {
     };
     let modes = Modes::load().unwrap_or_default();
     gtk::Window::set_default_icon_name(APP_ID);
-    let win = adw::ApplicationWindow::builder().application(app).title("CS:GO Legacy Server").default_width(1040).default_height(700).build();
+    let win =
+        adw::ApplicationWindow::builder().application(app).title("CS:GO Legacy Server").default_width(1040).default_height(700).build();
     let toasts = adw::ToastOverlay::new();
     let a = Rc::new(App {
         win: win.clone(),
@@ -269,7 +293,11 @@ fn build(app: &adw::Application) {
     tv.set_content(Some(&stack));
     tv.add_bottom_bar(&bar);
     // in narrow windows the tabs move to the bottom bar
-    let bp = adw::Breakpoint::new(adw::BreakpointCondition::new_length(adw::BreakpointConditionLengthType::MaxWidth, 600.0, adw::LengthUnit::Sp));
+    let bp = adw::Breakpoint::new(adw::BreakpointCondition::new_length(
+        adw::BreakpointConditionLengthType::MaxWidth,
+        600.0,
+        adw::LengthUnit::Sp,
+    ));
     bp.add_setter(&switcher, "visible", Some(&false.to_value()));
     bp.add_setter(&bar, "reveal", Some(&true.to_value()));
     win.add_breakpoint(bp);
@@ -285,10 +313,17 @@ fn build(app: &adw::Application) {
     }
     win.set_content(Some(&root));
 
-    glib::timeout_add_seconds_local(3, glib::clone!(#[strong] a, move || {
-        a.refresh();
-        glib::ControlFlow::Continue
-    }));
+    glib::timeout_add_seconds_local(
+        3,
+        glib::clone!(
+            #[strong]
+            a,
+            move || {
+                a.refresh();
+                glib::ControlFlow::Continue
+            }
+        ),
+    );
     a.refresh();
     win.present();
     if let Ok(tab) = std::env::var("CSLS_TAB") {

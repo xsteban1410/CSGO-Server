@@ -28,87 +28,121 @@ pub fn page(a: &AppRc) -> gtk::Widget {
     let history: Rc<RefCell<Vec<String>>> = Rc::default();
     let hpos = Rc::new(Cell::new(0usize));
     let buf = view.buffer();
-    let append = Rc::new(glib::clone!(#[weak] buf, #[weak] scroll, move |s: &str| {
-        let adj = scroll.vadjustment();
-        let at_bottom = adj.value() + adj.page_size() >= adj.upper() - 40.0;
-        buf.insert(&mut buf.end_iter(), s);
-        // do not grow without limit
-        if buf.char_count() > 400_000 {
-            let mut st = buf.start_iter();
-            let mut cut = buf.iter_at_offset(100_000);
-            buf.delete(&mut st, &mut cut);
+    let append = Rc::new(glib::clone!(
+        #[weak]
+        buf,
+        #[weak]
+        scroll,
+        move |s: &str| {
+            let adj = scroll.vadjustment();
+            let at_bottom = adj.value() + adj.page_size() >= adj.upper() - 40.0;
+            buf.insert(&mut buf.end_iter(), s);
+            // do not grow without limit
+            if buf.char_count() > 400_000 {
+                let mut st = buf.start_iter();
+                let mut cut = buf.iter_at_offset(100_000);
+                buf.delete(&mut st, &mut cut);
+            }
+            if at_bottom {
+                glib::idle_add_local_once(move || adj.set_value(adj.upper()));
+            }
         }
-        if at_bottom {
-            glib::idle_add_local_once(move || adj.set_value(adj.upper()));
-        }
-    }));
+    ));
 
-    entry.connect_activate(glib::clone!(#[strong] a, #[strong] append, #[strong] history, #[strong] hpos, move |e| {
-        let cmd = e.text().to_string();
-        if cmd.trim().is_empty() {
-            return;
+    entry.connect_activate(glib::clone!(
+        #[strong]
+        a,
+        #[strong]
+        append,
+        #[strong]
+        history,
+        #[strong]
+        hpos,
+        move |e| {
+            let cmd = e.text().to_string();
+            if cmd.trim().is_empty() {
+                return;
+            }
+            history.borrow_mut().push(cmd.clone());
+            hpos.set(history.borrow().len());
+            e.set_text("");
+            append(&format!("] {cmd}\n"));
+            let cfg = a.cfg.borrow().clone();
+            let ap = append.clone();
+            bg(
+                move || Server::new(&cfg).rcon()?.exec(&cmd),
+                move |r: anyhow::Result<String>| match r {
+                    Ok(o) => ap(&if o.ends_with('\n') || o.is_empty() { o } else { o + "\n" }),
+                    Err(e) => ap(&format!("{e:#}\n")),
+                },
+            );
         }
-        history.borrow_mut().push(cmd.clone());
-        hpos.set(history.borrow().len());
-        e.set_text("");
-        append(&format!("] {cmd}\n"));
-        let cfg = a.cfg.borrow().clone();
-        let ap = append.clone();
-        bg(move || Server::new(&cfg).rcon()?.exec(&cmd), move |r: anyhow::Result<String>| match r {
-            Ok(o) => ap(&if o.ends_with('\n') || o.is_empty() { o } else { o + "\n" }),
-            Err(e) => ap(&format!("{e:#}\n")),
-        });
-    }));
+    ));
     // arrows: history
     let keys = gtk::EventControllerKey::new();
-    keys.connect_key_pressed(glib::clone!(#[weak] entry, #[upgrade_or] glib::Propagation::Proceed, move |_, k, _, _| {
-        let h = history.borrow();
-        let i = hpos.get();
-        let n = match k {
-            gtk::gdk::Key::Up if i > 0 => i - 1,
-            gtk::gdk::Key::Down if i < h.len() => i + 1,
-            _ => return glib::Propagation::Proceed,
-        };
-        hpos.set(n);
-        entry.set_text(h.get(n).map(String::as_str).unwrap_or(""));
-        entry.set_position(-1);
-        glib::Propagation::Stop
-    }));
+    keys.connect_key_pressed(glib::clone!(
+        #[weak]
+        entry,
+        #[upgrade_or]
+        glib::Propagation::Proceed,
+        move |_, k, _, _| {
+            let h = history.borrow();
+            let i = hpos.get();
+            let n = match k {
+                gtk::gdk::Key::Up if i > 0 => i - 1,
+                gtk::gdk::Key::Down if i < h.len() => i + 1,
+                _ => return glib::Propagation::Proceed,
+            };
+            hpos.set(n);
+            entry.set_text(h.get(n).map(String::as_str).unwrap_or(""));
+            entry.set_position(-1);
+            glib::Propagation::Stop
+        }
+    ));
     entry.add_controller(keys);
 
     // follow the log file
     let pos = Rc::new(Cell::new(u64::MAX));
     let in_poll = Rc::new(Cell::new(false));
-    glib::timeout_add_local(std::time::Duration::from_millis(800), glib::clone!(#[strong] a, #[strong] append, move || {
-        let path = Server::new(&a.cfg.borrow()).console_log();
-        let Ok(mut f) = std::fs::File::open(&path) else { return glib::ControlFlow::Continue };
-        let len = f.metadata().map(|m| m.len()).unwrap_or(0);
-        let mut p = pos.get();
-        if p == u64::MAX || len < p {
-            p = len.saturating_sub(TAIL);
-        }
-        if len > p && f.seek(SeekFrom::Start(p)).is_ok() {
-            let mut b = Vec::new();
-            if f.take(len - p).read_to_end(&mut b).is_ok() {
-                let txt = String::from_utf8_lossy(&b);
-                // the app's polling sends rcon every 3 s: keep it out of the console
-                let mut clean = String::new();
-                for l in txt.split_inclusive('\n') {
-                    if l.contains(crate::POLL_BEGIN) {
-                        in_poll.set(true);
-                    } else if l.contains(crate::POLL_END) {
-                        in_poll.set(false);
-                    } else if !in_poll.get() && !l.starts_with("rcon from \"") {
-                        clean.push_str(l);
-                    }
+    glib::timeout_add_local(
+        std::time::Duration::from_millis(800),
+        glib::clone!(
+            #[strong]
+            a,
+            #[strong]
+            append,
+            move || {
+                let path = Server::new(&a.cfg.borrow()).console_log();
+                let Ok(mut f) = std::fs::File::open(&path) else { return glib::ControlFlow::Continue };
+                let len = f.metadata().map(|m| m.len()).unwrap_or(0);
+                let mut p = pos.get();
+                if p == u64::MAX || len < p {
+                    p = len.saturating_sub(TAIL);
                 }
-                append(&clean);
+                if len > p && f.seek(SeekFrom::Start(p)).is_ok() {
+                    let mut b = Vec::new();
+                    if f.take(len - p).read_to_end(&mut b).is_ok() {
+                        let txt = String::from_utf8_lossy(&b);
+                        // the app's polling sends rcon every 3 s: keep it out of the console
+                        let mut clean = String::new();
+                        for l in txt.split_inclusive('\n') {
+                            if l.contains(crate::POLL_BEGIN) {
+                                in_poll.set(true);
+                            } else if l.contains(crate::POLL_END) {
+                                in_poll.set(false);
+                            } else if !in_poll.get() && !l.starts_with("rcon from \"") {
+                                clean.push_str(l);
+                            }
+                        }
+                        append(&clean);
+                    }
+                    pos.set(len);
+                } else {
+                    pos.set(p.max(len.min(p)));
+                }
+                glib::ControlFlow::Continue
             }
-            pos.set(len);
-        } else {
-            pos.set(p.max(len.min(p)));
-        }
-        glib::ControlFlow::Continue
-    }));
+        ),
+    );
     bx.upcast()
 }
