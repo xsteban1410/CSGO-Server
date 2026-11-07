@@ -6,8 +6,7 @@
 |---|---|
 | `crates/core` | Library with all the logic: config, modes, rcon, deploy, install, server, bridge, Workshop, launching the game |
 | `crates/cli` | `csgo-legacy-server`, a thin layer over `core` |
-| `crates/gtk` | `csgo-legacy-server-gtk`, the GTK 4 and libadwaita app, also over `core`. The one that ships for now |
-| `crates/app` | The Slint app that will replace it, also over `core`. Not packaged yet |
+| `crates/app` | `csgo-legacy-server-app`, the Slint desktop app, also over `core` |
 | `game/plugin/` | SourceMod plugins, compiled at deploy time on the user's PC |
 | `game/cfg/` | Server configs. `modo_<id>.cfg` is a mode; `modo_base`, `modo_clasico` and `modo_tipo_*` are helpers |
 | `game/modes/` | Metadata of each mode: name, category, description, game type and maps |
@@ -79,7 +78,8 @@ open CS2 to handle the URL.
 history or schedule. It talks JSON lines on `$XDG_RUNTIME_DIR/csgo-legacy-server/agent.sock` (folder `0700`, socket `0600`) and gets
 its secrets from `internal agent-config` through a pipe, never in arguments or the environment.
 
-- **One poll:** `status` and `modo_nombre` over one rcon connection, every 5 s with a client connected and 30 s without one. After a
+- **One poll:** `status` and `modo_nombre` over one rcon connection, every 5 s with a client connected and 30 s without one. srcds writes them
+  to `console.log`, so they go between the `csls_poll_begin` and `csls_poll_end` markers that the app's console hides. After a
   failure rcon rests 30 s, because the server bans an address after too many wrong passwords.
 - **Finding the server:** `srcds_linux` by install folder and port, kept with its start time, so systemd and test instances are not
   confused with it and `/proc` is only walked while there is no server.
@@ -88,7 +88,7 @@ its secrets from `internal agent-config` through a pipe, never in arguments or t
   name or in chat. Each port has its own file, so test instances do not count as play.
 - **Tasks:** `schedule.json` holds a closed list of actions that run the CLI without a shell. Tasks never overlap, and runs missed
   while the agent was off are not made up.
-- **Clients:** `core::agent` is the Rust client, and `agent rpc METHOD [JSON]` the same from a script. The Slint app reads status from
+- **Clients:** `core::agent` is the Rust client, and `agent rpc METHOD [JSON]` the same from a script. The app reads status from
   the agent when it is running and polls rcon itself only when it is not, so only one thing polls the server.
 
 ## Packages

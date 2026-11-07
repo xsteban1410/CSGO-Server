@@ -42,7 +42,7 @@ The repository includes rules for [Claude Code](https://claude.com/claude-code) 
 
 ## Set up
 
-You need Rust and the GTK ≥ 4.14 and libadwaita ≥ 1.6 development files. To run a server you also need 32-bit libraries and
+You need Rust, Go, and the fontconfig, freetype, xkbcommon and Wayland development files. To run a server you also need 32-bit libraries and
 about 40 GB.
 
 ```bash
@@ -50,7 +50,7 @@ git clone https://github.com/xsteban1410/CSGO-Server.git && cd CSGO-Server
 cargo build
 ./target/debug/csgo-legacy-server doctor
 ./target/debug/csgo-legacy-server install      # downloads ~33 GB; only needed to run a server
-./target/debug/csgo-legacy-server-gtk          # from the repository, it uses its game/ folder
+./target/debug/csgo-legacy-server-app          # from the repository, it uses its game/ folder
 ```
 
 To build the `.deb` and the AppImage: `packaging/build-bundles.sh` (see `bundles` in `.github/workflows/ci.yml` for the system and packages). The Flatpak: `flatpak-builder` on `packaging/flatpak/`.
@@ -90,16 +90,15 @@ Do not add Valve's convars to `game/cfg/modo_base.cfg` unless you checked that n
 
 ## Translations and text
 
-- GTK app: write English in `t("…")` and add the Spanish to `crates/gtk/src/i18n.rs`. A test fails if one is missing.
-- Slint app: write English in `@tr("…")` or `t("…")` and add the Spanish to `crates/app/lang/es/LC_MESSAGES/csgo-legacy-server-app.po`. A test fails here too.
+- App: write English in `@tr("…")` or `t("…")` and add the Spanish to `crates/app/lang/es/LC_MESSAGES/csgo-legacy-server-app.po`. A test fails if one is missing.
 - Plugins: `game/plugin/translations/csls.phrases.txt`.
 - READMEs: edit one, and a workflow translates the changed lines into the other after the push. Both must keep the same lines in the same order. If you edit both, nothing is translated.
 
 ## Pull request rules
 
 - Fix bugs at their cause, and add a small test for new logic that is not trivial.
-- Everything in the repository is written in English: commit messages, code, comments, logs and documentation. Only translations are in Spanish: `README.es.md`, `crates/gtk/src/i18n.rs`, `crates/app/lang/`, the `es` entries of `game/plugin/translations/csls.phrases.txt` and of `game/modes/*.toml`, and `game/data/skins.es.cfg`. English is the default language everywhere: Spanish only shows when chosen in Settings. CI fails if accented text appears anywhere else.
-- One commit per change, with the message `type(scope): what changed`, for example `fix(skins): recompile plugins when sources change`. Types: `feat`, `fix`, `i18n`, `refactor`, `test`, `docs`, `ci`, `chore`. The scope is the area touched: `skins`, `modes`, `deploy`, `gtk`...
+- Everything in the repository is written in English: commit messages, code, comments, logs and documentation. Only translations are in Spanish: `README.es.md`, `crates/app/lang/`, the `es` entries of `game/plugin/translations/csls.phrases.txt` and of `game/modes/*.toml`, and `game/data/skins.es.cfg`. English is the default language everywhere: Spanish only shows when chosen in Settings. CI fails if accented text appears anywhere else.
+- One commit per change, with the message `type(scope): what changed`, for example `fix(skins): recompile plugins when sources change`. Types: `feat`, `fix`, `i18n`, `refactor`, `test`, `docs`, `ci`, `chore`. The scope is the area touched: `skins`, `modes`, `deploy`, `app`...
 - Contributions are licensed under [GPL-3.0-or-later](LICENSE).
 
 ## What you must not change

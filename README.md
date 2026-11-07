@@ -4,38 +4,51 @@
 
 [![CI](https://github.com/xsteban1410/CSGO-Server/actions/workflows/ci.yml/badge.svg)](https://github.com/xsteban1410/CSGO-Server/actions/workflows/ci.yml)
 
-Host a **CS:GO Legacy** dedicated server (app 740) and play with friends against bots, from a GTK app or the command line.
+Host a **CS:GO Legacy** dedicated server (app 740) and play with friends against bots, from a desktop app or the command line.
 It ships more than 30 game modes (snipers, zombie waves, retakes, Guardian, random cheats, anarchy…), remembers every
 player's skins, compiles SourceMod plugins by itself and browses the Steam Workshop for maps.
 
 Works on any 64-bit glibc distro with 32-bit libraries. Tested on Arch/CachyOS.
 
-<p><img src="packaging/screenshots/server.png" width="49%" alt="Server tab"> <img src="packaging/screenshots/modes.png" width="49%" alt="Modes"></p>
+<p><img src="packaging/screenshots/server.png" width="49%" alt="Server tab"> <img src="packaging/screenshots/wizard.png" width="49%" alt="Choosing a mode"></p>
+<p><img src="packaging/screenshots/console.png" width="49%" alt="Console"> <img src="packaging/screenshots/modes.png" width="49%" alt="Mode editor"></p>
+<p><img src="packaging/screenshots/players.png" width="49%" alt="Players"> <img src="packaging/screenshots/plugins.png" width="49%" alt="Plugins"></p>
 
 ## Install
 
 **Arch Linux:** open the [latest release](https://github.com/xsteban1410/CSGO-Server/releases/latest) and run the
 `sudo pacman -U …` command from its notes. The AUR package is not published yet.
 
-**From source** (any distro; needs Rust, GTK 4 ≥ 4.14 and libadwaita ≥ 1.6 development files):
+The next packages come with releases after 1.1.0:
+
+**Debian 12 or newer, Ubuntu 24.04 or newer:** download the `.deb` from the release and run `sudo apt install ./csgo-legacy-server_*_amd64.deb`.
+
+**Any distro, AppImage:** download it, `chmod +x` it and run it. It needs fontconfig, freetype and glibc 2.36 or newer. With arguments it is the command line: `./csgo-legacy-server-*.AppImage status`. It does not add itself to your app menu.
+
+**Any distro, Flatpak:** `flatpak install --user csgo-legacy-server-*.flatpak`. It is sandboxed: the server stops when you close the app, and you open the game yourself and type the `connect` command it shows.
+
+Each release has a `SHA256SUMS` file: `sha256sum -c SHA256SUMS --ignore-missing`.
+
+**From source** (any distro; needs Rust, Go for the agent, and the fontconfig, freetype, xkbcommon and Wayland development files):
 
 ```bash
 git clone https://github.com/xsteban1410/CSGO-Server.git && cd CSGO-Server
 cargo build --release
-./target/release/csgo-legacy-server-gtk       # run from the repo: it finds cfg/, modes/ and plugin/ here
+(cd go && go build -o ../target/release/csgo-legacy-server-agent ./cmd/agent)   # optional: history and scheduled tasks
+./target/release/csgo-legacy-server-app       # run from the repo: it finds game/ here
 ```
 
-To install elsewhere, copy `cfg/ modes/ plugin/ data/` to `<prefix>/share/csgo-legacy-server/` next to
+To install elsewhere, copy `cfg/ modes/ plugin/ data/` from `game/` to `<prefix>/share/csgo-legacy-server/` next to
 `<prefix>/bin`, or point `CSLS_RESOURCES` at a folder that has them.
 
 ### First run
 
-Nothing is downloaded until you ask. The app offers **Create a server** or **Just join servers**:
+Nothing is downloaded until you ask. The app offers **Create a server** or **Only join servers**:
 
 - *Create a server* looks for an existing install first (any folder with `srcds_run`) and reuses it. Otherwise pick a
   folder (~40 GB free), and it downloads SteamCMD, the dedicated server (~33 GB), Metamod:Source and SourceMod, then compiles
   the plugins. The download keeps going in the background if you close the app, and resumes if it is interrupted.
-- *Just join* skips all of that: it is for friends who only play.
+- *Only join* skips all of that and stays chosen: it is for friends who only play. **Start** offers the download if you change your mind.
 
 Headless: `csgo-legacy-server install` does the same, and `csgo-legacy-server doctor` tells you what is missing and the
 exact command for your distro (apt, pacman, dnf, zypper, xbps, emerge).
@@ -47,15 +60,22 @@ The app's **Play** button (or `csgo-legacy-server play local`) opens CS:GO Legac
 
 | Tab | |
 |---|---|
-| Server | status, connect address, Start (mode → map → options → network), change mode or map live, restart round, end warmup, add/remove bots, presets |
-| Players | kick, ban (minutes or permanent, with reason), bans list and unban, each player's saved skins |
-| Modes | make your own modes or duplicate a built-in one; import/export as `.toml` to share them |
+| Server | status, players, CPU, RAM, rcon and agent, warnings and recent events, connect address, Start (mode → map → options → network), change mode or map live, restart round, end warmup, add/remove bots, presets |
+| Players | kick, ban (minutes or permanent, with reason), bans list and unban, saved skins, connection history, sanctions with notes, export to CSV and JSON |
+| Modes | make your own modes or duplicate a built-in one, with weapons, health, speed, round time, bots and a preview of the cfg; rule blocks such as "when a kill happens, add 25 health"; import/export as `.toml` to share them |
 | Workshop | search maps without an API key, install by ID or link (collections too), generate bot navigation, import a local `.bsp` |
-| Console | live server log and rcon commands |
+| Console | live server log with filters and search, rcon commands with autocomplete, history, favorites and aliases, save the log |
+| Plugins | turn on and off, install `.sp` or `.smx`, reload, go back to an earlier version; compile errors are shown here |
+| Tasks | scheduled restarts, map or mode changes, rcon commands, backups and plugin deploys, with recent runs (needs the agent) |
+| Backups | create, restore with a preview of what changes, keep the last N |
+| Statistics | players per day, activity by hour, maps and modes; stored only on this PC, never IP addresses, and you can erase it (needs the agent) |
+| Updates | ask GitHub for a new release, only when you press it or turn the check on; nothing installs by itself |
 | Join | join a friend's server; with a 100.x IP it turns the VPN bridge on, tests the connection and gives the exact `connect` |
 | Settings | name, password, network profile, port, tickrate, GSLT, skins plugin, update the server |
 
-The server runs as a `systemd --user` unit, so it keeps running when you close the app.
+The server runs as a `systemd --user` unit, so it keeps running when you close the app (not in the Flatpak).
+
+Closing the window leaves the app in the system tray, with status, start, stop and quit. The tray needs a StatusNotifier host: GNOME needs the AppIndicator extension, and without a tray closing the window quits the app.
 
 ## Network profiles
 
@@ -180,7 +200,7 @@ errors are shown with their line and the server keeps the previous version. Dele
 
 ### Backups
 
-`backup create` (or **Settings → Backups**) saves your config, modes, plugins, presets and skins in `~/.local/share/csgo-legacy-server/backups/`, never the server. `install --update` makes one first and keeps the last five automatic ones. `restore --dry-run` shows what would change, and a restore saves the current files first and leaves files the backup does not have. Backups hold your passwords, so do not share them.
+`backup create` (or the **Backups** tab) saves your config, modes, plugins, presets and skins in `~/.local/share/csgo-legacy-server/backups/`, never the server. `install --update` makes one first and keeps the last five automatic ones. `restore --dry-run` shows what would change, and a restore saves the current files first and leaves files the backup does not have. Backups hold your passwords, so do not share them.
 
 ## Workshop maps
 
@@ -206,7 +226,7 @@ Choices are saved per SteamID and applied every time you join. The language chos
 | `~/.config/csgo-legacy-server/config.toml` | settings (rcon password inside, mode 600) |
 | `~/.config/csgo-legacy-server/{modes,plugins,presets.toml}` | your modes, plugins and presets |
 | `~/.local/share/csgo-legacy-server/` | server (default location), SteamCMD, logs, workshop cache |
-| `crates/core`, `crates/cli`, `crates/gtk`, `crates/app` | Rust: core library, command line, GTK app, and the Slint app that will replace it |
+| `crates/core`, `crates/cli`, `crates/app` | Rust: core library, command line, Slint desktop app |
 | `game/plugin/`, `game/cfg/`, `game/modes/` | SourceMod plugins, mode configs, mode metadata |
 | `go/` | The agent and the test tools |
 | `docs/ARCHITECTURE.md`, `docs/TROUBLESHOOTING.md`, `docs/PRIVACY.md` | How the pieces fit together, fixing problems, and what data is kept |
@@ -222,7 +242,7 @@ Choices are saved per SteamID and applied every time you join. The language chos
   must be found again. The idea comes from [NoLobbyReservation](https://github.com/vanz666/NoLobbyReservation).
 - The server runs with `-insecure` (no VAC). Skins are cosmetic and only visible on this server; skin changers break Valve's
   rules for public GSLT servers, so the Settings tab lets you turn the skins plugin off.
-- Tested on Arch Linux and CachyOS. CI builds the core and CLI on Debian and Fedora, but nothing else has been tried there. Not tested on musl distros or SteamOS (read-only system: use distrobox). No gloves.
+- Played on Arch Linux and CachyOS. CI builds and tests everything on Debian and Fedora, and tries the `.deb`, AppImage and Flatpak, but nobody has played on them yet. Not tested on musl distros or SteamOS (read-only system: use distrobox). No gloves.
 
 ## Branches
 
