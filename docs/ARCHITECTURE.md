@@ -91,6 +91,20 @@ its secrets from `internal agent-config` through a pipe, never in arguments or t
 - **Clients:** `core::agent` is the Rust client, and `agent rpc METHOD [JSON]` the same from a script. The Slint app reads status from
   the agent when it is running and polls rcon itself only when it is not, so only one thing polls the server.
 
+## Packages
+
+| Package | Built by | Server after closing the app |
+|---|---|---|
+| Arch (`.pkg.tar.zst`) | `packaging/build-pkg.sh` | Keeps running, as a `systemd --user` unit |
+| `.deb` | `packaging/build-bundles.sh` with nfpm, on Debian 12 | Keeps running |
+| AppImage | `packaging/build-bundles.sh`, on Debian 12 | Keeps running |
+| Flatpak | `packaging/flatpak/`, on Freedesktop 25.08 with its 32-bit extension | Stops: the sandbox has no systemd (`CSLS_NO_SYSTEMD`) |
+
+An AppImage's mount folder goes away with the process, so nothing may keep a path into it. `cli_exe` returns the `.AppImage` file itself,
+and `AppRun` starts the app with no arguments, the agent with `--agent` and the CLI otherwise. `$APPIMAGE` only counts if this process
+lives inside `$APPDIR`, because a terminal opened from another AppImage passes it on, and an update must not overwrite that one.
+Bundled libraries are found through the binary's rpath and not `LD_LIBRARY_PATH`, which the game and Steam would inherit.
+
 ## Rule blocks
 
 A mode can have up to 16 rules, "when a kill happens, add 25 health". They are stored as `modo_regla_N` in the mode's cfg, reset in

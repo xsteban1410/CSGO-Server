@@ -19,6 +19,14 @@ Start with `csgo-legacy-server doctor`, then the table in [SUPPORT.md](../SUPPOR
 - **A skin does not show.** Run `skins_estado` in the server console. It prints the SteamID, the loaded skins and the netprops of each weapon.
 - **The mode looks wrong.** `modo_estado` prints the wave, team, health and speed of each player, and `modo_sitios` the bomb sites used by `retake`.
 
+## Packages
+
+- **The Flatpak stops the server when you close the app.** That is its sandbox: the server, the agent and scheduled tasks only live while the app is open. Its files are in `~/.var/app/io.github.xsteban1410.CsgoLegacyServer`, so it downloads the server again even if another package installed it.
+- **The Flatpak does not open the game.** It cannot reach Steam's folders, and `steam://connect` would open CS2 with the game closed. Open CS:GO Legacy yourself and type the `connect` command the app shows.
+- **The server does not start in the Flatpak (`ld-linux.so.2`).** The 32-bit runtime is missing: `flatpak install flathub org.freedesktop.Platform.Compat.i386//25.08`.
+- **The AppImage does not open.** Without FUSE, run it with `APPIMAGE_EXTRACT_AND_RUN=1`. It needs fontconfig and freetype from the system, and glibc 2.36 or newer. With arguments it is the command line: `./csgo-legacy-server-*.AppImage status`.
+- **The `.deb` wants 32-bit packages.** `libc6-i386` and `lib32gcc-s1` run `srcds` and SteamCMD, and do not need the i386 architecture enabled.
+
 ## Restoring
 
 `csgo-legacy-server backup list`, then `backup restore <file> --dry-run` shows what would change. `restore` saves the current state first, so you can undo it.

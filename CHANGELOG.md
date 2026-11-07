@@ -16,6 +16,8 @@ The section of each version becomes the notes of its GitHub release, so keep the
   - player history, sanctions and CSV and JSON export;
   - in the mode editor, round time, bots, a preview of the cfg, and rule blocks ("when a kill happens, add 25 health") from a closed catalog, run by the new `modos_reglas` plugin;
   - Plugins (on and off, install `.sp` or `.smx`, reload, go back to an earlier version; also `plugins` in the CLI), Tasks, Backups, Statistics and Updates tabs.
+- CI builds a `.deb` (Debian 12 and newer, Ubuntu 24.04), an AppImage and a sandboxed Flatpak of the Slint app. Releases will carry them with a `SHA256SUMS` once that app replaces GTK; until then they only carry the Arch package.
+- The Arch packages include the agent, so `agent start` works there.
 - `updates` in the CLI and a button in the app ask GitHub for the latest release. Only on request, unless you turn on the check at startup. Nothing installs by itself; an AppImage replaces itself only after you accept and its SHA256SUMS match.
 
 ### Changed

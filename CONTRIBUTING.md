@@ -53,6 +53,8 @@ cargo build
 ./target/debug/csgo-legacy-server-gtk          # from the repository, it uses its game/ folder
 ```
 
+To build the `.deb` and the AppImage: `packaging/build-bundles.sh` (see `bundles` in `.github/workflows/ci.yml` for the system and packages). The Flatpak: `flatpak-builder` on `packaging/flatpak/`.
+
 ## Checks
 
 ```bash
