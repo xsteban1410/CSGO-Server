@@ -43,7 +43,7 @@ pub fn init(a: &AppRc) -> anyhow::Result<Tray> {
     }));
     tray.on_start(with(|a| {
         show(a, Some(0));
-        crate::wizard::open(a, false);
+        crate::wizard::start_or_install(a, false);
     }));
     tray.on_stop(with(|a| {
         show(a, Some(0));

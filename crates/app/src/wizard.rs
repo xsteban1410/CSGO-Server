@@ -42,6 +42,15 @@ pub fn run_preset(a: &AppRc, opts: LaunchOptions, live: bool) {
     apply(a, opts, live);
 }
 
+/// The Start button: on a PC that chose to only join there is no server yet, so it offers the download instead.
+pub fn start_or_install(a: &AppRc, live: bool) {
+    if !live && !Server::new(&a.cfg.borrow()).is_installed() {
+        a.s().set_setup("install".into());
+        return;
+    }
+    open(a, live);
+}
+
 pub fn open(a: &AppRc, live: bool) {
     a.reload_modes();
     let lang = csls_core::lang();

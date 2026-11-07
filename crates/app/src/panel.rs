@@ -140,7 +140,7 @@ pub fn init(a: &AppRc) {
         );
     });
     let app = a.clone();
-    s.on_open_wizard(move |live| wizard::open(&app, live));
+    s.on_open_wizard(move |live| wizard::start_or_install(&app, live));
     let app = a.clone();
     s.on_stop_server(move || ask_stop(&app));
     let app = a.clone();
