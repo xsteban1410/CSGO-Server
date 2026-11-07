@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/xsteban1410/CSGO-Server/go/internal/rcon"
+	"github.com/xsteban1410/CSGO-Server/go/internal/status"
 )
 
 const (
@@ -28,7 +29,7 @@ const (
 	portStep   = 10
 	bootLimit  = 120 * time.Second
 	rconLimit  = 10 * time.Second
-	ramPerInst = 1600 // MB per server
+	ramPerInst = 800 // MB per server: measured about 600 MB of RSS each, plus margin
 )
 
 var posRe = regexp.MustCompile(`pos=.*`)
@@ -38,6 +39,7 @@ type instance struct {
 	port     int
 	password string
 	hosts    []string
+	dir      string
 	cmd      *exec.Cmd
 	conn     *rcon.Client
 }
@@ -62,7 +64,7 @@ func startInstance(bin string, port int) (*instance, error) {
 	if err := c.Start(); err != nil {
 		return nil, err
 	}
-	in := &instance{port: port, password: info.RconPassword, hosts: info.RconHosts, cmd: c}
+	in := &instance{port: port, password: info.RconPassword, hosts: info.RconHosts, dir: info.Dir, cmd: c}
 	deadline := time.Now().Add(bootLimit)
 	for {
 		if err := in.connect(); err == nil {
@@ -83,6 +85,8 @@ func startInstance(bin string, port int) (*instance, error) {
 }
 
 func (in *instance) stop() {
+	// this instance's events are test play, not history
+	defer os.Remove(filepath.Join(in.dir, "csgo", "addons", "sourcemod", "data", fmt.Sprintf("csls_events_%d.jsonl", in.port)))
 	if in.conn != nil {
 		in.conn.Close()
 	}
@@ -146,6 +150,11 @@ func (in *instance) val(name string) string {
 	return rcon.CvarValue(o)
 }
 
+func (in *instance) botCount() int {
+	out, _ := in.exec("status")
+	return status.Parse(out).Bots
+}
+
 func (in *instance) positions() []string {
 	o, err := in.exec("modo_estado")
 	if err != nil {
@@ -185,9 +194,9 @@ func waitFor(limit time.Duration, f func() bool) bool {
 	}
 }
 
-func checkCase(in *instance, bin, name string) caseResult {
+func checkCase(in *instance, bin, name string) (r caseResult) {
 	start := time.Now()
-	r := caseResult{name: name, state: "ok", alive: -1}
+	r = caseResult{name: name, state: "ok", alive: -1}
 	defer func() { r.took = time.Since(start) }()
 	mode, kind, hasKind := strings.Cut(name, ":")
 	args := []string{"mode", mode, "--plan", "--set", "modo_humanos=0", "--set", "mp_warmuptime=5", "--set", "mp_freezetime=0", "--set", "bot_join_after_player=0"}
@@ -224,8 +233,10 @@ func checkCase(in *instance, bin, name string) caseResult {
 	r.respawn = in.val("mp_respawn_on_death_t")
 	r.mapName = strings.TrimSuffix(in.val("host_map"), ".bsp")
 
+	// Bots join one by one, and positions only sees the living, so the count comes from status.
+	quota, _ := strconv.Atoi(in.val("bot_quota"))
+	waitFor(10*time.Second, func() bool { r.bots = in.botCount(); return r.bots >= quota })
 	a := in.positions()
-	r.bots = len(a)
 	still := expectStill(mode, r.gt)
 	if !still {
 		waitFor(10*time.Second, func() bool {
@@ -322,7 +333,7 @@ func runCases(repo, bin string, cases []string, jobs int, noCache bool) int {
 	cache := loadCache(cachePath)
 	var todo []string
 	for _, c := range cases {
-		if !noCache && cache[c] == fingerprint(repo, c) {
+		if !noCache && cache[c] == fingerprint(filepath.Join(repo, "game"), c) {
 			continue
 		}
 		todo = append(todo, c)
@@ -357,7 +368,7 @@ func runCases(repo, bin string, cases []string, jobs int, noCache bool) int {
 		defer mu.Unlock()
 		fmt.Println(line)
 		if ok {
-			cache[name] = fingerprint(repo, name)
+			cache[name] = fingerprint(filepath.Join(repo, "game"), name)
 		} else {
 			failed++
 			delete(cache, name)

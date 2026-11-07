@@ -62,7 +62,7 @@ func TestLintFindsProblems(t *testing.T) {
 }
 
 func TestLintPassesOnTheRepo(t *testing.T) {
-	if p := lint(filepath.Join("..", "..", "..")); len(p) != 0 {
+	if p := lint(filepath.Join("..", "..", "..", "game")); len(p) != 0 {
 		t.Fatalf("%q", p)
 	}
 }

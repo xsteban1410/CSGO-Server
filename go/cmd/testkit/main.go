@@ -41,7 +41,7 @@ func main() {
 	failed := 0
 	switch flag.Arg(0) {
 	case "lint":
-		problems := lint(repo)
+		problems := lint(filepath.Join(repo, "game"))
 		for _, p := range problems {
 			fmt.Println(p)
 		}
