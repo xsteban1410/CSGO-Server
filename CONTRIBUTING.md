@@ -57,6 +57,7 @@ cargo build
 
 ```bash
 cargo test
+cargo fmt --all
 cargo clippy --all-targets
 shellcheck tools/*.sh packaging/*.sh packaging/aur/*.sh
 ```

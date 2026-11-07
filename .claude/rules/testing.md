@@ -4,7 +4,7 @@ Run what applies before saying a change works, and report what you ran and what 
 
 | Changed | Run |
 |---|---|
-| Rust | `cargo test` and `cargo clippy --all-targets` (add no new warnings) |
+| Rust | `cargo fmt --all`, `cargo test` and `cargo clippy --all-targets` (no warnings) |
 | Shell scripts | `shellcheck tools/*.sh packaging/*.sh packaging/aur/*.sh` |
 | `tools/promote.sh` | `tools/test-promote.sh` |
 | `tools/sync_readme.py` | `python3 tools/test_sync_readme.py` |
