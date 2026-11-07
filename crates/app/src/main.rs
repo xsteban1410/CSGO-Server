@@ -525,6 +525,8 @@ fn debug_open(a: &AppRc) {
     }
 }
 
+const APP_ID: &str = "io.github.xsteban1410.CsgoLegacyServer";
+
 fn tab_index(name: &str) -> Option<i32> {
     ["server", "players", "modes", "workshop", "console", "plugins", "tasks", "backups", "stats", "updates", "join", "settings"]
         .iter()
@@ -558,6 +560,8 @@ fn run() -> anyhow::Result<()> {
     // a second launch shows the first window and leaves
     let Some(listener) = single::claim()? else { return Ok(()) };
     let a = build(cfg)?;
+    // docks and window lists find the app's name and icon through this, which must match its .desktop file
+    slint::set_xdg_app_id(APP_ID)?;
     start_agent(&a);
     single::serve(listener, a.ui.as_weak());
     let quit_on_close = !tray::available();
@@ -589,6 +593,12 @@ fn main() {
 mod tests {
     use super::*;
     use slint::Model;
+
+    #[test]
+    fn the_app_id_names_its_desktop_file() {
+        let file = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(format!("../../packaging/{APP_ID}.desktop"));
+        assert!(file.is_file(), "{}", file.display());
+    }
 
     #[test]
     fn dates_and_bars() {

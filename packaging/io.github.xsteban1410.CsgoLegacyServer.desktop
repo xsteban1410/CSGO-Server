@@ -11,3 +11,4 @@ Terminal=false
 Categories=Game;
 Keywords=csgo;counter-strike;server;srcds;bots;sourcemod;workshop;
 StartupNotify=true
+StartupWMClass=io.github.xsteban1410.CsgoLegacyServer
