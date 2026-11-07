@@ -22,8 +22,8 @@ check_case() {
     fi
     # Give changelevel time to start, or the bots seen below are the old map's.
     sleep 2
-    local i a b n moved=0 still
-    [[ $mode == duelo ]] || for i in {1..25}; do [[ -n $(pos) ]] && break; sleep 1; done
+    local a b n moved=0 still
+    [[ $mode == duelo ]] || for _ in {1..25}; do [[ -n $(pos) ]] && break; sleep 1; done
     r "mp_warmup_end" >/dev/null
     # The round restart teleports everyone, which would look like moving.
     sleep $(( $(val mp_freezetime | cut -d. -f1) + 4 ))
@@ -33,7 +33,7 @@ check_case() {
     local expect_still=0
     [[ $gt == 4/0 || $mode == aim || $mode == retake || $mode == duelo ]] && expect_still=1
     if [[ $expect_still == 0 ]]; then
-        for i in {1..10}; do
+        for _ in {1..10}; do
             sleep 1; b=$(pos)
             still=$(comm -12 <(echo "$a") <(echo "$b") | wc -l)
             moved=$((n - still))
@@ -45,7 +45,7 @@ check_case() {
     if [[ $rt == 1 ]]; then
         r "sv_cheats 1; bot_kill; sv_cheats 0" >/dev/null
         sleep 2
-        for i in {1..10}; do
+        for _ in {1..10}; do
             alive=$(r modo_estado | grep -c 'pos=')
             [[ $alive -gt 0 ]] && break
             sleep 1
