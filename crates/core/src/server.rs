@@ -269,6 +269,29 @@ impl<'a> Server<'a> {
         Ok(a)
     }
 
+    /// What the test runner needs to start its own instance on another port. Never uses console.log: instances share the folder.
+    pub fn test_instance_json(&self, modes: &Modes, port: u16) -> crate::Result<String> {
+        let mut cfg = self.cfg.clone();
+        cfg.server.port = port;
+        let srv = Server::new(&cfg);
+        let opts = LaunchOptions::from_config(&cfg);
+        let mode = modes.get(&opts.mode)?;
+        let (t, g) = opts.game_type_mode(mode);
+        let map = opts.pick_map(modes, &cfg, None, &srv.maps_dir())?;
+        srv.patch()?;
+        srv.write_server_cfg()?;
+        srv.write_secrets()?;
+        srv.write_mode_start(mode, &opts)?;
+        let argv: Vec<String> = srv.srcds_args(&opts, &map, t, g)?.into_iter().filter(|a| a != "-condebug").collect();
+        Ok(serde_json::json!({
+            "dir": srv.dir(),
+            "argv": argv,
+            "rcon_password": cfg.server.rcon_password,
+            "rcon_hosts": net::rcon_candidates(&cfg.server.rcon_host),
+        })
+        .to_string())
+    }
+
     /// Starts the server with these options.
     pub fn start(&self, modes: &Modes, opts: &LaunchOptions) -> crate::Result<Started> {
         if !self.is_installed() {
@@ -352,7 +375,7 @@ impl<'a> Server<'a> {
                 Ok(r) => return Ok(r),
                 Err(e) if t.elapsed() > timeout => return Err(e),
                 Err(e) if e.to_string().contains("password") => return Err(e),
-                Err(_) => std::thread::sleep(Duration::from_millis(700)),
+                Err(_) => std::thread::sleep(Duration::from_millis(100)),
             }
             if self.state() == State::Stopped {
                 bail!("the server closed while starting; see {}", self.console_log().display());
@@ -362,12 +385,12 @@ impl<'a> Server<'a> {
 
     /// Stops the server: `quit` over rcon and, if that is not enough, kill.
     pub fn stop(&self) -> crate::Result<()> {
-        if let Ok(mut r) = self.rcon() {
-            let _ = r.exec("quit");
-        }
-        let t = Instant::now();
-        while running(UNIT) && t.elapsed() < Duration::from_secs(15) {
-            std::thread::sleep(Duration::from_millis(300));
+        // without an answer on rcon nothing is shutting down, so there is nothing to wait for
+        if self.rcon().is_ok_and(|mut r| r.exec("quit").is_ok()) {
+            let t = Instant::now();
+            while running(UNIT) && t.elapsed() < Duration::from_secs(15) {
+                std::thread::sleep(Duration::from_millis(100));
+            }
         }
         kill_bg(UNIT);
         kill_bg(BRIDGE_UNIT);
@@ -431,7 +454,6 @@ impl<'a> Server<'a> {
         let current = Self::current_map(&mut self.rcon()?);
         let map = opts.pick_map(modes, self.cfg, current.as_deref(), &self.maps_dir())?;
         let mode = modes.get(&opts.mode)?;
-        let (t, g) = opts.game_type_mode(mode);
         let report = deploy::deploy(self.cfg, false, true)?;
         if let Some(e) = report.error_text() {
             bail!("some plugins do not compile:\n{e}");
@@ -439,24 +461,39 @@ impl<'a> Server<'a> {
         self.write_mode_start(mode, opts)?;
         // after the deploy: reloading plugins can leave an already open connection unresponsive
         let mut r = self.rcon()?;
-        // the plugin applies modo_base + modo_<mode> + modo_extra when the map loads
-        let load = match opts.workshop {
-            Some(id) => format!("host_workshop_map {id}"),
-            None => format!("changelevel {map}"),
-        };
-        for c in [
-            format!("modo_nombre {}", opts.mode),
-            format!("modo_tipo \"{}\"", opts.tipo_cfg(mode)),
-            format!("modo_humanos {}", opts.humans),
-            format!("modo_extra \"{}\"", opts.extra(mode)),
-            format!("game_type {t}"),
-            format!("game_mode {g}"),
-        ] {
+        let load = load_command(opts, &map);
+        for c in mode_commands(opts, mode) {
             r.exec(&c)?;
         }
-        // with the map change the response may not arrive in time, even though the map loads
-        let _ = r.exec(&load);
+        // with the map change the response may not arrive in time, even though the map loads,
+        // so only an explicit refusal counts as a failure
+        if let Ok(o) = r.exec(&load) {
+            if o.contains("changelevel failed") {
+                bail!("{}", o.trim());
+            }
+        }
         Ok(map)
+    }
+}
+
+/// What selects a mode over rcon. The plugin applies modo_base + modo_<mode> + modo_extra when the next map loads.
+pub fn mode_commands(opts: &LaunchOptions, mode: &crate::modes::Mode) -> Vec<String> {
+    let (t, g) = opts.game_type_mode(mode);
+    vec![
+        format!("modo_nombre {}", opts.mode),
+        format!("modo_tipo \"{}\"", opts.tipo_cfg(mode)),
+        format!("modo_humanos {}", opts.humans),
+        format!("modo_extra \"{}\"", opts.extra(mode)),
+        format!("game_type {t}"),
+        format!("game_mode {g}"),
+    ]
+}
+
+/// Loads the map, which applies the mode.
+pub fn load_command(opts: &LaunchOptions, map: &str) -> String {
+    match opts.workshop {
+        Some(id) => format!("host_workshop_map {id}"),
+        None => format!("changelevel {map}"),
     }
 }
 
