@@ -29,6 +29,11 @@ fn parse_local_ips(fib: &str) -> Vec<String> {
     v
 }
 
+/// Every IP of this PC.
+pub fn local_ips() -> Vec<String> {
+    parse_local_ips(&std::fs::read_to_string("/proc/net/fib_trie").unwrap_or_default())
+}
+
 /// This PC's VPN IP. shortcut: only recognizes 100.64.0.0/10 (Tailscale, ZeroTier with that range); other VPNs are not detected.
 pub fn vpn_ip() -> Option<String> {
     parse_local_ips(&std::fs::read_to_string("/proc/net/fib_trie").ok()?).into_iter().find(|i| is_vpn_ip(i))
