@@ -152,6 +152,28 @@ impl<'a> Server<'a> {
         Ok(a)
     }
 
+    /// What the agent needs. It holds the rcon password, so it only goes through a pipe to the agent.
+    pub fn agent_config_json(&self) -> crate::Result<String> {
+        let s = &self.cfg.server;
+        let addrs: Vec<String> =
+            net::rcon_candidates(&s.rcon_host).into_iter().map(|ip| std::net::SocketAddr::new(ip, s.port).to_string()).collect();
+        let secrets: Vec<&str> =
+            [s.rcon_password.as_str(), s.password.as_str(), s.gslt.as_str()].into_iter().filter(|v| !v.is_empty()).collect();
+        Ok(serde_json::json!({
+            "rcon_addrs": addrs,
+            "rcon_password": s.rcon_password,
+            "csgo_dir": self.csgo_dir(),
+            "data_dir": paths::data_dir(),
+            "config_dir": paths::config_dir(),
+            "runtime_dir": paths::runtime_dir(),
+            "port": s.port,
+            "stats_enabled": s.stats,
+            "stats_days": s.stats_days,
+            "secrets": secrets,
+        })
+        .to_string())
+    }
+
     /// What the test runner needs to start its own instance on another port. Never uses console.log: instances share the folder.
     pub fn test_instance_json(&self, modes: &Modes, port: u16) -> crate::Result<String> {
         let mut cfg = self.cfg.clone();
@@ -386,6 +408,35 @@ pub fn load_command(opts: &LaunchOptions, map: &str) -> String {
         Some(id) => format!("host_workshop_map {id}"),
         None => format!("changelevel {map}"),
     }
+}
+
+/// Name of the agent's program, installed next to the CLI.
+const AGENT_EXE: &str = "csgo-legacy-server-agent";
+pub const AGENT_UNIT: &str = "csgo-legacy-server-agent";
+
+/// The agent next to the CLI. It is optional: without one the app and the CLI work, with no history or schedule.
+fn agent_exe() -> Option<PathBuf> {
+    cli_exe().parent().map(|d| d.join(AGENT_EXE)).filter(|p| p.is_file())
+}
+
+/// Starts the agent unless it is running. Says whether it is there to start.
+pub fn start_agent() -> crate::Result<bool> {
+    let Some(exe) = agent_exe() else {
+        return Ok(false);
+    };
+    if !running(AGENT_UNIT) {
+        let cmd = [exe.to_string_lossy().into_owned(), "--cli".into(), cli_exe().to_string_lossy().into_owned()];
+        spawn_bg(AGENT_UNIT, &paths::data_dir(), &[], &cmd, &paths::data_dir().join("agent.log"))?;
+    }
+    Ok(true)
+}
+
+pub fn stop_agent() {
+    kill_bg(AGENT_UNIT);
+}
+
+pub fn agent_running() -> bool {
+    running(AGENT_UNIT)
 }
 
 /// Value from a cvar response: `"bot_quota" = "5" ( def. "0" )` -> `5`.

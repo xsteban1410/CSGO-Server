@@ -168,6 +168,25 @@ pub struct Server {
     pub bridge_max_clients: u32,
     /// VPN profile: networks allowed through the bridge, as IP/bits. Empty = the VPN range (100.64.0.0/10) and this PC.
     pub bridge_allow: Vec<String>,
+    /// Keep a local history of players, maps and modes. It never holds IP addresses (docs/PRIVACY.md).
+    #[serde(default = "default_true")]
+    pub stats: bool,
+    /// Days of history to keep; 0 keeps everything. Sanctions are always kept.
+    #[serde(default = "default_stats_days")]
+    pub stats_days: u32,
+    /// Automatic backups to keep.
+    #[serde(default = "default_backup_keep")]
+    pub backup_keep: u32,
+}
+
+fn default_true() -> bool {
+    true
+}
+fn default_stats_days() -> u32 {
+    365
+}
+fn default_backup_keep() -> u32 {
+    5
 }
 
 impl Default for Server {
@@ -190,6 +209,9 @@ impl Default for Server {
             upnp: false,
             bridge_max_clients: 64,
             bridge_allow: Vec::new(),
+            stats: true,
+            stats_days: 365,
+            backup_keep: 5,
         }
     }
 }

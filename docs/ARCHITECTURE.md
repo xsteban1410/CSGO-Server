@@ -7,10 +7,10 @@
 | `crates/core` | Library with all the logic: config, modes, rcon, deploy, install, server, bridge, Workshop, launching the game |
 | `crates/cli` | `csgo-legacy-server`, a thin layer over `core` |
 | `crates/gtk` | `csgo-legacy-server-gtk`, the GTK 4 and libadwaita app, also over `core` |
-| `plugin/` | SourceMod plugins, compiled at deploy time on the user's PC |
-| `cfg/` | Server configs. `modo_<id>.cfg` is a mode; `modo_base`, `modo_clasico` and `modo_tipo_*` are helpers |
-| `modes/` | Metadata of each mode: name, category, description, game type and maps |
-| `data/` | Data files installed with the app |
+| `game/plugin/` | SourceMod plugins, compiled at deploy time on the user's PC |
+| `game/cfg/` | Server configs. `modo_<id>.cfg` is a mode; `modo_base`, `modo_clasico` and `modo_tipo_*` are helpers |
+| `game/modes/` | Metadata of each mode: name, category, description, game type and maps |
+| `game/data/` | Data files installed with the app |
 | `packaging/` | Desktop entry, metainfo, icons, PKGBUILDs and the package build script |
 | `tools/` | Developer scripts: release versions and the mode test |
 
@@ -38,13 +38,13 @@ counts humans in the quota, so `bot_quota 10` is a 5v5. Only modes whose rules n
 and `FixHumanTeam` holds those. `modo_equipos` (`--teams`) places a human once, on their first spawn on a map, and never moves
 them again; `Comp_BalanceBots` moves bots to keep the teams even. `modo_humanos` is 0 unless asked for, so warmup is Valve's
 timed one. `modo_clasico.cfg` sets `mp_halftime 0` and competitive modes turn it back on; `modo_veto` runs the map bans in warmup and `modo_listos` lets `!ready` end it. All of that
-is in `plugin/modos_competitivo.sp`. `competitivo` and `premier` are `game_type 0`, `game_mode 1`; a mode's own `.cfg` still
+is in `game/plugin/modos_competitivo.sp`. `competitivo` and `premier` are `game_type 0`, `game_mode 1`; a mode's own `.cfg` still
 runs last, so a mode can change any of it.
 
 ## Language
 
 `language` in `config.toml` is the only source: `csls_core::lang()` reads it once, and the system locale does not count. `deploy`
-copies `data/skins.<lang>.cfg` (or the copy generated from the game files in the data folder), and `modo_inicio.cfg` sets `csls_language`, which `modos.sp` applies to each client with `SetClientLanguage` so every plugin's phrases follow it.
+copies `game/data/skins.<lang>.cfg` (or the copy generated from the game files in the data folder), and `modo_inicio.cfg` sets `csls_language`, which `modos.sp` applies to each client with `SetClientLanguage` so every plugin's phrases follow it.
 
 ## Deploying plugins
 
@@ -71,3 +71,19 @@ it. The `wait` command does not exist in this build, and the TCP console (`-netc
 So `steam_client::launch_csgo` starts the game with `-condebug`, watches its `console.log` for the menu to be ready, and runs
 `steam://connect/IP:PORT` until the log shows the connection. It stops if the game closes, because otherwise Steam would
 open CS2 to handle the URL.
+
+## The agent
+
+`go/cmd/agent` is the optional long-running helper, started with `agent start`. The app and the CLI work without it, with no
+history or schedule. It talks JSON lines on `$XDG_RUNTIME_DIR/csgo-legacy-server/agent.sock` (folder `0700`, socket `0600`) and gets
+its secrets from `internal agent-config` through a pipe, never in arguments or the environment.
+
+- **One poll:** `status` and `modo_nombre` over one rcon connection, every 5 s with a client connected and 30 s without one. After a
+  failure rcon rests 30 s, because the server bans an address after too many wrong passwords.
+- **Finding the server:** `srcds_linux` by install folder and port, kept with its start time, so systemd and test instances are not
+  confused with it and `/proc` is only walked while there is no server.
+- **Logs:** `console.log` is read by offset, secrets are hidden and it is rotated by copy and cut, because srcds keeps the file open.
+- **History:** player data comes from `game/plugin/csls_events.sp`, not the console, because a player could fake console lines with a
+  name or in chat. Each port has its own file, so test instances do not count as play.
+- **Tasks:** `schedule.json` holds a closed list of actions that run the CLI without a shell. Tasks never overlap, and runs missed
+  while the agent was off are not made up.

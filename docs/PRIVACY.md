@@ -9,12 +9,14 @@ The app has no telemetry and no account. It sends nothing to the project.
 | Rcon password, GSLT token, Web API key | `~/.config/csgo-legacy-server/config.toml` (mode 600) | Also written at start to `cfg/csls_secrets.cfg` and `webapi_authkey.txt` in the server folder (mode 600) |
 | SteamID and chosen skins of each player who picks one | `csgo/addons/sourcemod/data/sqlite/sourcemod-local.sq3` in the server folder | This includes your friends' SteamIDs |
 | Player names, SteamIDs and IPs | Server and SourceMod logs, under `csgo/` in the server folder | Written by the game server and SourceMod |
+| SteamID, name, connection times, bans and notes of each player; maps and modes played | `~/.local/share/csgo-legacy-server/stats.db`, written by the agent if you run it. **Never IP addresses.** History older than `stats_days` (365) is deleted; sanctions stay until you erase them. `stats = false` turns it off | Local only |
 | Backups | `~/.local/share/csgo-legacy-server/backups/` (mode 600) | They contain the password, tokens and skins above: do not share them |
 
 ## How to delete it
 
 - Skins: stop the server and delete `sourcemod-local.sq3`. This removes the skins of every player, and any other data SourceMod plugins keep in that file.
 - Logs: delete `csgo/logs/` and `csgo/addons/sourcemod/logs/`.
+- History: stop the agent (`agent stop`) and delete `stats.db`.
 - Backups: delete the files in the folder above.
 - Settings and secrets: delete `~/.config/csgo-legacy-server/`.
 

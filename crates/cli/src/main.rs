@@ -154,6 +154,11 @@ enum Cmd {
         #[arg(long)]
         port: u16,
     },
+    /// The helper that keeps history and runs scheduled tasks: agent start|stop|status
+    Agent { action: AgentAction },
+    /// For the agent. Prints the rcon password, so it refuses to write to a terminal
+    #[command(hide = true, subcommand)]
+    Internal(Internal),
     /// Add or remove bots with the server running: bots +2 | bots -1
     Bots {
         #[arg(allow_hyphen_values = true)]
@@ -188,10 +193,26 @@ enum Ws {
     Import { file: std::path::PathBuf },
 }
 
+#[derive(Clone, clap::ValueEnum)]
+enum AgentAction {
+    Start,
+    Stop,
+    Status,
+}
+
+#[derive(Subcommand)]
+enum Internal {
+    AgentConfig,
+}
+
 #[derive(Subcommand)]
 enum Backup {
     /// Make a backup now
-    Create,
+    Create {
+        /// Count it as automatic: only the newest few stay (`backup_keep`)
+        #[arg(long)]
+        auto: bool,
+    },
     /// List backups, newest first
     List,
     /// Put back the files of a backup; it saves the current ones first
@@ -517,7 +538,10 @@ fn main() -> Result<()> {
             }
         }
         Cmd::Backup(b) => match b {
-            Backup::Create => println!("{}", backup::create(&cfg)?.display()),
+            Backup::Create { auto } => {
+                let out = if auto { backup::create_auto(&cfg)? } else { backup::create(&cfg)? };
+                println!("{}", out.display());
+            }
             Backup::List => {
                 for p in backup::list()? {
                     println!("{}", p.display());
@@ -543,6 +567,23 @@ fn main() -> Result<()> {
             println!("Generating .nav (seconds to minutes)...");
             let m = srv.generate_nav(Duration::from_secs(600), force)?;
             println!("Saved {m}.nav and reloaded the map.");
+        }
+        Cmd::Agent { action } => match action {
+            AgentAction::Start => {
+                if !csls_core::server::start_agent()? {
+                    bail!("the agent is not installed next to this program");
+                }
+            }
+            AgentAction::Stop => csls_core::server::stop_agent(),
+            AgentAction::Status => {
+                println!("{}", if csls_core::server::agent_running() { "Running." } else { "Stopped." });
+            }
+        },
+        Cmd::Internal(Internal::AgentConfig) => {
+            if std::io::IsTerminal::is_terminal(&std::io::stdout()) {
+                bail!("this prints the rcon password: it is only for the agent");
+            }
+            println!("{}", srv.agent_config_json()?);
         }
         Cmd::TestInstance { port } => println!("{}", srv.test_instance_json(&Modes::load()?, port)?),
         Cmd::Bots { delta } => println!("bot_quota {}", srv.add_bots(delta)?),

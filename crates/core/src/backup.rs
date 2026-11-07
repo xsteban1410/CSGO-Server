@@ -7,7 +7,6 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 /// Automatic backups kept; the ones the user makes are never removed.
-const KEEP_AUTO: usize = 5;
 const CONFIG_DIR: &str = "config";
 const SKINS_FILE: &str = "skins.sq3";
 
@@ -16,11 +15,18 @@ struct Roots {
     config: PathBuf,
     skins: PathBuf,
     backups: PathBuf,
+    /// Automatic backups to keep
+    keep: usize,
 }
 
 impl Roots {
     fn new(cfg: &Config) -> Roots {
-        Roots { config: paths::config_dir(), skins: skins::db_path(&cfg.install_dir().join("csgo")), backups: backups_dir() }
+        Roots {
+            config: paths::config_dir(),
+            skins: skins::db_path(&cfg.install_dir().join("csgo")),
+            backups: backups_dir(),
+            keep: (cfg.server.backup_keep as usize).max(1),
+        }
     }
 }
 
@@ -127,15 +133,15 @@ pub fn create(cfg: &Config) -> crate::Result<PathBuf> {
 pub fn create_auto(cfg: &Config) -> crate::Result<PathBuf> {
     let r = Roots::new(cfg);
     let out = create_in(&r, "auto")?;
-    prune(&r.backups)?;
+    prune(&r.backups, r.keep)?;
     Ok(out)
 }
 
-fn prune(dir: &Path) -> crate::Result<()> {
+fn prune(dir: &Path, keep: usize) -> crate::Result<()> {
     let mut auto: Vec<PathBuf> =
         list_in(dir)?.into_iter().filter(|p| p.file_name().is_some_and(|n| n.to_string_lossy().starts_with("auto-"))).collect();
     // list_in gives the newest first
-    for old in auto.drain(KEEP_AUTO.min(auto.len())..) {
+    for old in auto.drain(keep.min(auto.len())..) {
         std::fs::remove_file(old)?;
     }
     Ok(())
@@ -222,7 +228,7 @@ fn restore_in(r: &Roots, archive: &Path) -> crate::Result<Vec<Change>> {
     if !pairs.is_empty() {
         // undoing this restore must be possible too
         create_in(r, "auto")?;
-        prune(&r.backups)?;
+        prune(&r.backups, r.keep)?;
     }
     let mut changes = Vec::new();
     for (from, to) in pairs {
@@ -258,7 +264,7 @@ mod tests {
     fn setup(name: &str) -> (PathBuf, Roots) {
         let d = std::env::temp_dir().join(format!("csls-backup-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&d);
-        let r = Roots { config: d.join("conf"), skins: d.join("db/skins.sq3"), backups: d.join("backups") };
+        let r = Roots { config: d.join("conf"), skins: d.join("db/skins.sq3"), backups: d.join("backups"), keep: 5 };
         std::fs::create_dir_all(r.config.join("modes")).unwrap();
         std::fs::create_dir_all(r.skins.parent().unwrap()).unwrap();
         std::fs::write(r.config.join("config.toml"), "one").unwrap();
@@ -329,10 +335,10 @@ mod tests {
             std::fs::write(r.backups.join(format!("auto-20260101-00000{i}.tar.gz")), "").unwrap();
         }
         std::fs::write(r.backups.join("backup-20200101-000000.tar.gz"), "").unwrap();
-        prune(&r.backups).unwrap();
+        prune(&r.backups, r.keep).unwrap();
         let left: Vec<String> =
             list_in(&r.backups).unwrap().iter().map(|p| p.file_name().unwrap().to_string_lossy().into_owned()).collect();
-        assert_eq!(left.len(), KEEP_AUTO + 1);
+        assert_eq!(left.len(), 5 + 1);
         assert_eq!(left[0], "auto-20260101-000007.tar.gz");
         assert!(left.contains(&"backup-20200101-000000.tar.gz".to_string()));
         assert!(!left.contains(&"auto-20260101-000002.tar.gz".to_string()));
