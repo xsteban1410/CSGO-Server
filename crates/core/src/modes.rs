@@ -294,6 +294,7 @@ impl CfgDoc {
             if v.contains([';', '"', '\n', '\r']) {
                 bail!("invalid value for {k}: no ; or quotes");
             }
+            crate::rules::check_pair(k, v)?;
         }
         Ok(())
     }

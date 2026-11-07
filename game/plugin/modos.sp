@@ -22,6 +22,7 @@ float g_SiteCenter[3];
 #include "modos_extras.sp"
 #include "modos_zombies.sp"
 #include "modos_competitivo.sp"
+#include "modos_reglas.sp"
 
 public void OnPluginStart()
 {
@@ -58,6 +59,7 @@ public void OnPluginStart()
 	Extras_Start();
 	Zombies_Start();
 	Comp_Start();
+	Reglas_Start();
 	for (int i = 1; i <= MaxClients; i++)
 		if (IsClientInGame(i))
 			OnClientPutInServer(i);
