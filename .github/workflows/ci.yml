@@ -58,6 +58,28 @@ jobs:
       - name: Build and test
         run: cargo test --locked -p csls-core -p csgo-legacy-server
 
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go/go.mod
+          cache-dependency-path: go/go.sum
+      - name: Dependencies
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libsqlite3-dev pkg-config
+      - name: Build the CLI that the tests run
+        run: cargo build --locked -p csgo-legacy-server
+      - name: Vet
+        working-directory: go
+        run: go vet ./...
+      - name: Lint the game files
+        working-directory: go
+        run: go run ./cmd/testkit -root .. lint
+      - name: Test
+        working-directory: go
+        run: go test -race ./...
+
   audit:
     runs-on: ubuntu-latest
     steps:
@@ -80,8 +102,8 @@ jobs:
         run: |
           set -e
           inc=addons/sourcemod/scripting/include
-          for p in plugin/modos.sp plugin/modos_cheats.sp plugin/skins.sp plugin/csls_directconnect/csls_directconnect.sp; do
-            addons/sourcemod/scripting/spcomp64 -i$inc -iplugin "$p" -o/tmp/out.smx
+          for p in game/plugin/modos.sp game/plugin/modos_cheats.sp game/plugin/skins.sp game/plugin/csls_directconnect/csls_directconnect.sp; do
+            addons/sourcemod/scripting/spcomp64 -i$inc -igame/plugin "$p" -o/tmp/out.smx
           done
 
   scripts:
@@ -96,14 +118,14 @@ jobs:
         run: tools/test-promote.sh
       - name: English outside translation files
         run: |
-          ! git grep -nIP '[áéíóúñÁÉÍÓÚÑ¿¡]' -- . ':!README.es.md' ':!crates/gtk/src/i18n.rs' ':!modes/*.toml' ':!plugin/translations/*' \
-            ':!data/skins.es.cfg' ':!crates/core/src/skins_gen.rs' ':!packaging/*.metainfo.xml' ':!.github/workflows/ci.yml' | grep -v 'Español'
+          ! git grep -nIP '[áéíóúñÁÉÍÓÚÑ¿¡]' -- . ':!README.es.md' ':!crates/gtk/src/i18n.rs' ':!game/modes/*.toml' ':!game/plugin/translations/*' \
+            ':!game/data/skins.es.cfg' ':!crates/core/src/skins_gen.rs' ':!packaging/*.metainfo.xml' ':!.github/workflows/ci.yml' | grep -v 'Español'
       - name: README translation
         run: python3 tools/test_sync_readme.py
 
   # Each commit's package: Actions tab > the run > Artifacts, or `gh run download -n package`.
   package:
-    needs: [rust, plugins, scripts]
+    needs: [rust, go, plugins, scripts]
     runs-on: ubuntu-latest
     container: archlinux:latest
     steps:

@@ -10,11 +10,12 @@ The section of each version becomes the notes of its GitHub release, so keep the
 
 ### Changed
 
+- The game files moved to `game/` (`game/cfg`, `game/modes`, `game/plugin`, `game/data`). Installed packages keep their layout.
+- `tools/test-modes.sh` was replaced by `testkit`.
 - Nothing is forced any more, as on a Valve or community server: everyone picks their team, bots fill the empty seats and warmup runs out by itself. Only modes whose rules need sides fix them (`retake`, `defensa`, `clutch`, `zombies`, `ninjas`, `aim`, Guardian). Configs saved earlier stop waiting for two humans; presets keep what they saved.
 - `competitivo` and `premier` start humans balanced, one on each side, and `--teams` only says where a human starts: it no longer moves anyone back or along with a teammate.
 - `competitivo` and `premier` end in a draw at 15-15 and 12-12 unless the new `--no-draw` rule (**No draws** in the wizard) is on, which plays overtime until someone wins.
 - `--no-bots` (**No bots** in the wizard) plays humans only, and the Wingman match type fills four seats.
-- `tools/test-modes.sh` turns off hibernation by itself and polls instead of waiting, so all modes take about 12 minutes instead of about an hour.
 - All code comments, messages, logs, tests and documentation are now in English. The app, plugin messages and `README.es.md`
   are still translated into Spanish, but errors coming from the core now always appear in English.
 - `tools/probar-modos.sh` is now `tools/test-modes.sh`, and `modo_estado` prints `team=`, `health=`, `speed=`, `scale=` and `type=`.
@@ -26,6 +27,10 @@ The section of each version becomes the notes of its GitHub release, so keep the
 - `guardian` no longer uses `exec`, so it can be duplicated in the Modes tab.
 
 ### Added
+
+- `agent start|stop|status`: an optional helper that watches the server with a single poll, rotates `console.log`, and keeps a local history of players, maps, modes and bans in `stats.db` (no IP addresses, see `docs/PRIVACY.md`; `stats = false` turns it off). It also runs scheduled restarts, map or mode changes, rcon commands, backups and plugin deploys from `schedule.json`.
+- `backup create --auto` and `backup_keep` in the config set how many automatic backups stay.
+- `go/cmd/testkit` tests configs in seconds without a server and all modes in about 3 minutes instead of 12, on parallel servers, skipping what did not change.
 
 - `doctor` and `start` warn about weak or shared passwords, rcon open to the network, a public server without a password and loose file permissions. Empty rcon passwords are generated, and secret commands stay out of the console history.
 - The bridge has limits per server, per IP and per second, an address allowlist (`bridge_allow`, VPN range and loopback by default, `bridge_max_clients`) and `bridge --status`.

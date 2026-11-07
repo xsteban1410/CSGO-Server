@@ -79,6 +79,7 @@ csgo-legacy-server mode-file export|import|delete     share custom modes
 csgo-legacy-server presets [--delete name]            saved start options
 csgo-legacy-server backup create | list | restore <file> [--dry-run]   your config, modes, plugins, presets and skins
 csgo-legacy-server deploy [--force] [--watch]         compile plugins, copy configs
+csgo-legacy-server agent start | stop | status        optional helper: history and scheduled tasks
 csgo-legacy-server nav [--force]                      bot navigation for the current map
 csgo-legacy-server skins                              rebuild the skins list after a game update
 csgo-legacy-server rcon "command" | play [cs2|local|IP:PORT] | bridge | doctor | install [--update]
@@ -203,7 +204,8 @@ Choices are saved per SteamID and applied every time you join. The language chos
 | `~/.config/csgo-legacy-server/{modes,plugins,presets.toml}` | your modes, plugins and presets |
 | `~/.local/share/csgo-legacy-server/` | server (default location), SteamCMD, logs, workshop cache |
 | `crates/core`, `crates/cli`, `crates/gtk` | Rust: core library, command line, GTK app |
-| `plugin/`, `cfg/`, `modes/` | SourceMod plugins, mode configs, mode metadata |
+| `game/plugin/`, `game/cfg/`, `game/modes/` | SourceMod plugins, mode configs, mode metadata |
+| `go/` | The agent and the test tools |
 | `docs/ARCHITECTURE.md`, `docs/TROUBLESHOOTING.md`, `docs/PRIVACY.md` | How the pieces fit together, fixing problems, and what data is kept |
 
 ## Notes and limits
@@ -212,7 +214,7 @@ Choices are saved per SteamID and applied every time you join. The language chos
 - `doctor --report` prints a report for issues with passwords, IPs and SteamIDs hidden, and `status --json` is meant for scripts.
 - The packages install shell completions. From source: `csgo-legacy-server completions fish > ~/.config/fish/completions/csgo-legacy-server.fish` (also `bash` and `zsh`).
 
-- `plugin/csls_directconnect` patches the engine in memory so players can join by IP without a matchmaking lobby. Its Linux
+- `game/plugin/csls_directconnect` patches the engine in memory so players can join by IP without a matchmaking lobby. Its Linux
   signatures match the current `engine.so`; if Valve updates the server binaries it will log "signature not found" and they
   must be found again. The idea comes from [NoLobbyReservation](https://github.com/vanz666/NoLobbyReservation).
 - The server runs with `-insecure` (no VAC). Skins are cosmetic and only visible on this server; skin changers break Valve's

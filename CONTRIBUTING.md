@@ -50,7 +50,7 @@ git clone https://github.com/xsteban1410/CSGO-Server.git && cd CSGO-Server
 cargo build
 ./target/debug/csgo-legacy-server doctor
 ./target/debug/csgo-legacy-server install      # downloads ~33 GB; only needed to run a server
-./target/debug/csgo-legacy-server-gtk          # from the repository, it uses its cfg/, modes/ and plugin/
+./target/debug/csgo-legacy-server-gtk          # from the repository, it uses its game/ folder
 ```
 
 ## Checks
@@ -65,10 +65,12 @@ shellcheck tools/*.sh packaging/*.sh packaging/aur/*.sh
 CI runs these, compiles the plugins and builds the package. To test modes on a real server, without players:
 
 ```bash
-./target/debug/csgo-legacy-server start normal
-./target/debug/csgo-legacy-server rcon "sv_hibernate_when_empty 0"
-tools/test-modes.sh                  # all of them, about 12 minutes
-tools/test-modes.sh dm normal:ffa    # only these (mode or mode:type)
+cd go
+go test ./...                               # the CLI against a fake server, in seconds; needs `cargo build`
+go run ./cmd/testkit -root .. lint          # configs, modes and phrases, without a server
+go run ./cmd/testkit -root .. smoke         # one case per game type on real servers, about a minute
+go run ./cmd/testkit -root .. full          # all of them, about 3 minutes; what did not change is skipped
+go run ./cmd/testkit -root .. full dm normal:ffa   # only these (mode or mode:type)
 ```
 
 It checks the game type, that bots move and that they respawn. Anything needing a person (aim, feel, skins, joining from
@@ -76,24 +78,24 @@ another PC) has to be played, so say in your pull request what you could not tes
 
 ## Adding a game mode
 
-1. Create `cfg/modo_<id>.cfg` with the rules, and `modes/<id>.toml` with its name and description in English and Spanish.
+1. Create `game/cfg/modo_<id>.cfg` with the rules, and `game/modes/<id>.toml` with its name and description in English and Spanish.
 2. Only set what your mode changes. Weapons per team go in `modo_t_*` and `modo_ct_*`.
-3. If it needs logic, add it to `plugin/modos*.sp` behind a `modo_*` convar, and reset that convar in `cfg/modo_base.cfg`.
-4. Add it to the table in both READMEs and run `tools/test-modes.sh <id>`.
+3. If it needs logic, add it to `game/plugin/modos*.sp` behind a `modo_*` convar, and reset that convar in `game/cfg/modo_base.cfg`.
+4. Add it to the table in both READMEs and run `go run ./cmd/testkit -root .. full <id>` from `go/`.
 
-Do not add Valve's convars to `cfg/modo_base.cfg` unless you checked that no `gamemode_*.cfg` relies on them. The
+Do not add Valve's convars to `game/cfg/modo_base.cfg` unless you checked that no `gamemode_*.cfg` relies on them. The
 [architecture notes](docs/ARCHITECTURE.md#how-a-mode-is-applied) explain why.
 
 ## Translations and text
 
 - App: write English in `t("…")` and add the Spanish to `crates/gtk/src/i18n.rs`. A test fails if one is missing.
-- Plugins: `plugin/translations/csls.phrases.txt`.
+- Plugins: `game/plugin/translations/csls.phrases.txt`.
 - READMEs: edit one, and a workflow translates the changed lines into the other after the push. Both must keep the same lines in the same order. If you edit both, nothing is translated.
 
 ## Pull request rules
 
 - Fix bugs at their cause, and add a small test for new logic that is not trivial.
-- Everything in the repository is written in English: commit messages, code, comments, logs and documentation. Only translations are in Spanish: `README.es.md`, `crates/gtk/src/i18n.rs`, the `es` entries of `plugin/translations/csls.phrases.txt` and of `modes/*.toml`, and `data/skins.es.cfg`. English is the default language everywhere: Spanish only shows when chosen in Settings. CI fails if accented text appears anywhere else.
+- Everything in the repository is written in English: commit messages, code, comments, logs and documentation. Only translations are in Spanish: `README.es.md`, `crates/gtk/src/i18n.rs`, the `es` entries of `game/plugin/translations/csls.phrases.txt` and of `game/modes/*.toml`, and `game/data/skins.es.cfg`. English is the default language everywhere: Spanish only shows when chosen in Settings. CI fails if accented text appears anywhere else.
 - One commit per change, with the message `type(scope): what changed`, for example `fix(skins): recompile plugins when sources change`. Types: `feat`, `fix`, `i18n`, `refactor`, `test`, `docs`, `ci`, `chore`. The scope is the area touched: `skins`, `modes`, `deploy`, `gtk`...
 - Contributions are licensed under [GPL-3.0-or-later](LICENSE).
 
@@ -114,12 +116,13 @@ say exactly how you tested it. CI labels these pull requests `sensitive` and the
 
 | Path | Why it is dangerous | What to do |
 |---|---|---|
-| `cfg/modo_base.cfg`, `cfg/modo_clasico.cfg` | They run before every mode. A wrong convar breaks all modes: `mp_buy_anywhere 0` froze the deathmatch bots | Run the whole `tools/test-modes.sh` |
-| `plugin/modos.sp` (`OnConfigsExecuted`) | Decides the order of every config | Same, and read the [architecture notes](docs/ARCHITECTURE.md#how-a-mode-is-applied) |
-| `plugin/csls_directconnect/` | Patches the engine in memory with signatures. Wrong bytes crash the server, and nobody can join without it | Test with a real client joining by IP |
+| `game/cfg/modo_base.cfg`, `game/cfg/modo_clasico.cfg` | They run before every mode. A wrong convar breaks all modes: `mp_buy_anywhere 0` froze the deathmatch bots | Run the whole `tools/test-modes.sh` |
+| `game/plugin/modos.sp` (`OnConfigsExecuted`) | Decides the order of every config | Same, and read the [architecture notes](docs/ARCHITECTURE.md#how-a-mode-is-applied) |
+| `game/plugin/csls_directconnect/` | Patches the engine in memory with signatures. Wrong bytes crash the server, and nobody can join without it | Test with a real client joining by IP |
 | `crates/core/src/bridge.rs`, `sv_lan` and the bridge in `server.rs` | Friends over VPN depend on exactly this recipe. Steam rejects clients otherwise (`STEAMAUTH` code 10) | Test from a second PC over a real VPN |
 | `crates/core/src/steam_client.rs` | `+connect` is discarded, the TCP console crashes the client, and `steam://connect` opens CS2 if the game is closed | Test with the real game, on a real client |
 | `check_cvar`, `valid_map_name`, `valid_address`, `valid_id`, `CfgDoc::validate` | They stop values from injecting console commands. They are a security boundary | Never loosen them without tests that try to break them |
+| `go/cmd/agent`, `go/internal/sched`, `game/plugin/csls_events.sp` | The agent holds the rcon password and runs commands, and the plugin writes what a player can influence. Keep the list of actions closed, no shell, and no IP in the database | `go test ./...`, and try it on a real server |
 | `crates/core/src/rcon.rs`, `config.rs` | The rcon password gives full control of the server, and the config must stay at mode 600 | Never log secrets or print them |
 | `crates/core/src/install.rs`, `deploy.rs` | They download and run code, and write into the user's install, which is 33 GB to download again | Test on a copy, and never delete a folder you did not create |
 | `.github/`, `.claude/`, `tools/version.sh`, `tools/promote.sh`, `tools/sync_readme.py`, `packaging/` | They publish what users install | Only the maintainer merges these. Do not add secrets or third-party actions without a good reason |
