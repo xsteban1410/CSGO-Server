@@ -85,7 +85,7 @@ csgo-legacy-server rcon "comando" | play [cs2|local|IP:PUERTO] | bridge | doctor
 ```
 
 Opciones de start/mode: `-m/--map`, `-t/--type competitive|short|casual|wingman|dm|ffa|tdm|armsrace|demolition|guardian|dz`, `-d/--difficulty 0-3`, `-b/--bots`,
-`-r/--rounds`, `-s/--site a|b|random`, `--teams together|versus|free` (modos competitivos), `-p/--precision` (sin propagación ni retroceso para todos), `--anarchy`,
+`-r/--rounds`, `-s/--site a|b|random`, `--no-bots`, `--teams versus|together|free` (modos competitivos, donde comienzan los humanos), `--no-draw` (`competitivo` y `premier`: tiempo extra hasta que alguien gane), `-p/--precision` (sin propagación ni retroceso para todos), `--anarchy`,
 `-w/--workshop ID`, `--set cvar=valor` (repetible), `--preset NOMBRE`, `--save-preset NOMBRE`.
 
 ```bash
@@ -97,7 +97,7 @@ csgo-legacy-server start premier 2 --teams versus
 
 ## Modos
 
-Los humanos van en CT y los bots en T (5, expertos) salvo que el modo diga otra cosa.
+Cada uno elige su propio equipo, como en un servidor comunitario o de Valve. Los bots (expertos) llenan los asientos vacíos y se van cuando se une un humano; `--no-bots` solo juega con humanos. El calentamiento termina solo a menos que le pidas que espere a los jugadores (`start awp 2`). Solo los modos cuyas reglas necesitan que los lados las arreglen: `retake`, `defensa`, `clutch`, `zombies`, `ninjas`, `aim` y Guardian.
 
 | Modo | |
 |---|---|
@@ -131,11 +131,11 @@ Los humanos van en CT y los bots en T (5, expertos) salvo que el modo diga otra 
 | `luna` | **Moon** — AWP y Deagle con gravedad muy baja, como en la Luna |
 | `negev` | **Negev** — Todo el mundo recibe un Néguev y nada más. Rondas cortas, sin compras |
 | `ninjas` | **Ninjas**: Bots rápidos, casi invisibles y con cuchillos te cazan. Compra lo que quieras y escúchalos. |
-| `normal` | **Normal** — Rondas contra 5 bots con $16000 cada ronda, para que siempre puedas comprar cualquier cosa |
+| `normal` | **Normal** — Rondas con $16000 en cada ronda, por lo que siempre puedes comprar cualquier cosa |
 | `pesados` | **Armadura pesada** — Todos con un traje de asalto pesado y un M249: resistente y lento |
 | `pistolas` | **Deagle**: todos reciben solo un Deagle. Rondas cortas, sin compras |
 | `premier` | **Premier** — Reglas de Premier: 5 contra 5, primero en llegar al 13, tiempo extra y prohibiciones de mapas en el calentamiento. Sin clasificación CS, necesita los servidores de Valve |
-| `rehenes` | **Rehenes** — Tú (CT) rescatas a los rehenes de 5 bots, en cs_maps |
+| `rehenes` | **Rehenes** — Rescata o protege a los rehenes, en cs_maps |
 | `retake` | **Retomar** — La bomba ya está colocada y tú (CT) debes desactivarla contra 5 robots que la custodian. |
 | `rifles` | **Rifles**: todos reciben un AK-47 y un Deagle. Rondas cortas, sin compras |
 | `scout` | **Scout**: todos obtienen un SSG 08 y un P250. Rondas cortas, sin compras |
@@ -148,7 +148,7 @@ Los humanos van en CT y los bots en T (5, expertos) salvo que el modo diga otra 
 | `zeus` | **Zeus** — Combate a muerte con un Zeus que nunca se agota |
 | `zombies` | **Zombies**: sobrevive a cinco oleadas de robots zombies con todas las armas y munición infinita. Si mueres, te vuelves |
 
-**Partidos competitivos** (`competitivo`, `premier`, `wingman`, `duelo`) son partidos normales, no reglas personalizadas: economía, intercambio de bandos en el entretiempo y tiempo extra. Los humanos juegan juntos o entre sí (`--teams` o **Equipos** en el asistente) y los robots llenan los asientos vacíos. En `competitivo`, `premier` y `wingman` el partido comienza cuando todos escriben `!ready` o cuando termina el calentamiento; `duelo` comienza tan pronto como ambos están dentro. En `premier`, los humanos se turnan para prohibir mapas durante el calentamiento a menos que elijas un mapa cuando comienzas. No tiene clasificación CS ni emparejamiento, que necesitan los servidores de Valve.
+**Partidos competitivos** (`competitivo`, `premier`, `wingman`, `duelo`) son partidos normales, no reglas personalizadas: economía e intercambio de lados en el medio tiempo. `competitivo` y `premier` inician a los humanos equilibrados, por lo que dos humanos obtienen un lado cada uno; `--teams` (o **Equipos** en el asistente) cambia el lugar donde comienzan y cualquiera puede cambiar de equipo después. Los robots llenan los asientos vacíos. Un empate es un empate, a menos que actives `--no-draw` (**No hay empates** en el asistente), que juega tiempo extra hasta que alguien gana. En `competitivo`, `premier` y `wingman` el partido comienza cuando todos escriben `!ready` o cuando finaliza el calentamiento; `duelo` termina su calentamiento. En `premier`, los humanos se turnan para prohibir mapas durante el calentamiento, a menos que elijas un mapa al comenzar. No tiene clasificación CS ni emparejamiento, que necesitan los servidores de Valve.
 
 Ajustes por equipo para tus modos o `--set` (`t` o `ct`): `modo_<eq>_quitar`, `_arma`, `_pistola`, `_objeto`,
 `_vida`, `_velocidad`, `_color` (`R,G,B`).
