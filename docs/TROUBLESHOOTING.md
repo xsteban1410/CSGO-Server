@@ -25,7 +25,7 @@ Start with `csgo-legacy-server doctor`, then the table in [SUPPORT.md](../SUPPOR
 - **The Flatpak does not open the game.** It cannot reach Steam's folders, and `steam://connect` would open CS2 with the game closed. Open CS:GO Legacy yourself and type the `connect` command the app shows.
 - **The server does not start in the Flatpak (`ld-linux.so.2`).** The 32-bit runtime is missing: `flatpak install flathub org.freedesktop.Platform.Compat.i386//25.08`.
 - **The window is missing from the dock or shows a generic name.** Docks match the window to `io.github.xsteban1410.CsgoLegacyServer.desktop`. Packages install that file; an AppImage does not, so add it to `~/.local/share/applications` with `Exec=` pointing at the AppImage. With no window open the app is only in the tray.
-- **The AppImage does not open.** Without FUSE, run it with `APPIMAGE_EXTRACT_AND_RUN=1`. It needs fontconfig and freetype from the system, and glibc 2.36 or newer. With arguments it is the command line: `./csgo-legacy-server-*.AppImage status`.
+- **The AppImage does not open.** Without FUSE, run it with `APPIMAGE_EXTRACT_AND_RUN=1`. It needs fontconfig, freetype and at least one font from the system, and glibc 2.36 or newer. With arguments it is the command line: `./csgo-legacy-server-*.AppImage status`.
 - **The `.deb` wants 32-bit packages.** `libc6-i386` and `lib32gcc-s1` run `srcds` and SteamCMD, and do not need the i386 architecture enabled.
 
 ## Restoring

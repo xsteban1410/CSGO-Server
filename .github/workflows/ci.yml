@@ -16,7 +16,7 @@ jobs:
     container: archlinux:latest
     steps:
       - name: Dependencies
-        run: pacman -Syu --noconfirm --needed base-devel git rust sqlite curl appstream desktop-file-utils fontconfig freetype2 libxkbcommon wayland
+        run: pacman -Syu --noconfirm --needed base-devel git rust sqlite curl appstream desktop-file-utils fontconfig freetype2 libxkbcommon wayland ttf-dejavu
       - uses: actions/checkout@v7
       - uses: actions/cache@v6
         with:
@@ -130,7 +130,7 @@ jobs:
     container: archlinux:latest
     steps:
       - name: Dependencies
-        run: pacman -Syu --noconfirm --needed base-devel git rust go fontconfig freetype2 libxkbcommon wayland sqlite curl namcap
+        run: pacman -Syu --noconfirm --needed base-devel git rust go fontconfig freetype2 libxkbcommon wayland ttf-dejavu sqlite curl namcap
       - uses: actions/checkout@v7
       - name: Build package
         # makepkg does not run as root; tests already passed in the rust job

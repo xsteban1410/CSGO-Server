@@ -7,7 +7,7 @@ arch=('x86_64')
 url="https://github.com/xsteban1410/CSGO-Server"
 license=('GPL-3.0-or-later')
 # srcds and steamcmd are 32-bit; curl/tar to download SteamCMD, SourceMod and maps
-depends=('fontconfig' 'freetype2' 'libxkbcommon' 'wayland' 'sqlite' 'curl' 'tar' 'lib32-glibc' 'lib32-gcc-libs')
+depends=('fontconfig' 'freetype2' 'libxkbcommon' 'wayland' 'ttf-font' 'sqlite' 'curl' 'tar' 'lib32-glibc' 'lib32-gcc-libs')
 makedepends=('cargo' 'go')
 optdepends=('steamcmd: use the system SteamCMD instead of downloading it'
             'steam: play on this PC (CS:GO Legacy is the csgo_legacy beta of CS2)'
