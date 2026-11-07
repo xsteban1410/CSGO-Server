@@ -1,0 +1,125 @@
+import { Button, Palette } from "std-widgets.slint";
+import { Theme, Overlay } from "kit.slint";
+import { S, ActionRow, Btn, ConsoleLine, Card, KeyValue, ModeItem, TeamEdit } from "state.slint";
+import { ServerPage } from "server.slint";
+import { SetupPage } from "setup.slint";
+import { Wizard } from "wizard.slint";
+import { PlayersPage, BanDialog, SkinsDialog } from "players.slint";
+import { ModesPage, ModeEditor } from "modes.slint";
+import { WorkshopPage } from "workshop.slint";
+import { ConsolePage } from "console.slint";
+import { JoinPage } from "join.slint";
+import { SettingsPage } from "settings.slint";
+
+export { S, ActionRow, Btn, ConsoleLine, Card, KeyValue, ModeItem, TeamEdit }
+
+component Rail {
+    in-out property <int> index;
+    in property <[string]> tabs;
+    Rectangle {
+        background: Theme.card;
+        VerticalLayout {
+            padding: 8px;
+            spacing: 2px;
+            alignment: start;
+            for t[i] in root.tabs: Rectangle {
+                height: 36px;
+                border-radius: 6px;
+                background: root.index == i ? Theme.accent : area.has-hover ? Palette.border : transparent;
+                area := TouchArea { clicked => { root.index = i; } }
+                Text {
+                    x: 10px;
+                    height: 100%;
+                    vertical-alignment: center;
+                    text: t;
+                    color: root.index == i ? Palette.accent-foreground : Theme.text;
+                }
+            }
+        }
+    }
+}
+
+export component AppWindow inherits Window {
+    title: "CS:GO Legacy Server";
+    preferred-width: 1040px;
+    preferred-height: 700px;
+    min-width: 640px;
+    min-height: 460px;
+    icon: @image-url("../../../packaging/io.github.xsteban1410.CsgoLegacyServer.svg");
+    Rectangle { background: Palette.background; }
+    HorizontalLayout {
+        Rail {
+            width: 170px;
+            index <=> S.tab;
+            tabs: [@tr("Server"), @tr("Players"), @tr("Modes"), @tr("Workshop"), @tr("Console"), @tr("Join"), @tr("Settings")];
+        }
+        Rectangle {
+            horizontal-stretch: 1;
+            if S.tab == 0: ServerPage { width: 100%; height: 100%; }
+            if S.tab == 1: PlayersPage { width: 100%; height: 100%; }
+            if S.tab == 2: ModesPage { width: 100%; height: 100%; }
+            if S.tab == 3: WorkshopPage { width: 100%; height: 100%; init => { S.ws-shown(); } }
+            if S.tab == 4: ConsolePage { width: 100%; height: 100%; }
+            if S.tab == 5: JoinPage { width: 100%; height: 100%; }
+            if S.tab == 6: SettingsPage { width: 100%; height: 100%; }
+        }
+    }
+    if S.setup != "": SetupPage { width: 100%; height: 100%; }
+    if S.wiz-open: Wizard { width: 100%; height: 100%; }
+    if S.ban-open: BanDialog { width: 100%; height: 100%; }
+    if S.skins-open: SkinsDialog { width: 100%; height: 100%; }
+    if S.ed-open: ModeEditor { width: 100%; height: 100%; }
+    if S.alert-open: Overlay {
+        card-width: 460px;
+        card-height: 240px;
+        Text { text: S.alert-title; font-size: 16px; font-weight: 700; color: Theme.text; }
+        Text { text: S.alert-text; wrap: word-wrap; color: Theme.text; vertical-stretch: 1; }
+        HorizontalLayout {
+            alignment: end;
+            spacing: 8px;
+            if S.alert-no != "": Button { text: S.alert-no; clicked => { S.alert-open = false; S.alert-answer(false); } }
+            Button { text: S.alert-yes; primary: !S.alert-danger; clicked => { S.alert-open = false; S.alert-answer(true); } }
+        }
+    }
+    if S.toast != "": Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: parent.height - self.height - 16px;
+        width: min(parent.width - 32px, toast-text.preferred-width + 32px);
+        height: toast-text.preferred-height + 16px;
+        background: Palette.foreground;
+        border-radius: 8px;
+        toast-text := Text {
+            x: 16px;
+            y: 8px;
+            width: parent.width - 32px;
+            text: S.toast;
+            color: Palette.background;
+            wrap: word-wrap;
+        }
+    }
+}
+
+export component Tray inherits SystemTrayIcon {
+    in property <bool> running;
+    in property <bool> live;
+    in property <string> status;
+    callback open();
+    callback console();
+    callback start();
+    callback change();
+    callback stop();
+    callback quit();
+    icon: @image-url("../../../packaging/icons/64.png");
+    tooltip: status;
+    title: "CS:GO Legacy Server";
+    clicked => { open(); }
+    Menu {
+        MenuItem { title: status; enabled: false; }
+        MenuItem { title: @tr("Open"); activated => { open(); } }
+        MenuItem { title: @tr("Console"); activated => { console(); } }
+        if !running: MenuItem { title: @tr("Start server"); activated => { start(); } }
+        if live: MenuItem { title: @tr("Change mode or map"); activated => { change(); } }
+        if running: MenuItem { title: @tr("Stop"); activated => { stop(); } }
+        MenuItem { title: @tr("Quit"); activated => { quit(); } }
+    }
+}

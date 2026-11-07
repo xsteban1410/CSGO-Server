@@ -1,0 +1,53 @@
+import { Button, ScrollView, ProgressIndicator, Palette } from "std-widgets.slint";
+import { Group, Row, ValueRow, Theme } from "kit.slint";
+import { S } from "state.slint";
+
+export component SetupPage {
+    Rectangle { background: Palette.background; }
+    if S.setup == "welcome": VerticalLayout {
+        alignment: center;
+        spacing: 12px;
+        padding: 24px;
+        Text { text: @tr("Welcome"); font-size: 28px; font-weight: 700; horizontal-alignment: center; color: Theme.text; }
+        Text {
+            text: @tr("Set up a CS:GO Legacy server to play with friends and bots, or join one");
+            horizontal-alignment: center;
+            wrap: word-wrap;
+            color: Theme.dim;
+        }
+        HorizontalLayout {
+            alignment: center;
+            spacing: 12px;
+            Button { text: @tr("Create a server"); primary: true; clicked => { S.setup = "install"; } }
+            Button { text: @tr("Only join servers"); clicked => { S.setup-only-join(); } }
+        }
+    }
+    if S.setup == "install": ScrollView {
+        width: 100%;
+        height: 100%;
+        VerticalLayout {
+            padding: 24px;
+            spacing: Theme.page-gap;
+            alignment: start;
+            Group {
+                title: @tr("Download the server");
+                description: @tr("About 33 GB. You can close the app: the download continues and resumes if cut.");
+                ValueRow {
+                    title: @tr("Server folder");
+                    value: S.setup-folder;
+                    Button { text: @tr("Change"); enabled: !S.setup-busy; clicked => { S.setup-choose-folder(); } }
+                }
+                ValueRow { title: @tr("Dependencies"); value: S.setup-deps; value-color: S.setup-deps-ok ? Theme.dim : Theme.warn; }
+            }
+            HorizontalLayout {
+                alignment: center;
+                Button { text: @tr("Download"); primary: true; enabled: S.setup-deps-ok && !S.setup-busy; clicked => { S.setup-download(); } }
+            }
+            if S.setup-busy: VerticalLayout {
+                spacing: 6px;
+                ProgressIndicator { progress: S.setup-progress; indeterminate: S.setup-progress < 0; }
+                Text { text: S.setup-progress-text; color: Theme.dim; wrap: word-wrap; horizontal-alignment: center; }
+            }
+        }
+    }
+}

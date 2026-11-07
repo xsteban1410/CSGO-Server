@@ -1,0 +1,53 @@
+import { Button, LineEdit, ListView, TextEdit, Switch } from "std-widgets.slint";
+import { Theme } from "kit.slint";
+import { S } from "state.slint";
+
+export component ConsolePage {
+    function color-for(category: string) -> color {
+        return category == "error" ? Theme.bad : category == "warning" ? Theme.warn : category == "chat" ? Theme.ok
+            : category == "player" ? Theme.accent : category == "command" ? Theme.dim : Theme.text;
+    }
+    VerticalLayout {
+        padding: 12px;
+        spacing: 8px;
+        HorizontalLayout {
+            spacing: 8px;
+            LineEdit {
+                text <=> S.con-search;
+                placeholder-text: @tr("Search");
+                edited => { S.con-filter-changed(); }
+            }
+            Switch { text: @tr("Follow"); checked <=> S.con-follow; }
+            Switch { text: @tr("Select text"); checked <=> S.con-select; }
+            Button { text: @tr("Copy"); clicked => { S.con-copy(); } }
+        }
+        if S.con-select: TextEdit { vertical-stretch: 1; read-only: true; wrap: no-wrap; text: S.con-text; font-size: 12px; }
+        if !S.con-select: list := ListView {
+            vertical-stretch: 1;
+            for l in S.con-lines: Text {
+                text: l.text;
+                color: root.color-for(l.category);
+                font-family: "monospace";
+                font-size: 12px;
+                height: 16px;
+                overflow: elide;
+            }
+            property <int> tick: S.con-scroll-tick;
+            changed tick => {
+                if S.con-follow {
+                    self.content-y = min(0px, self.visible-height - self.content-height);
+                }
+            }
+        }
+        LineEdit {
+            text <=> S.con-entry;
+            placeholder-text: @tr("Send command");
+            accepted => { S.con-send(); }
+            key-pressed(event) => {
+                if event.text == Key.UpArrow { S.con-history(-1); return accept; }
+                if event.text == Key.DownArrow { S.con-history(1); return accept; }
+                return reject;
+            }
+        }
+    }
+}

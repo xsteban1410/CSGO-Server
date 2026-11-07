@@ -1,0 +1,63 @@
+import { Button, ScrollView, LineEdit } from "std-widgets.slint";
+import { Group, Row, ActionList, Overlay, SpinRow, EntryRow, ValueRow, Theme } from "kit.slint";
+import { S } from "state.slint";
+
+export component PlayersPage {
+    ScrollView {
+        width: 100%;
+        height: 100%;
+        VerticalLayout {
+            padding: 16px;
+            spacing: Theme.page-gap;
+            alignment: start;
+            Group {
+                title: @tr("Connected now");
+                ActionList { rows: S.pl-now; empty: @tr("No players"); clicked(id, action) => { S.pl-now-action(id, action); } }
+            }
+            Group {
+                title: @tr("Saved skins");
+                description: @tr("Players with skins saved, also offline");
+                ActionList { rows: S.pl-saved; clicked(id, action) => { S.pl-saved-action(id, action); } }
+            }
+            Group {
+                title: @tr("Bans");
+                ActionList { rows: S.pl-bans; empty: @tr("No bans"); clicked(id, action) => { S.pl-bans-action(id, action); } }
+                HorizontalLayout { alignment: end; Button { text: @tr("Refresh"); clicked => { S.pl-refresh(); } } }
+            }
+        }
+    }
+}
+
+export component BanDialog {
+    Overlay {
+        card-height: 280px;
+        card-width: 480px;
+        Text { text: S.ban-title; font-size: 16px; font-weight: 700; color: Theme.text; }
+        SpinRow { title: @tr("Minutes (0 = permanent)"); maximum: 525600; step: 30; value <=> S.ban-minutes; }
+        EntryRow { title: @tr("Reason"); field: 220px; text <=> S.ban-reason; }
+        Rectangle { vertical-stretch: 1; }
+        HorizontalLayout {
+            alignment: end;
+            spacing: 8px;
+            Button { text: @tr("Cancel"); clicked => { S.ban-open = false; } }
+            Button { text: @tr("Ban"); primary: true; clicked => { S.ban-confirm(); } }
+        }
+    }
+}
+
+export component SkinsDialog {
+    Overlay {
+        card-width: 480px;
+        card-height: 520px;
+        Text { text: S.skins-title; font-size: 16px; font-weight: 700; color: Theme.text; }
+        ScrollView {
+            vertical-stretch: 1;
+            VerticalLayout {
+                spacing: 8px;
+                alignment: start;
+                for s in S.skins-list: ValueRow { title: s.key; value: s.value; }
+            }
+        }
+        HorizontalLayout { alignment: end; Button { text: @tr("Close"); clicked => { S.skins-open = false; } } }
+    }
+}

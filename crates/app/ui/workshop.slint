@@ -1,0 +1,84 @@
+import { Button, ScrollView, LineEdit, ComboBox, Spinner } from "std-widgets.slint";
+import { Group, Row, ActionList, ComboRow, EntryRow, Theme } from "kit.slint";
+import { S, Card } from "state.slint";
+
+component MapCard {
+    in property <Card> card;
+    Rectangle {
+        background: Theme.card;
+        border-radius: Theme.radius;
+        border-width: 1px;
+        border-color: Theme.line;
+        clip: true;
+        VerticalLayout {
+            spacing: 4px;
+            Image { source: root.card.thumb; height: 124px; image-fit: cover; }
+            VerticalLayout {
+                padding: 8px;
+                spacing: 4px;
+                Text { text: root.card.title; overflow: elide; font-weight: 700; color: Theme.text; }
+                Text {
+                    text: root.card.badge;
+                    font-size: Theme.small;
+                    overflow: elide;
+                    color: root.card.kind == "ok" ? Theme.ok : root.card.kind == "bad" ? Theme.bad : Theme.dim;
+                }
+                Button {
+                    text: root.card.installed ? @tr("Installed") : @tr("Install");
+                    enabled: root.card.can && !root.card.installed;
+                    clicked => { S.ws-install(root.card.id); }
+                }
+            }
+        }
+    }
+}
+
+export component WorkshopPage {
+    property <int> columns: max(1, floor(self.width / 250px));
+    ScrollView {
+        width: 100%;
+        height: 100%;
+        VerticalLayout {
+            padding: 16px;
+            spacing: Theme.page-gap;
+            alignment: start;
+            Group {
+                title: @tr("Installed maps");
+                description: @tr("Bots need a .nav: generate it once per map.");
+                ActionList { rows: S.ws-library; empty: @tr("No workshop maps installed"); clicked(id, action) => { S.ws-library-action(id, action); } }
+                HorizontalLayout { alignment: end; Button { text: @tr("Import .bsp"); clicked => { S.ws-import(); } } }
+            }
+            Group {
+                title: @tr("Search the Workshop");
+                description: @tr("Only CS:GO maps work. CS2 maps (Source 2) cannot be loaded by CS:GO Legacy.");
+                EntryRow { title: @tr("Search maps"); text <=> S.ws-search; accepted => { S.ws-run-search(false); } }
+                ComboRow {
+                    title: @tr("Type");
+                    model: [@tr("Any type"), "Classic", "Deathmatch", "Armsrace", "Demolition", "Hostage", "Wingman", "Custom"];
+                    index <=> S.ws-tag;
+                    changed index => { S.ws-run-search(false); }
+                }
+                ComboRow {
+                    title: @tr("Order");
+                    model: [@tr("Trending"), @tr("Most popular"), @tr("Most recent")];
+                    index <=> S.ws-sort;
+                    changed index => { S.ws-run-search(false); }
+                }
+                EntryRow { title: @tr("Install by ID or link (map or collection)"); text <=> S.ws-by-id; accepted => { S.ws-install-id(); } }
+            }
+            // a grid of cards: fixed rows, as many columns as fit
+            Rectangle {
+                height: ceil(S.ws-cards.length / root.columns) * 224px;
+                for c[i] in S.ws-cards: MapCard {
+                    card: c;
+                    x: mod(i, root.columns) * (parent.width / root.columns) + 4px;
+                    y: floor(i / root.columns) * 224px + 4px;
+                    width: parent.width / root.columns - 8px;
+                    height: 216px;
+                }
+            }
+            if S.ws-busy: HorizontalLayout { alignment: center; Spinner { indeterminate: true; width: 32px; height: 32px; } }
+            if S.ws-more: HorizontalLayout { alignment: center; Button { text: @tr("More results"); clicked => { S.ws-run-search(true); } } }
+        }
+    }
+}

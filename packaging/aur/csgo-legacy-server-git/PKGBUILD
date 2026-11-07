@@ -37,14 +37,14 @@ build() {
   cd "$_dir"
   export RUSTUP_TOOLCHAIN=stable
   export CARGO_TARGET_DIR=target
-  cargo build --frozen --release
+  cargo build --frozen --release -p csgo-legacy-server -p csgo-legacy-server-gtk
 }
 
 check() {
   cd "$_dir"
   export RUSTUP_TOOLCHAIN=stable
   export CARGO_TARGET_DIR=target
-  cargo test --frozen --release
+  cargo test --frozen --release -p csls-core -p csgo-legacy-server -p csgo-legacy-server-gtk
 }
 
 package() {

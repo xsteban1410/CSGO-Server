@@ -1,0 +1,140 @@
+import { Button, LineEdit, ListView, ScrollView, Palette } from "std-widgets.slint";
+import { Group, Row, Overlay, SwitchRow, SpinRow, ComboRow, EntryRow, Theme } from "kit.slint";
+import { S } from "state.slint";
+
+export component Wizard {
+    Overlay {
+        HorizontalLayout {
+            spacing: 8px;
+            if S.wiz-step > 0: Button { text: @tr("Back"); clicked => { S.wiz-step -= 1; } }
+            Text {
+                horizontal-stretch: 1;
+                vertical-alignment: center;
+                font-size: 16px;
+                font-weight: 700;
+                color: Theme.text;
+                text: S.wiz-step == 0 ? @tr("Choose a mode") : S.wiz-step == 1 ? @tr("Choose a map") : S.wiz-step == 2 ? @tr("Options") : @tr("Server");
+            }
+            Button { text: @tr("Cancel"); clicked => { S.wiz-open = false; } }
+        }
+        if S.wiz-step == 0: ListView {
+            vertical-stretch: 1;
+            for m in S.wiz-modes: VerticalLayout {
+                padding: 6px;
+                if m.heading: Text { text: m.title; font-size: 15px; font-weight: 700; color: Theme.text; }
+                if !m.heading: Rectangle {
+                    height: self.preferred-height;
+                    background: t1.has-hover ? Palette.alternate-background : transparent;
+                    border-radius: 6px;
+                    t1 := TouchArea { clicked => { S.wiz-pick-mode(m.id); } }
+                    VerticalLayout {
+                        padding: 6px;
+                        Text { text: m.title; color: Theme.text; font-size: Theme.title; }
+                        Text { text: m.subtitle; color: Theme.dim; font-size: Theme.small; wrap: word-wrap; }
+                    }
+                }
+            }
+        }
+        if S.wiz-step == 1: VerticalLayout {
+            vertical-stretch: 1;
+            spacing: 8px;
+            Button {
+                text: @tr("Default map for this mode");
+                primary: true;
+                clicked => { S.wiz-pick-map(""); }
+            }
+            HorizontalLayout {
+                spacing: 8px;
+                LineEdit {
+                    text <=> S.wiz-workshop;
+                    placeholder-text: @tr("Workshop map ID");
+                    accepted => { S.wiz-pick-workshop(); }
+                }
+                Button { text: @tr("Apply"); clicked => { S.wiz-pick-workshop(); } }
+            }
+            LineEdit {
+                text <=> S.wiz-search;
+                placeholder-text: @tr("Search maps");
+                edited => { S.wiz-search-changed(); }
+            }
+            ListView {
+                vertical-stretch: 1;
+                for m in S.wiz-maps: VerticalLayout {
+                    padding-top: 3px;
+                    padding-bottom: 3px;
+                    if m.heading: Text { text: m.title; font-size: 15px; font-weight: 700; color: Theme.text; }
+                    if !m.heading: Rectangle {
+                        height: 28px;
+                        background: t2.has-hover ? Palette.alternate-background : transparent;
+                        border-radius: 6px;
+                        t2 := TouchArea { clicked => { S.wiz-pick-map(m.id); } }
+                        Text { x: 6px; text: m.title; color: Theme.text; vertical-alignment: center; height: 100%; }
+                    }
+                }
+            }
+        }
+        if S.wiz-step == 2: ScrollView {
+            vertical-stretch: 1;
+            VerticalLayout {
+                spacing: Theme.page-gap;
+                alignment: start;
+                Group {
+                    title: S.wiz-title;
+                    SpinRow { title: @tr("Humans to wait for"); subtitle: @tr("0 = the warmup runs out by itself"); maximum: 64; value <=> S.wiz-humans; }
+                    if S.wiz-teams-show: ComboRow {
+                        title: @tr("Teams");
+                        subtitle: @tr("Where humans start; anyone can switch afterwards");
+                        model: [@tr("Balanced, one on each side"), @tr("Together"), @tr("Each one chooses")];
+                        index <=> S.wiz-teams;
+                    }
+                    if S.wiz-nodraw-show: SwitchRow { title: @tr("No draws"); subtitle: @tr("Overtime until someone wins"); checked <=> S.wiz-nodraw; }
+                    ComboRow { title: @tr("Bot difficulty"); model: [@tr("Easy"), @tr("Normal"), @tr("Hard"), @tr("Expert")]; index <=> S.wiz-difficulty; }
+                    if S.wiz-site-show: ComboRow { title: @tr("Bomb site"); model: [@tr("Random"), "A", "B"]; index <=> S.wiz-site; }
+                    SwitchRow { title: @tr("No bots"); subtitle: @tr("Humans only, bots do not fill the empty seats"); checked <=> S.wiz-no-bots; }
+                    SwitchRow { title: @tr("Bots"); subtitle: @tr("Default"); checked <=> S.wiz-bots-on; }
+                    SpinRow { title: @tr("Number of bots"); maximum: 63; enabled: S.wiz-bots-on; value <=> S.wiz-bots; }
+                    EntryRow { title: @tr("Save as preset (name, optional)"); text <=> S.wiz-preset; }
+                }
+                Group {
+                    SwitchRow { title: @tr("Advanced"); subtitle: @tr("Rule changes for this match"); checked <=> S.wiz-advanced; }
+                    if S.wiz-advanced && S.wiz-kind-show: ComboRow {
+                        title: @tr("Match type");
+                        subtitle: @tr("Arms Race, Guardian and Danger Zone use their own maps");
+                        model: S.wiz-kinds;
+                        index <=> S.wiz-kind;
+                    }
+                    if S.wiz-advanced: SpinRow { title: @tr("Max rounds (0 = default)"); maximum: 99; value <=> S.wiz-rounds; }
+                    if S.wiz-advanced: SwitchRow { title: @tr("Infinite accuracy"); subtitle: @tr("No spread and no recoil for everyone"); checked <=> S.wiz-precision; }
+                    if S.wiz-advanced: SwitchRow { title: @tr("Anarchy"); subtitle: @tr("Nobody is kicked or banned automatically"); checked <=> S.wiz-anarchy; }
+                    if S.wiz-advanced: EntryRow { title: @tr("Extra variables"); subtitle: @tr("cvar=value separated by spaces"); text <=> S.wiz-extra; }
+                }
+            }
+        }
+        if S.wiz-step == 2: HorizontalLayout {
+            alignment: center;
+            Button { text: S.wiz-live ? @tr("Apply") : @tr("Next"); primary: true; clicked => { S.wiz-options-next(); } }
+        }
+        if S.wiz-step == 3: ScrollView {
+            vertical-stretch: 1;
+            VerticalLayout {
+                alignment: start;
+                Group {
+                    title: @tr("Server");
+                    ComboRow {
+                        title: @tr("Network");
+                        model: [@tr("LAN only"), @tr("Friends over VPN"), @tr("Internet (open port)"), @tr("Community (Steam server list)")];
+                        index <=> S.wiz-net;
+                    }
+                    EntryRow { title: @tr("Server name"); text <=> S.wiz-name; }
+                    EntryRow { title: @tr("Password (empty = none)"); text <=> S.wiz-pass; password: true; }
+                    SpinRow { title: @tr("Max players"); minimum: 2; maximum: 64; value <=> S.wiz-max; }
+                    if S.wiz-net == 3: EntryRow { title: @tr("GSLT token (community)"); text <=> S.wiz-gslt; password: true; }
+                }
+            }
+        }
+        if S.wiz-step == 3: HorizontalLayout {
+            alignment: center;
+            Button { text: @tr("Start"); primary: true; clicked => { S.wiz-start(); } }
+        }
+    }
+}

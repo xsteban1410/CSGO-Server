@@ -16,7 +16,7 @@ jobs:
     container: archlinux:latest
     steps:
       - name: Dependencies
-        run: pacman -Syu --noconfirm --needed base-devel git rust gtk4 libadwaita sqlite curl appstream desktop-file-utils
+        run: pacman -Syu --noconfirm --needed base-devel git rust gtk4 libadwaita sqlite curl appstream desktop-file-utils fontconfig freetype2 libxkbcommon wayland
       - uses: actions/checkout@v7
       - uses: actions/cache@v6
         with:
@@ -118,7 +118,7 @@ jobs:
         run: tools/test-promote.sh
       - name: English outside translation files
         run: |
-          ! git grep -nIP '[áéíóúñÁÉÍÓÚÑ¿¡]' -- . ':!README.es.md' ':!crates/gtk/src/i18n.rs' ':!game/modes/*.toml' ':!game/plugin/translations/*' \
+          ! git grep -nIP '[áéíóúñÁÉÍÓÚÑ¿¡]' -- . ':!README.es.md' ':!crates/gtk/src/i18n.rs' ':!crates/app/lang/*' ':!game/modes/*.toml' ':!game/plugin/translations/*' \
             ':!game/data/skins.es.cfg' ':!crates/core/src/skins_gen.rs' ':!packaging/*.metainfo.xml' ':!.github/workflows/ci.yml' | grep -v 'Español'
       - name: README translation
         run: python3 tools/test_sync_readme.py

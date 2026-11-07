@@ -1,0 +1,62 @@
+import { Button, ScrollView } from "std-widgets.slint";
+import { Group, Row, ValueRow, EntryRow, SwitchRow, ComboRow, SpinRow, Theme } from "kit.slint";
+import { S } from "state.slint";
+
+export component SettingsPage {
+    ScrollView {
+        width: 100%;
+        height: 100%;
+        VerticalLayout {
+            padding: 16px;
+            spacing: Theme.page-gap;
+            alignment: start;
+            Group {
+                title: @tr("Server");
+                ComboRow { title: @tr("Language"); subtitle: @tr("App, command line and in-game messages"); model: ["English", "Español"]; index <=> S.set-language; }
+                EntryRow { title: @tr("Server name"); text <=> S.set-name; }
+                EntryRow { title: @tr("Password (empty = none)"); text <=> S.set-pass; password: true; }
+                ComboRow {
+                    title: @tr("Network");
+                    model: [@tr("LAN only"), @tr("Friends over VPN"), @tr("Internet (open port)"), @tr("Community (Steam server list)")];
+                    index <=> S.set-net;
+                }
+                if S.set-net >= 2: SwitchRow {
+                    title: @tr("Open the port with UPnP");
+                    subtitle: @tr("Asks the router to open one UDP port while the server runs. Internet and community profiles; needs upnpc (miniupnpc)");
+                    checked <=> S.set-upnp;
+                }
+                SpinRow { title: @tr("Port"); minimum: 1024; maximum: 65000; value <=> S.set-port; }
+                SpinRow { title: @tr("Max players"); minimum: 2; maximum: 64; value <=> S.set-max; }
+                ComboRow { title: @tr("Tickrate"); model: ["64", "128"]; index <=> S.set-tick; }
+                EntryRow { title: @tr("GSLT token (community)"); text <=> S.set-gslt; password: true; }
+                EntryRow { title: @tr("Workshop Web API key"); text <=> S.set-wkey; password: true; }
+                SwitchRow { title: @tr("Skins plugin"); subtitle: @tr("Can cost the GSLT on public servers"); checked <=> S.set-skins; }
+                ValueRow { title: @tr("Server folder"); value: S.set-folder; }
+                HorizontalLayout { alignment: end; Button { text: @tr("Save"); primary: true; clicked => { S.set-save(); } } }
+            }
+            Group {
+                title: @tr("Maintenance");
+                HorizontalLayout {
+                    spacing: 8px;
+                    alignment: start;
+                    Button { text: @tr("Recompile plugins"); clicked => { S.set-redeploy(); } }
+                    Button { text: @tr("Update server and SourceMod"); clicked => { S.set-update(); } }
+                }
+            }
+            Group {
+                title: @tr("Backups");
+                description: @tr("Your config, modes, plugins, presets and skins. They hold your passwords: do not share them");
+                HorizontalLayout {
+                    spacing: 8px;
+                    alignment: start;
+                    Button { text: @tr("Create backup"); clicked => { S.set-backup(); } }
+                    Button { text: @tr("Restore the latest backup"); clicked => { S.set-restore(); } }
+                }
+            }
+            Group {
+                title: @tr("Diagnosis");
+                for c in S.set-doctor: ValueRow { title: c.key; value: c.value; value-color: c.warn ? Theme.warn : Theme.dim; }
+            }
+        }
+    }
+}

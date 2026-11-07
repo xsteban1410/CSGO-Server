@@ -8,6 +8,10 @@ The section of each version becomes the notes of its GitHub release, so keep the
 
 ## [Unreleased]
 
+### Added
+
+- `crates/app`, the Slint version of the desktop app with the same tabs, not packaged yet: the GTK app is still the one that ships.
+
 ### Changed
 
 - The game files moved to `game/` (`game/cfg`, `game/modes`, `game/plugin`, `game/data`). Installed packages keep their layout.

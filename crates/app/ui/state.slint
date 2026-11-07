@@ -1,0 +1,216 @@
+// Everything Rust and the pages share.
+import { ActionRow, Btn } from "kit.slint";
+export { ActionRow, Btn }
+
+export struct ConsoleLine { text: string, category: string }
+export struct Card { id: string, title: string, badge: string, kind: string, can: bool, installed: bool, thumb: image, tip: string }
+export struct KeyValue { key: string, value: string, warn: bool }
+export struct ModeItem { id: string, title: string, subtitle: string, heading: bool }
+export struct TeamEdit { strip: bool, weapon: int, pistol: int, item: int, health: int, speed: string, color: string }
+
+export global S {
+    // navigation
+    in-out property <int> tab: 0;
+    in-out property <string> setup: "";    // "", "welcome" or "install"
+    in-out property <string> toast;
+    // alert
+    in-out property <bool> alert-open;
+    in-out property <string> alert-title;
+    in-out property <string> alert-text;
+    in-out property <string> alert-yes;
+    in-out property <string> alert-no;
+    in-out property <bool> alert-danger;
+    callback alert-answer(bool);
+
+    // server
+    in-out property <bool> running;
+    in-out property <bool> rcon-ok;
+    in-out property <string> st-state;
+    in-out property <string> st-mode;
+    in-out property <string> st-map;
+    in-out property <string> st-players;
+    in-out property <string> st-resources;
+    in-out property <string> st-error;
+    in-out property <string> st-addr;
+    in-out property <string> st-vpn-addr;
+    in-out property <bool> st-is-vpn;
+    in-out property <bool> st-bridge;
+    in-out property <[ActionRow]> presets;
+    callback copy-addr();
+    callback copy-vpn();
+    callback bridge-start();
+    callback open-wizard(bool);
+    callback stop-server();
+    callback play();
+    callback quick(string);
+    callback preset-action(string, string);
+
+    // setup
+    in-out property <string> setup-folder;
+    in-out property <string> setup-deps;
+    in-out property <bool> setup-deps-ok;
+    in-out property <bool> setup-busy;
+    in-out property <float> setup-progress;
+    in-out property <string> setup-progress-text;
+    callback setup-only-join();
+    callback setup-choose-folder();
+    callback setup-download();
+
+    // wizard
+    in-out property <bool> wiz-open;
+    in-out property <bool> wiz-live;
+    in-out property <int> wiz-step;
+    in-out property <[ModeItem]> wiz-modes;
+    in-out property <[ModeItem]> wiz-maps;
+    in-out property <string> wiz-search;
+    in-out property <string> wiz-workshop;
+    in-out property <string> wiz-title;
+    in-out property <int> wiz-humans;
+    in-out property <bool> wiz-no-bots;
+    in-out property <bool> wiz-bots-on;
+    in-out property <int> wiz-bots: 5;
+    in-out property <int> wiz-difficulty;
+    in-out property <int> wiz-rounds;
+    in-out property <[string]> wiz-kinds;
+    in-out property <int> wiz-kind;
+    in-out property <bool> wiz-kind-show;
+    in-out property <bool> wiz-site-show;
+    in-out property <int> wiz-site;
+    in-out property <bool> wiz-teams-show;
+    in-out property <int> wiz-teams;
+    in-out property <bool> wiz-nodraw-show;
+    in-out property <bool> wiz-nodraw;
+    in-out property <bool> wiz-precision;
+    in-out property <bool> wiz-anarchy;
+    in-out property <string> wiz-extra;
+    in-out property <string> wiz-preset;
+    in-out property <bool> wiz-advanced;
+    in-out property <int> wiz-net;
+    in-out property <string> wiz-name;
+    in-out property <string> wiz-pass;
+    in-out property <int> wiz-max: 20;
+    in-out property <string> wiz-gslt;
+    callback wiz-pick-mode(string);
+    callback wiz-pick-map(string);
+    callback wiz-search-changed();
+    callback wiz-pick-workshop();
+    callback wiz-options-next();
+    callback wiz-start();
+
+    // players
+    in-out property <[ActionRow]> pl-now;
+    in-out property <[ActionRow]> pl-saved;
+    in-out property <[ActionRow]> pl-bans;
+    callback pl-now-action(string, string);
+    callback pl-saved-action(string, string);
+    callback pl-bans-action(string, string);
+    callback pl-refresh();
+    in-out property <bool> ban-open;
+    in-out property <string> ban-title;
+    in-out property <int> ban-minutes: 60;
+    in-out property <string> ban-reason;
+    callback ban-confirm();
+    in-out property <bool> skins-open;
+    in-out property <string> skins-title;
+    in-out property <[KeyValue]> skins-list;
+
+    // modes
+    in-out property <[ActionRow]> md-mine;
+    in-out property <[ActionRow]> md-builtin;
+    callback md-new();
+    callback md-import();
+    callback md-mine-action(string, string);
+    callback md-builtin-action(string, string);
+    in-out property <bool> ed-open;
+    in-out property <string> ed-title;
+    in-out property <bool> ed-editing;
+    in-out property <string> ed-id;
+    in-out property <string> ed-name;
+    in-out property <string> ed-desc;
+    in-out property <int> ed-base;
+    in-out property <string> ed-prefixes;
+    in-out property <TeamEdit> ed-t;
+    in-out property <TeamEdit> ed-ct;
+    in-out property <[string]> ed-t-weapons;
+    in-out property <[string]> ed-t-pistols;
+    in-out property <[string]> ed-t-items;
+    in-out property <[string]> ed-ct-weapons;
+    in-out property <[string]> ed-ct-pistols;
+    in-out property <[string]> ed-ct-items;
+    in-out property <int> ed-gravity: 800;
+    in-out property <bool> ed-respawn;
+    in-out property <bool> ed-headshot;
+    in-out property <int> ed-ammo;
+    in-out property <bool> ed-buy;
+    in-out property <int> ed-air: 12;
+    in-out property <string> ed-vampire;
+    in-out property <bool> ed-chamber;
+    in-out property <bool> ed-random;
+    in-out property <int> ed-boss;
+    in-out property <bool> ed-anarchy;
+    in-out property <bool> ed-cheats;
+    in-out property <bool> ed-zombies;
+    in-out property <string> ed-extra;
+    callback ed-save(bool);
+
+    // workshop
+    in-out property <[ActionRow]> ws-library;
+    in-out property <[Card]> ws-cards;
+    in-out property <string> ws-search;
+    in-out property <int> ws-tag;
+    in-out property <int> ws-sort;
+    in-out property <string> ws-by-id;
+    in-out property <bool> ws-busy;
+    in-out property <bool> ws-more;
+    callback ws-library-action(string, string);
+    callback ws-import();
+    callback ws-run-search(bool);
+    callback ws-install(string);
+    callback ws-install-id();
+    callback ws-shown();
+
+    // console
+    in-out property <[ConsoleLine]> con-lines;
+    in-out property <string> con-entry;
+    in-out property <string> con-search;
+    in-out property <bool> con-follow: true;
+    in-out property <bool> con-select;
+    in-out property <string> con-text;
+    in-out property <int> con-scroll-tick;
+    callback con-send();
+    callback con-history(int);
+    callback con-filter-changed();
+    callback con-copy();
+
+    // join
+    in-out property <string> jn-addr;
+    in-out property <bool> jn-vpn;
+    in-out property <string> jn-target;
+    in-out property <bool> jn-bridge;
+    callback jn-addr-changed();
+    callback jn-copy();
+    callback jn-stop-bridge();
+    callback jn-play();
+    callback jn-test();
+    callback jn-cs2();
+
+    // settings
+    in-out property <int> set-language;
+    in-out property <string> set-name;
+    in-out property <string> set-pass;
+    in-out property <int> set-net;
+    in-out property <int> set-port: 27030;
+    in-out property <int> set-max: 20;
+    in-out property <int> set-tick;
+    in-out property <string> set-gslt;
+    in-out property <string> set-wkey;
+    in-out property <bool> set-upnp;
+    in-out property <bool> set-skins;
+    in-out property <string> set-folder;
+    in-out property <[KeyValue]> set-doctor;
+    callback set-save();
+    callback set-redeploy();
+    callback set-update();
+    callback set-backup();
+    callback set-restore();
+}

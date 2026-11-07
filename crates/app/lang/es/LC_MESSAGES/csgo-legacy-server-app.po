@@ -1,0 +1,971 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: es\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Warning"
+msgstr "Aviso"
+
+msgid "Resources"
+msgstr "Recursos"
+
+msgid "Last SourceMod error"
+msgstr "Último error de SourceMod"
+
+msgid "The server has stopped. The Console tab may say why"
+msgstr "El servidor se ha detenido. La pestaña Consola puede indicar el motivo"
+
+msgid "Plugins"
+msgstr "Plugins"
+
+msgid "Server install"
+msgstr "Instalación del servidor"
+
+msgid "Free space"
+msgstr "Espacio libre"
+
+msgid "After logging out"
+msgstr "Al cerrar sesión"
+
+msgid "the server keeps running"
+msgstr "el servidor sigue en marcha"
+
+msgid "the server stops when you log out; to keep it: loginctl enable-linger"
+msgstr "el servidor se detiene al cerrar sesión; para evitarlo: loginctl enable-linger"
+
+msgid "the server keeps running after closing the app"
+msgstr "el servidor sigue en marcha al cerrar la app"
+
+msgid "missing: the server stops with the app"
+msgstr "falta: el servidor se detiene con la app"
+
+msgid "the last install did not finish: run csgo-legacy-server install"
+msgstr "la última instalación no terminó: ejecuta csgo-legacy-server install"
+
+msgid "Local IP"
+msgstr "IP local"
+
+msgid "UDP port"
+msgstr "Puerto UDP"
+
+msgid "up to date"
+msgstr "al día"
+
+msgid "SourceMod errors"
+msgstr "Errores de SourceMod"
+
+msgid "none in its last session"
+msgstr "ninguno en su última sesión"
+
+msgid "Config"
+msgstr "Configuración"
+
+msgid "CS:GO Legacy client"
+msgstr "Cliente de CS:GO Legacy"
+
+msgid "Steam not found (only needed to play on this PC)"
+msgstr "Steam no encontrado (solo hace falta para jugar en este PC)"
+
+msgid "only on this PC"
+msgstr "solo en este PC"
+
+msgid "Backups"
+msgstr "Copias de seguridad"
+
+msgid "Your config, modes, plugins, presets and skins. They hold your passwords: do not share them"
+msgstr "Tu configuración, modos, plugins, presets y skins. Incluyen tus contraseñas: no las compartas"
+
+msgid "Create backup"
+msgstr "Crear copia"
+
+msgid "Backup saved"
+msgstr "Copia guardada"
+
+msgid "Restore the latest backup"
+msgstr "Restaurar la última copia"
+
+msgid "There are no backups"
+msgstr "No hay copias"
+
+msgid "Nothing to restore: the files are the same"
+msgstr "Nada que restaurar: los archivos son iguales"
+
+msgid "Files that will change"
+msgstr "Archivos que cambiarán"
+
+msgid "Restore"
+msgstr "Restaurar"
+
+msgid "Backup restored; restart the app"
+msgstr "Copia restaurada; reinicia la app"
+
+msgid "Saving a backup"
+msgstr "Guardando una copia"
+
+msgid "stop the server before restoring a backup"
+msgstr "detén el servidor antes de restaurar una copia"
+
+msgid "stop the server before installing or updating"
+msgstr "detén el servidor antes de instalar o actualizar"
+
+msgid "another install is already running"
+msgstr "ya hay otra instalación en marcha"
+
+msgid "This server is reachable from the internet, has no VAC (-insecure) and anyone can join without a password. UDP port"
+msgstr "Este servidor es accesible desde internet, no tiene VAC (-insecure) y cualquiera puede entrar sin contraseña. Puerto UDP"
+
+msgid "This server is reachable from the internet and has no VAC (-insecure). Players need its password. UDP port"
+msgstr "Este servidor es accesible desde internet y no tiene VAC (-insecure). Los jugadores necesitan su contraseña. Puerto UDP"
+
+msgid "Language"
+msgstr "Idioma"
+
+msgid "App, command line and in-game messages"
+msgstr "App, línea de comandos y mensajes dentro del juego"
+
+msgid "Restart the app to apply the language"
+msgstr "Reinicia la app para aplicar el idioma"
+
+msgid "Knife"
+msgstr "Cuchillo"
+
+msgid "Downloading SteamCMD (~20 MB)"
+msgstr "Descargando SteamCMD (~20 MB)"
+
+msgid "CS:GO server (app 740, ~33 GB)"
+msgstr "Servidor de CS:GO (app 740, ~33 GB)"
+
+msgid "Adjusting the server"
+msgstr "Ajustando el servidor"
+
+msgid "Installing Metamod:Source"
+msgstr "Instalando Metamod:Source"
+
+msgid "Installing SourceMod"
+msgstr "Instalando SourceMod"
+
+msgid "Generating the skin list"
+msgstr "Generando la lista de skins"
+
+msgid "Compiling plugins and copying configs"
+msgstr "Compilando plugins y copiando configuraciones"
+
+msgid "Done"
+msgstr "Listo"
+
+msgid "the server is already running"
+msgstr "el servidor ya está en marcha"
+
+msgid "rcon: wrong password"
+msgstr "rcon: contraseña incorrecta"
+
+msgid "at least 1 human is needed"
+msgstr "hace falta al menos 1 humano"
+
+msgid "difficulty must be 0 to 3"
+msgstr "la dificultad debe estar entre 0 y 3"
+
+msgid "could not download SteamCMD"
+msgstr "no se pudo descargar SteamCMD"
+
+msgid "could not install app 740; try again (it resumes where it stopped)"
+msgstr "no se pudo instalar la app 740; inténtalo de nuevo (sigue donde se quedó)"
+
+msgid "rcon_password cannot contain spaces"
+msgstr "rcon_password no puede tener espacios"
+
+msgid "max_players must be 1 to 64"
+msgstr "max_players debe estar entre 1 y 64"
+
+msgid "open Steam first"
+msgstr "abre Steam primero"
+
+msgid "the download is not a .bsp map"
+msgstr "la descarga no es un mapa .bsp"
+
+msgid "the zip contains no .bsp"
+msgstr "el zip no contiene ningún .bsp"
+
+msgid "cancelled"
+msgstr "cancelado"
+
+msgid "Teams"
+msgstr "Equipos"
+
+msgid "Where humans start; anyone can switch afterwards"
+msgstr "Dónde empiezan los humanos; cada uno puede cambiarse después"
+
+msgid "Balanced, one on each side"
+msgstr "Repartidos, uno en cada lado"
+
+msgid "No bots"
+msgstr "Sin bots"
+
+msgid "Humans only, bots do not fill the empty seats"
+msgstr "Solo humanos, los bots no ocupan los sitios libres"
+
+msgid "No draws"
+msgstr "Sin empate"
+
+msgid "Overtime until someone wins"
+msgstr "Prórrogas hasta que gane alguien"
+
+msgid "0 = the warmup runs out by itself"
+msgstr "0 = el calentamiento termina solo"
+
+msgid "Together"
+msgstr "Juntos"
+
+msgid "Each one chooses"
+msgstr "Cada uno elige"
+
+msgid "Advanced"
+msgstr "Avanzado"
+
+msgid "Rule changes for this match"
+msgstr "Cambios de reglas para esta partida"
+
+msgid "Server"
+msgstr "Servidor"
+
+msgid "Players"
+msgstr "Jugadores"
+
+msgid "Console"
+msgstr "Consola"
+
+msgid "Join"
+msgstr "Unirse"
+
+msgid "Settings"
+msgstr "Ajustes"
+
+msgid "Status"
+msgstr "Estado"
+
+msgid "Running"
+msgstr "Encendido"
+
+msgid "Stopped"
+msgstr "Apagado"
+
+msgid "Starting…"
+msgstr "Arrancando…"
+
+msgid "Mode"
+msgstr "Modo"
+
+msgid "Map"
+msgstr "Mapa"
+
+msgid "Connect address"
+msgstr "Dirección para conectar"
+
+msgid "Copy"
+msgstr "Copiar"
+
+msgid "Copied"
+msgstr "Copiado"
+
+msgid "Start server"
+msgstr "Iniciar servidor"
+
+msgid "Change mode or map"
+msgstr "Cambiar modo o mapa"
+
+msgid "Stop"
+msgstr "Detener"
+
+msgid "Play"
+msgstr "Jugar"
+
+msgid "Choose a mode"
+msgstr "Elige un modo"
+
+msgid "Choose a map"
+msgstr "Elige un mapa"
+
+msgid "Options"
+msgstr "Opciones"
+
+msgid "Default map for this mode"
+msgstr "Mapa por defecto del modo"
+
+msgid "Keep the current one or use the mode's default"
+msgstr "Mantener el actual o el del modo"
+
+msgid "Workshop map ID"
+msgstr "ID de mapa del workshop"
+
+msgid "Search maps"
+msgstr "Buscar mapas"
+
+msgid "Humans to wait for"
+msgstr "Humanos a los que esperar"
+
+msgid "Bots"
+msgstr "Bots"
+
+msgid "Number of bots"
+msgstr "Cantidad de bots"
+
+msgid "Bot difficulty"
+msgstr "Dificultad de los bots"
+
+msgid "Easy"
+msgstr "Fácil"
+
+msgid "Normal"
+msgstr "Normal"
+
+msgid "Hard"
+msgstr "Difícil"
+
+msgid "Expert"
+msgstr "Experto"
+
+msgid "Max rounds (0 = default)"
+msgstr "Rondas máximas (0 = por defecto)"
+
+msgid "Match type"
+msgstr "Tipo de partida"
+
+msgid "Competitive"
+msgstr "Competitivo"
+
+msgid "Casual"
+msgstr "Casual"
+
+msgid "Wingman"
+msgstr "Wingman"
+
+msgid "Short competitive"
+msgstr "Competitivo corto"
+
+msgid "Turns on by itself with a Tailscale address (100.x). The server must use the VPN profile"
+msgstr "Se activa solo con una dirección de Tailscale (100.x). El servidor debe usar el perfil VPN"
+
+msgid "Type in the game console"
+msgstr "Escribe en la consola del juego"
+
+msgid "Test connection"
+msgstr "Probar conexión"
+
+msgid "The server answers"
+msgstr "El servidor responde"
+
+msgid "No answer: is the server on, with the VPN profile, and is your VPN connected?"
+msgstr "Sin respuesta: ¿está encendido el servidor, con perfil VPN, y tienes la VPN conectada?"
+
+msgid "Write the server address first"
+msgstr "Escribe primero la dirección del servidor"
+
+msgid "Opening. If it does not join by itself, paste the copied command in the console"
+msgstr "Abriendo. Si no entra solo, pega en la consola el comando copiado"
+
+msgid "Address for friends over VPN"
+msgstr "Dirección para amigos por VPN"
+
+msgid "VPN bridge"
+msgstr "Puente VPN"
+
+msgid "Not running: friends cannot join"
+msgstr "Apagado: los amigos no pueden entrar"
+
+msgid "No Tailscale address found: use this PC's VPN IP"
+msgstr "No encuentro dirección de Tailscale: usa la IP de VPN de este PC"
+
+msgid "Free-for-all deathmatch"
+msgstr "Deathmatch todos contra todos"
+
+msgid "Team deathmatch"
+msgstr "Deathmatch por equipos"
+
+msgid "Guardian"
+msgstr "Guardián"
+
+msgid "Danger Zone"
+msgstr "Zona de peligro"
+
+msgid "Arms Race, Guardian and Danger Zone use their own maps"
+msgstr "Carrera de armas, Guardián y Zona de peligro usan sus propios mapas"
+
+msgid "Bomb site"
+msgstr "Sitio de la bomba"
+
+msgid "Random"
+msgstr "Al azar"
+
+msgid "Infinite accuracy"
+msgstr "Precisión infinita"
+
+msgid "No spread and no recoil for everyone"
+msgstr "Sin dispersión ni retroceso para todos"
+
+msgid "Anarchy"
+msgstr "Anarquía"
+
+msgid "Nobody is kicked or banned automatically"
+msgstr "Nadie es expulsado ni baneado automáticamente"
+
+msgid "Extra variables"
+msgstr "Variables extra"
+
+msgid "cvar=value separated by spaces"
+msgstr "cvar=valor separadas por espacios"
+
+msgid "Next"
+msgstr "Siguiente"
+
+msgid "Start"
+msgstr "Iniciar"
+
+msgid "Apply"
+msgstr "Aplicar"
+
+msgid "Network"
+msgstr "Red"
+
+msgid "LAN only"
+msgstr "Solo red local"
+
+msgid "Friends over VPN"
+msgstr "Amigos por VPN"
+
+msgid "Internet (open port)"
+msgstr "Internet (puerto abierto)"
+
+msgid "Community (Steam server list)"
+msgstr "Comunitario (lista de Steam)"
+
+msgid "Server name"
+msgstr "Nombre del servidor"
+
+msgid "Password (empty = none)"
+msgstr "Contraseña (vacía = sin contraseña)"
+
+msgid "Max players"
+msgstr "Máximo de jugadores"
+
+msgid "GSLT token (community)"
+msgstr "Token GSLT (comunitario)"
+
+msgid "Server started"
+msgstr "Servidor iniciado"
+
+msgid "Server stopped"
+msgstr "Servidor detenido"
+
+msgid "Mode changed"
+msgstr "Modo cambiado"
+
+msgid "Error"
+msgstr "Error"
+
+msgid "Kick"
+msgstr "Expulsar"
+
+msgid "Ban"
+msgstr "Banear"
+
+msgid "Skins"
+msgstr "Skins"
+
+msgid "Reason"
+msgstr "Motivo"
+
+msgid "Minutes (0 = permanent)"
+msgstr "Minutos (0 = permanente)"
+
+msgid "Cancel"
+msgstr "Cancelar"
+
+msgid "Connected now"
+msgstr "Conectados ahora"
+
+msgid "No players"
+msgstr "Sin jugadores"
+
+msgid "Saved skins"
+msgstr "Skins guardadas"
+
+msgid "Players with skins saved, also offline"
+msgstr "Jugadores con skins guardadas, también desconectados"
+
+msgid "Bans"
+msgstr "Baneos"
+
+msgid "Unban"
+msgstr "Desbanear"
+
+msgid "Refresh"
+msgstr "Actualizar"
+
+msgid "Nothing saved"
+msgstr "Nada guardado"
+
+msgid "Send command"
+msgstr "Enviar comando"
+
+msgid "Save"
+msgstr "Guardar"
+
+msgid "Saved"
+msgstr "Guardado"
+
+msgid "Port"
+msgstr "Puerto"
+
+msgid "Tickrate"
+msgstr "Tickrate"
+
+msgid "Workshop Web API key"
+msgstr "Clave Web API del workshop"
+
+msgid "Skins plugin"
+msgstr "Plugin de skins"
+
+msgid "Can cost the GSLT on public servers"
+msgstr "En servidores públicos puede costar el GSLT"
+
+msgid "Server folder"
+msgstr "Carpeta del servidor"
+
+msgid "Maintenance"
+msgstr "Mantenimiento"
+
+msgid "Recompile plugins"
+msgstr "Recompilar plugins"
+
+msgid "Update server and SourceMod"
+msgstr "Actualizar servidor y SourceMod"
+
+msgid "Diagnosis"
+msgstr "Diagnóstico"
+
+msgid "Dependencies"
+msgstr "Dependencias"
+
+msgid "Firewall"
+msgstr "Cortafuegos"
+
+msgid "Welcome"
+msgstr "Bienvenido"
+
+msgid "Set up a CS:GO Legacy server to play with friends and bots, or join one"
+msgstr "Monta un servidor de CS:GO Legacy para jugar con amigos y bots, o únete a uno"
+
+msgid "Create a server"
+msgstr "Crear un servidor"
+
+msgid "Only join servers"
+msgstr "Solo unirme a servidores"
+
+msgid "Download the server"
+msgstr "Descargar el servidor"
+
+msgid "About 33 GB. You can close the app: the download continues and resumes if cut."
+msgstr "Unos 33 GB. Puedes cerrar la app: la descarga sigue y se reanuda si se corta."
+
+msgid "Download"
+msgstr "Descargar"
+
+msgid "Change"
+msgstr "Cambiar"
+
+msgid "Installing…"
+msgstr "Instalando…"
+
+msgid "Installation failed"
+msgstr "La instalación falló"
+
+msgid "Installed"
+msgstr "Instalado"
+
+msgid "Server address"
+msgstr "Dirección del servidor"
+
+msgid "Through VPN bridge"
+msgstr "Por puente VPN"
+
+msgid "For friends over Tailscale/ZeroTier with the server in VPN mode"
+msgstr "Para amigos por Tailscale/ZeroTier con el servidor en modo VPN"
+
+msgid "Open CS:GO Legacy"
+msgstr "Abrir CS:GO Legacy"
+
+msgid "Open CS2"
+msgstr "Abrir CS2"
+
+msgid "Stop bridge"
+msgstr "Parar puente"
+
+msgid "Bridge running"
+msgstr "Puente activo"
+
+msgid "Restart the server to apply network changes"
+msgstr "Reinicia el servidor para aplicar los cambios de red"
+
+msgid "Stop the server?"
+msgstr "¿Detener el servidor?"
+
+msgid "Players will be disconnected."
+msgstr "Se desconectará a los jugadores."
+
+msgid "The server keeps running when you close the app."
+msgstr "El servidor sigue encendido aunque cierres la app."
+
+msgid "Back"
+msgstr "Atrás"
+
+msgid "Default"
+msgstr "Por defecto"
+
+msgid "Classic"
+msgstr "Clásico"
+
+msgid "Weapons"
+msgstr "Armas"
+
+msgid "Deathmatch"
+msgstr "Deathmatch"
+
+msgid "Fun"
+msgstr "Diversión"
+
+msgid "Objective"
+msgstr "Objetivo"
+
+msgid "PvE"
+msgstr "Contra bots (PvE)"
+
+msgid "Custom"
+msgstr "Personalizados"
+
+msgid "Not installed"
+msgstr "No instalado"
+
+msgid "installed"
+msgstr "instalado"
+
+msgid "missing"
+msgstr "falta"
+
+msgid "Modes"
+msgstr "Modos"
+
+msgid "Workshop"
+msgstr "Workshop"
+
+msgid "Your modes"
+msgstr "Tus modos"
+
+msgid "They are saved in ~/.config/csgo-legacy-server/modes and deployed automatically"
+msgstr "Se guardan en ~/.config/csgo-legacy-server/modes y se despliegan solos"
+
+msgid "New mode"
+msgstr "Nuevo modo"
+
+msgid "Import"
+msgstr "Importar"
+
+msgid "Export"
+msgstr "Exportar"
+
+msgid "Edit"
+msgstr "Editar"
+
+msgid "Delete"
+msgstr "Borrar"
+
+msgid "Duplicate"
+msgstr "Duplicar"
+
+msgid "Built-in modes"
+msgstr "Modos incluidos"
+
+msgid "Duplicate one to make your own version"
+msgstr "Duplica uno para hacer tu versión"
+
+msgid "No custom modes yet"
+msgstr "Aún no hay modos propios"
+
+msgid "Imported mode"
+msgstr "Modo importado"
+
+msgid "Edit mode"
+msgstr "Editar modo"
+
+msgid "General"
+msgstr "General"
+
+msgid "Id (lowercase, numbers and _)"
+msgstr "Id (minúsculas, números y _)"
+
+msgid "Name"
+msgstr "Nombre"
+
+msgid "Description"
+msgstr "Descripción"
+
+msgid "Valve game type"
+msgstr "Tipo de juego de Valve"
+
+msgid "From the match type"
+msgstr "Según el tipo de partida"
+
+msgid "Arms Race"
+msgstr "Carrera de armas"
+
+msgid "Demolition"
+msgstr "Demolición"
+
+msgid "Allowed map prefixes (empty = any)"
+msgstr "Prefijos de mapa permitidos (vacío = cualquiera)"
+
+msgid "Terrorists"
+msgstr "Terroristas"
+
+msgid "Counter-Terrorists"
+msgstr "Antiterroristas"
+
+msgid "Strip weapons on spawn"
+msgstr "Quitar armas al aparecer"
+
+msgid "Primary weapon"
+msgstr "Arma principal"
+
+msgid "Pistol"
+msgstr "Pistola"
+
+msgid "Extra item"
+msgstr "Objeto extra"
+
+msgid "Health (0 = normal)"
+msgstr "Vida (0 = normal)"
+
+msgid "Speed"
+msgstr "Velocidad"
+
+msgid "Color R,G,B (empty = normal)"
+msgstr "Color R,G,B (vacío = normal)"
+
+msgid "Rules"
+msgstr "Reglas"
+
+msgid "Gravity (800 = normal)"
+msgstr "Gravedad (800 = normal)"
+
+msgid "Respawn on death"
+msgstr "Reaparecer al morir"
+
+msgid "Headshots only"
+msgstr "Solo tiros a la cabeza"
+
+msgid "Infinite ammo"
+msgstr "Munición infinita"
+
+msgid "No"
+msgstr "No"
+
+msgid "Yes"
+msgstr "Sí"
+
+msgid "Yes, without reloading"
+msgstr "Sí, sin recargar"
+
+msgid "Buy anywhere"
+msgstr "Comprar en cualquier sitio"
+
+msgid "Air acceleration (12 = normal)"
+msgstr "Aceleración en el aire (12 = normal)"
+
+msgid "Special rules"
+msgstr "Reglas especiales"
+
+msgid "Vampire: fraction of damage that heals (0 = off)"
+msgstr "Vampiro: fracción del daño que cura (0 = no)"
+
+msgid "One in the Chamber"
+msgstr "Una bala"
+
+msgid "Random weapon each round"
+msgstr "Arma aleatoria cada ronda"
+
+msgid "Boss bot health (0 = no boss)"
+msgstr "Vida del bot jefe (0 = sin jefe)"
+
+msgid "Random cheats power-ups"
+msgstr "Power-ups de cheats aleatorios"
+
+msgid "Zombie waves (T are zombies)"
+msgstr "Oleadas de zombis (los T son zombis)"
+
+msgid "One per line: cvar value"
+msgstr "Una por línea: cvar valor"
+
+msgid "Save and try"
+msgstr "Guardar y probar"
+
+msgid "A mode already exists with id"
+msgstr "Ya existe un modo con id"
+
+msgid "Installed maps"
+msgstr "Mapas instalados"
+
+msgid "Drop a .bsp file here to import it. Bots need a .nav: generate it once per map."
+msgstr "Suelta aquí un .bsp para importarlo. Los bots necesitan un .nav: genéralo una vez por mapa."
+
+msgid "Import .bsp"
+msgstr "Importar .bsp"
+
+msgid "Search the Workshop"
+msgstr "Buscar en el Workshop"
+
+msgid "Only CS:GO maps work. CS2 maps (Source 2) cannot be loaded by CS:GO Legacy."
+msgstr "Solo sirven mapas de CS:GO. Los de CS2 (Source 2) no los puede cargar CS:GO Legacy."
+
+msgid "Any type"
+msgstr "Cualquier tipo"
+
+msgid "Type"
+msgstr "Tipo"
+
+msgid "Order"
+msgstr "Orden"
+
+msgid "Trending"
+msgstr "Tendencia"
+
+msgid "Most popular"
+msgstr "Más populares"
+
+msgid "Most recent"
+msgstr "Más recientes"
+
+msgid "Install by ID or link (map or collection)"
+msgstr "Instalar por ID o enlace (mapa o colección)"
+
+msgid "More results"
+msgstr "Más resultados"
+
+msgid "No workshop maps installed"
+msgstr "No hay mapas del workshop instalados"
+
+msgid "bots ready"
+msgstr "listo para bots"
+
+msgid "no .nav for bots"
+msgstr "sin .nav para bots"
+
+msgid "Load"
+msgstr "Cargar"
+
+msgid "Generate .nav"
+msgstr "Generar .nav"
+
+msgid "Generating .nav (seconds to minutes)…"
+msgstr "Generando .nav (de segundos a minutos)…"
+
+msgid "Bots ready"
+msgstr "Listo para bots"
+
+msgid "Not found:"
+msgstr "No encontrado:"
+
+msgid "Install"
+msgstr "Instalar"
+
+msgid "CS2 only — incompatible"
+msgstr "Solo CS2 — incompatible"
+
+msgid "Collection"
+msgstr "Colección"
+
+msgid "Not a map"
+msgstr "No es un mapa"
+
+msgid "Plugins that do not compile (the server keeps the previous version):"
+msgstr "Plugins que no compilan (el servidor sigue con la versión anterior):"
+
+msgid "Compiled and reloaded"
+msgstr "Compilado y recargado"
+
+msgid "Removed"
+msgstr "Quitado"
+
+msgid "Compiled"
+msgstr "Compilado"
+
+msgid "+ Bot"
+msgstr "+ Bot"
+
+msgid "− Bot"
+msgstr "− Bot"
+
+msgid "End warmup"
+msgstr "Acabar calentamiento"
+
+msgid "Match"
+msgstr "Partida"
+
+msgid "Preset saved"
+msgstr "Preset guardado"
+
+msgid "Presets"
+msgstr "Presets"
+
+msgid "Restart round"
+msgstr "Reiniciar ronda"
+
+msgid "Round restarted"
+msgstr "Ronda reiniciada"
+
+msgid "Save as preset (name, optional)"
+msgstr "Guardar como preset (nombre, opcional)"
+
+msgid "Save one from the last step of “Start server”"
+msgstr "Guarda uno desde el último paso de «Iniciar servidor»"
+
+msgid "Warmup ended"
+msgstr "Calentamiento terminado"
+
+msgid "Open the port with UPnP"
+msgstr "Abrir el puerto por UPnP"
+
+msgid "Asks the router to open one UDP port while the server runs. Internet and community profiles; needs upnpc (miniupnpc)"
+msgstr "Pide al router abrir un puerto UDP mientras el servidor está en marcha. Perfiles Internet y comunitario; necesita upnpc (miniupnpc)"
+
+msgid "Close"
+msgstr "Cerrar"
+
+msgid "Search"
+msgstr "Buscar"
+
+msgid "Follow"
+msgstr "Seguir"
+
+msgid "Select text"
+msgstr "Seleccionar texto"
+
+msgid "Bots need a .nav: generate it once per map."
+msgstr "Los bots necesitan un .nav: genéralo una vez por mapa."
+
+msgid "Leave it running"
+msgstr "Dejarlo en marcha"
+
+msgid "Open"
+msgstr "Abrir"
+
+msgid "Quit"
+msgstr "Salir"
+
+msgid "Stop and quit"
+msgstr "Parar y salir"
+
+msgid "The server is running. Stop it too?"
+msgstr "El servidor está en marcha. ¿Pararlo también?"
+
+msgid "No bans"
+msgstr "Sin baneos"

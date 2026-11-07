@@ -1,0 +1,72 @@
+import { Button, ScrollView } from "std-widgets.slint";
+import { Group, Row, ValueRow, ActionList, Theme } from "kit.slint";
+import { S } from "state.slint";
+
+export component ServerPage {
+    ScrollView {
+        width: 100%;
+        height: 100%;
+        VerticalLayout {
+            padding: 16px;
+            spacing: Theme.page-gap;
+            alignment: start;
+            Group {
+                title: @tr("Server");
+                ValueRow { title: @tr("Status"); value: S.st-state; }
+                ValueRow { title: @tr("Mode"); value: S.st-mode; }
+                ValueRow { title: @tr("Map"); value: S.st-map; }
+                ValueRow { title: @tr("Players"); value: S.st-players; }
+                ValueRow { title: @tr("Resources"); value: S.st-resources; }
+                if S.st-error != "": ValueRow { title: @tr("Last SourceMod error"); value: S.st-error; value-color: Theme.bad; }
+                ValueRow {
+                    title: @tr("Connect address");
+                    value: S.st-addr;
+                    Button { text: @tr("Copy"); clicked => { S.copy-addr(); } }
+                }
+                if S.st-is-vpn: ValueRow {
+                    title: @tr("Address for friends over VPN");
+                    value: S.st-vpn-addr;
+                    Button { text: @tr("Copy"); clicked => { S.copy-vpn(); } }
+                }
+                if S.st-is-vpn && S.running: ValueRow {
+                    title: @tr("VPN bridge");
+                    value: S.st-bridge ? @tr("Running") : @tr("Not running: friends cannot join");
+                    if !S.st-bridge: Button { text: @tr("Start"); clicked => { S.bridge-start(); } }
+                }
+            }
+            VerticalLayout {
+                spacing: 8px;
+                HorizontalLayout {
+                    alignment: center;
+                    spacing: 12px;
+                    if !S.running: Button { text: @tr("Start server"); primary: true; clicked => { S.open-wizard(false); } }
+                    if S.running && S.rcon-ok: Button { text: @tr("Change mode or map"); clicked => { S.open-wizard(true); } }
+                    if S.running: Button { text: @tr("Stop"); clicked => { S.stop-server(); } }
+                    Button { text: @tr("Play"); clicked => { S.play(); } }
+                }
+                Text {
+                    text: @tr("The server keeps running when you close the app.");
+                    font-size: Theme.small;
+                    color: Theme.dim;
+                    horizontal-alignment: center;
+                }
+            }
+            if S.rcon-ok: Group {
+                title: @tr("Match");
+                HorizontalLayout {
+                    alignment: center;
+                    spacing: 8px;
+                    Button { text: @tr("Restart round"); clicked => { S.quick("restart"); } }
+                    Button { text: @tr("End warmup"); clicked => { S.quick("warmup"); } }
+                    Button { text: @tr("+ Bot"); clicked => { S.quick("bot+"); } }
+                    Button { text: @tr("− Bot"); clicked => { S.quick("bot-"); } }
+                }
+            }
+            if S.presets.length > 0: Group {
+                title: @tr("Presets");
+                description: @tr("Save one from the last step of “Start server”");
+                ActionList { rows: S.presets; clicked(id, action) => { S.preset-action(id, action); } }
+            }
+        }
+    }
+}

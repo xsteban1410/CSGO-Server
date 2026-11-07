@@ -1,0 +1,137 @@
+import { Button, ScrollView, TextEdit } from "std-widgets.slint";
+import { Group, Row, ActionList, Overlay, SwitchRow, SpinRow, ComboRow, EntryRow, Theme } from "kit.slint";
+import { S, TeamEdit } from "state.slint";
+
+export component ModesPage {
+    ScrollView {
+        width: 100%;
+        height: 100%;
+        VerticalLayout {
+            padding: 16px;
+            spacing: Theme.page-gap;
+            alignment: start;
+            HorizontalLayout {
+                alignment: end;
+                spacing: 8px;
+                Button { text: @tr("Import"); clicked => { S.md-import(); } }
+                Button { text: @tr("New mode"); primary: true; clicked => { S.md-new(); } }
+            }
+            Group {
+                title: @tr("Your modes");
+                description: @tr("They are saved in ~/.config/csgo-legacy-server/modes and deployed automatically");
+                ActionList { rows: S.md-mine; empty: @tr("No custom modes yet"); clicked(id, action) => { S.md-mine-action(id, action); } }
+            }
+            Group {
+                title: @tr("Built-in modes");
+                description: @tr("Duplicate one to make your own version");
+                ActionList { rows: S.md-builtin; clicked(id, action) => { S.md-builtin-action(id, action); } }
+            }
+        }
+    }
+}
+
+component TeamGroup inherits Group {
+    in property <[string]> weapons;
+    in property <[string]> pistols;
+    in property <[string]> items;
+    in-out property <TeamEdit> team;
+    SwitchRow {
+        title: @tr("Strip weapons on spawn");
+        checked: root.team.strip;
+        changed checked => { root.team.strip = self.checked; }
+    }
+    ComboRow {
+        title: @tr("Primary weapon");
+        model: root.weapons;
+        index: root.team.weapon;
+        changed index => { root.team.weapon = self.index; }
+    }
+    ComboRow {
+        title: @tr("Pistol");
+        model: root.pistols;
+        index: root.team.pistol;
+        changed index => { root.team.pistol = self.index; }
+    }
+    ComboRow {
+        title: @tr("Extra item");
+        model: root.items;
+        index: root.team.item;
+        changed index => { root.team.item = self.index; }
+    }
+    SpinRow {
+        title: @tr("Health (0 = normal)");
+        maximum: 10000;
+        step: 25;
+        value: root.team.health;
+        changed value => { root.team.health = self.value; }
+    }
+    EntryRow {
+        title: @tr("Speed");
+        text: root.team.speed;
+        changed text => { root.team.speed = self.text; }
+    }
+    EntryRow {
+        title: @tr("Color R,G,B (empty = normal)");
+        text: root.team.color;
+        changed text => { root.team.color = self.text; }
+    }
+}
+
+export component ModeEditor {
+    Overlay {
+        card-width: 760px;
+        card-height: 780px;
+        HorizontalLayout {
+            spacing: 8px;
+            Text { text: S.ed-title; font-size: 16px; font-weight: 700; color: Theme.text; vertical-alignment: center; horizontal-stretch: 1; }
+            Button { text: @tr("Cancel"); clicked => { S.ed-open = false; } }
+            if S.rcon-ok: Button { text: @tr("Save and try"); clicked => { S.ed-save(true); } }
+            Button { text: @tr("Save"); primary: true; clicked => { S.ed-save(false); } }
+        }
+        ScrollView {
+            vertical-stretch: 1;
+            VerticalLayout {
+                spacing: Theme.page-gap;
+                alignment: start;
+                Group {
+                    title: @tr("General");
+                    EntryRow { title: @tr("Id (lowercase, numbers and _)"); text <=> S.ed-id; enabled: !S.ed-editing; }
+                    EntryRow { title: @tr("Name"); text <=> S.ed-name; }
+                    EntryRow { title: @tr("Description"); text <=> S.ed-desc; }
+                    ComboRow {
+                        title: @tr("Valve game type");
+                        model: [@tr("From the match type"), @tr("Deathmatch"), @tr("Arms Race"), @tr("Demolition")];
+                        index <=> S.ed-base;
+                    }
+                    EntryRow { title: @tr("Allowed map prefixes (empty = any)"); text <=> S.ed-prefixes; }
+                }
+                TeamGroup { title: @tr("Terrorists"); weapons: S.ed-t-weapons; pistols: S.ed-t-pistols; items: S.ed-t-items; team <=> S.ed-t; }
+                TeamGroup { title: @tr("Counter-Terrorists"); weapons: S.ed-ct-weapons; pistols: S.ed-ct-pistols; items: S.ed-ct-items; team <=> S.ed-ct; }
+                Group {
+                    title: @tr("Rules");
+                    SpinRow { title: @tr("Gravity (800 = normal)"); minimum: 50; maximum: 1600; step: 50; value <=> S.ed-gravity; }
+                    SwitchRow { title: @tr("Respawn on death"); checked <=> S.ed-respawn; }
+                    SwitchRow { title: @tr("Headshots only"); checked <=> S.ed-headshot; }
+                    ComboRow { title: @tr("Infinite ammo"); model: [@tr("No"), @tr("Yes"), @tr("Yes, without reloading")]; index <=> S.ed-ammo; }
+                    SwitchRow { title: @tr("Buy anywhere"); checked <=> S.ed-buy; }
+                    SpinRow { title: @tr("Air acceleration (12 = normal)"); maximum: 1000; value <=> S.ed-air; }
+                }
+                Group {
+                    title: @tr("Special rules");
+                    EntryRow { title: @tr("Vampire: fraction of damage that heals (0 = off)"); text <=> S.ed-vampire; }
+                    SwitchRow { title: @tr("One in the Chamber"); checked <=> S.ed-chamber; }
+                    SwitchRow { title: @tr("Random weapon each round"); checked <=> S.ed-random; }
+                    SpinRow { title: @tr("Boss bot health (0 = no boss)"); maximum: 20000; step: 500; value <=> S.ed-boss; }
+                    SwitchRow { title: @tr("Anarchy"); subtitle: @tr("Nobody is kicked or banned automatically"); checked <=> S.ed-anarchy; }
+                    SwitchRow { title: @tr("Random cheats power-ups"); checked <=> S.ed-cheats; }
+                    SwitchRow { title: @tr("Zombie waves (T are zombies)"); checked <=> S.ed-zombies; }
+                }
+                Group {
+                    title: @tr("Extra variables");
+                    description: @tr("One per line: cvar value");
+                    TextEdit { height: 140px; text <=> S.ed-extra; wrap: no-wrap; }
+                }
+            }
+        }
+    }
+}
