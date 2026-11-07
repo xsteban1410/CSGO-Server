@@ -244,11 +244,7 @@ func (a *agent) monitor(ctx context.Context) {
 					}
 				}
 				if client != nil {
-					out, err := client.Exec("status", 3*time.Second)
-					var mode string
-					if err == nil {
-						mode, err = client.Exec("modo_nombre", 3*time.Second)
-					}
+					out, mode, err := pollServer(client.Exec)
 					if err != nil {
 						client.Close()
 						client = nil
@@ -443,4 +439,20 @@ func (a *agent) rotate() {
 		a.events.Offset = 0
 		a.saveOffset(0)
 	}
+}
+
+// pollServer reads the status and the mode. srcds writes what rcon runs to console.log, so the poll goes between the
+// markers that the app's console hides (POLL_BEGIN and POLL_END in crates/app), or it would flood the console.
+func pollServer(exec func(string, time.Duration) (string, error)) (out, mode string, err error) {
+	if _, err = exec("echo csls_poll_begin", 3*time.Second); err != nil {
+		return
+	}
+	if out, err = exec("status", 3*time.Second); err != nil {
+		return
+	}
+	if mode, err = exec("modo_nombre", 3*time.Second); err != nil {
+		return
+	}
+	_, err = exec("echo csls_poll_end", 3*time.Second)
+	return
 }
