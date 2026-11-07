@@ -181,7 +181,9 @@ pub fn deploy(cfg: &Config, force: bool, reload: bool) -> crate::Result<Report> 
     std::fs::create_dir_all(sm.join("plugins"))?;
     for p in &plugins {
         let smx = sm.join("plugins").join(format!("{}.smx", p.name));
-        if force || needs_compile(p, &smx) {
+        // turned off in the plugin manager: compiling would turn it on again
+        let disabled = sm.join("plugins/disabled").join(format!("{}.smx", p.name)).is_file();
+        if !disabled && (force || needs_compile(p, &smx)) {
             match compile(&sm, p)? {
                 Ok(()) => r.compiled.push(p.name.clone()),
                 Err(e) => r.errors.push((p.name.clone(), e)),

@@ -14,6 +14,7 @@ pub mod modes;
 pub mod net;
 pub mod paths;
 pub mod players;
+pub mod plugins;
 pub mod presets;
 pub mod rcon;
 pub mod rules;
