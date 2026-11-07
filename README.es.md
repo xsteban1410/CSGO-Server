@@ -210,6 +210,7 @@ Se guarda por SteamID y se aplica cada vez que entras. Los mensajes salen en el 
 
 - Sin demorarse, systemd detiene los servicios del usuario cuando cierra la sesión, y el servidor con ellos. Para que siga funcionando, ejecute `loginctl enable-linger`; `doctor` te indica si está apagado.
 - `doctor --report` imprime un informe sobre problemas con contraseñas, IP e ID de Steam ocultos, y `status --json` está destinado a scripts.
+- Los paquetes instalan terminaciones de shell. De la fuente: `csgo-legacy-server completions fish > ~/.config/fish/completions/csgo-legacy-server.fish` (también `bash` y `zsh`).
 
 - `plugin/csls_directconnect` parchea el motor en memoria para que se pueda entrar por IP sin lobby de matchmaking. Sus firmas
   para Linux corresponden al `engine.so` actual; si Valve actualiza los binarios del servidor, el log dirá "signature not
