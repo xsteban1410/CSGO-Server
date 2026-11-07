@@ -85,7 +85,7 @@ csgo-legacy-server rcon "command" | play [cs2|local|IP:PORT] | bridge | doctor |
 ```
 
 Start/mode options: `-m/--map`, `-t/--type competitive|short|casual|wingman|dm|ffa|tdm|armsrace|demolition|guardian|dz`, `-d/--difficulty 0-3`, `-b/--bots`,
-`-r/--rounds`, `-s/--site a|b|random`, `--teams together|versus|free` (competitive modes), `-p/--precision` (no spread or recoil for everyone), `--anarchy`,
+`-r/--rounds`, `-s/--site a|b|random`, `--no-bots`, `--teams versus|together|free` (competitive modes, where humans start), `--no-draw` (`competitivo` and `premier`: overtime until someone wins), `-p/--precision` (no spread or recoil for everyone), `--anarchy`,
 `-w/--workshop ID`, `--set cvar=value` (repeatable), `--preset NAME`, `--save-preset NAME`.
 
 ```bash
@@ -97,7 +97,7 @@ csgo-legacy-server start premier 2 --teams versus
 
 ## Modes
 
-Humans play CT and bots T (5, expert) unless the mode says otherwise.
+Everyone picks their own team, as on a Valve or community server. Bots (expert) fill the empty seats and leave when a human joins; `--no-bots` plays humans only. Warmup runs out by itself unless you ask it to wait for players (`start awp 2`). Only modes whose rules need sides fix them: `retake`, `defensa`, `clutch`, `zombies`, `ninjas`, `aim` and Guardian.
 
 | Mode | |
 |---|---|
@@ -131,11 +131,11 @@ Humans play CT and bots T (5, expert) unless the mode says otherwise.
 | `luna` | **Moon** — AWP and Deagle with very low gravity, as if on the Moon |
 | `negev` | **Negev** — Everyone gets a Negev and nothing else. Short rounds, no buying |
 | `ninjas` | **Ninjas** — Fast, almost invisible bots with knives hunt you. Buy what you want and listen for them |
-| `normal` | **Normal** — Rounds against 5 bots with $16000 every round, so you can always buy anything |
+| `normal` | **Normal** — Rounds with $16000 every round, so you can always buy anything |
 | `pesados` | **Heavy armor** — Everyone in a Heavy Assault Suit with an M249: tough and slow |
 | `pistolas` | **Deagle** — Everyone gets only a Deagle. Short rounds, no buying |
 | `premier` | **Premier** — Premier rules: 5v5, first to 13, overtime and map bans in warmup. No CS Rating, that needs Valve's servers |
-| `rehenes` | **Hostages** — You (CT) rescue the hostages from 5 bots, on cs_ maps |
+| `rehenes` | **Hostages** — Rescue or guard the hostages, on cs_ maps |
 | `retake` | **Retake** — The bomb is already planted and you (CT) must defuse it against 5 bots guarding it |
 | `rifles` | **Rifles** — Everyone gets an AK-47 and a Deagle. Short rounds, no buying |
 | `scout` | **Scout** — Everyone gets an SSG 08 and a P250. Short rounds, no buying |
@@ -148,7 +148,7 @@ Humans play CT and bots T (5, expert) unless the mode says otherwise.
 | `zeus` | **Zeus** — Deathmatch with a Zeus that never runs out |
 | `zombies` | **Zombies** — Survive five waves of zombie bots with all the guns and infinite ammo. If you die, you turn |
 
-**Competitive matches** (`competitivo`, `premier`, `wingman`, `duelo`) are normal matches, not custom rules: economy, side swap at half time and overtime. Humans play together or against each other (`--teams`, or **Teams** in the wizard) and bots fill the empty seats. In `competitivo`, `premier` and `wingman` the match starts when everyone types `!ready` or when the warmup ends; `duelo` starts as soon as you are both in. In `premier`, humans take turns banning maps during warmup unless you choose a map when you start. It has no CS Rating or matchmaking, which need Valve's servers.
+**Competitive matches** (`competitivo`, `premier`, `wingman`, `duelo`) are normal matches, not custom rules: economy and side swap at half time. `competitivo` and `premier` start humans balanced, so two humans get one side each; `--teams` (or **Teams** in the wizard) changes where they start, and anyone can switch team afterwards. Bots fill the empty seats. A tie is a draw, unless you turn on `--no-draw` (**No draws** in the wizard), which plays overtime until someone wins. In `competitivo`, `premier` and `wingman` the match starts when everyone types `!ready` or when the warmup ends; `duelo` runs its warmup out. In `premier`, humans take turns banning maps during warmup unless you choose a map when you start. It has no CS Rating or matchmaking, which need Valve's servers.
 
 Per-team settings for your own modes or `--set` (`t` or `ct`): `modo_<team>_quitar`, `_arma`, `_pistola`,
 `_objeto`, `_vida`, `_velocidad`, `_color` (`R,G,B`).

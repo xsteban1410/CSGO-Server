@@ -31,7 +31,7 @@ impl Site {
     }
 }
 
-/// Where humans play in the competitive modes, against bots filling the rest.
+/// Where humans start in the competitive modes. They can switch team afterwards.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Teams {
@@ -65,7 +65,7 @@ pub struct LaunchOptions {
     /// Requested map; None = the current one or the one from the mode/config.
     pub map: Option<String>,
     pub workshop: Option<u64>,
-    /// Humans needed to end warmup.
+    /// Humans needed to end warmup; 0 = Valve's timed warmup.
     pub humans: u32,
     pub bots: Option<u32>,
     pub difficulty: u8,
@@ -78,6 +78,9 @@ pub struct LaunchOptions {
     pub precision: bool,
     /// No automatic kicks or bans.
     pub anarchy: bool,
+    /// Overtime until someone wins, in the modes with the "nodraw" option.
+    #[serde(default)]
+    pub no_draw: bool,
     pub cvars: Vec<(String, String)>,
 }
 
@@ -97,6 +100,7 @@ impl LaunchOptions {
             teams: None,
             precision: false,
             anarchy: false,
+            no_draw: false,
             cvars: Vec::new(),
         }
     }
@@ -107,10 +111,10 @@ impl LaunchOptions {
             bail!("mode {} does not support match type {}", mode.id, self.kind.label());
         }
         if self.teams.is_some() && !mode.has_option("teams") {
-            bail!("mode {} has fixed teams", mode.id);
+            bail!("mode {} has no team placement: players pick their team, or its rules fix the sides", mode.id);
         }
-        if self.humans == 0 {
-            bail!("at least 1 human is needed");
+        if self.no_draw && !mode.has_option("nodraw") {
+            bail!("mode {} has no no-draw rule", mode.id);
         }
         if self.difficulty > 3 {
             bail!("difficulty must be 0 to 3");
@@ -149,6 +153,9 @@ impl LaunchOptions {
         }
         if let Some(t) = self.teams {
             e += &format!("; modo_equipos {}", t.as_str());
+        }
+        if self.no_draw {
+            e += "; mp_overtime_enable 1";
         }
         // choosing a map is already the decision the map bans would make
         if mode.has_option("veto") && (self.map.is_some() || self.workshop.is_some()) {
@@ -368,7 +375,16 @@ mod tests {
         assert_eq!(o.extra(premier), "bot_difficulty 3; modo_equipos contra; modo_veto 0", "a chosen map skips the bans");
         assert!(o.validate(&m, &c).is_ok());
         o.mode = "awp".into();
-        assert!(o.validate(&m, &c).is_err(), "awp forces humans onto CT");
+        assert!(o.validate(&m, &c).is_err(), "awp has no team placement");
+        o.teams = None;
+        o.map = None;
+        o.no_draw = true;
+        assert!(o.validate(&m, &c).is_err(), "awp has no no-draw rule");
+        o.mode = "competitivo".into();
+        assert!(o.validate(&m, &c).is_ok());
+        assert_eq!(o.extra(m.get("competitivo").unwrap()), "bot_difficulty 3; mp_overtime_enable 1");
+        o.humans = 0;
+        assert!(o.validate(&m, &c).is_ok(), "no humans are needed: warmup runs out by itself");
         assert_eq!(Teams::parse("JUNTOS"), Some(Teams::Together));
         assert_eq!(Teams::parse("x"), None);
         // presets saved before the option existed still load

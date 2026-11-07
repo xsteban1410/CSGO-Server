@@ -29,7 +29,7 @@ public void OnPluginStart()
 	g_Nombre  = CreateConVar("modo_nombre", "awp", "Modo activo (cfg/modo_<nombre>.cfg)");
 	g_Tipo    = CreateConVar("modo_tipo", "", "Match type settings (cfg/modo_tipo_<name>.cfg; empty = none)");
 	g_GameType = FindConVar("game_type");
-	g_Humanos = CreateConVar("modo_humanos", "2", "Humans on a team needed to end warmup (0 = no control)");
+	g_Humanos = CreateConVar("modo_humanos", "0", "Humans on a team needed to end warmup (0 = Valve's timed warmup)");
 	g_Extra   = CreateConVar("modo_extra", "", "Commands run after the mode cfg (separated by ;)");
 	g_Idioma  = CreateConVar("csls_language", "", "Language of in-game messages for everyone: en or es (empty = each player's game language)");
 	g_Idioma.AddChangeHook(OnLanguageChanged);
@@ -163,24 +163,22 @@ public Action CheckWarmup(Handle t)
 	int need = g_Humanos.IntValue;
 	if (FindEntityByClassname(-1, "cs_gamerules") == -1 || !GameRules_GetProp("m_bWarmupPeriod"))
 		return Plugin_Continue;
-	if (need <= 0)
-	{
-		g_Pausa.SetInt(0);  // no control: normal timed warmup
-		return Plugin_Continue;
-	}
 	int h = CountHumans();
-	if (h < need)
+	// Waiting is only for whoever asked for it with modo_humanos: by default warmup just runs out, as on Valve's servers.
+	if (need > 0 && h < need)
 	{
 		g_Pausa.SetInt(1);
 		PrintHintTextToAll("%t", "warmup_waiting", h, need);
 		return Plugin_Continue;
 	}
-	if (Veto_Pending())
+	if (h > 0 && Veto_Pending())
 	{
 		g_Pausa.SetInt(1);
 		return Plugin_Continue;
 	}
 	g_Pausa.SetInt(0);
+	if (h == 0 || (need <= 0 && !g_Listos.BoolValue))
+		return Plugin_Continue;
 	if (g_Listos.BoolValue && Comp_ReadyCount() < h)
 	{
 		PrintHintTextToAll("%t", "warmup_ready", Comp_ReadyCount(), h);
@@ -206,14 +204,15 @@ void Give(int c, ConVar cv)
 		GivePlayerItem(c, w);
 }
 
-// If the mode decides the team of humans (modo_equipos or mp_humanteam), moves them.
+// Modes whose rules fix the sides (mp_humanteam) keep humans there. modo_equipos only places a human
+// once, when they join: after that they stay on whichever team they pick.
 bool FixHumanTeam(int c)
 {
 	if (IsFakeClient(c) || Zombies_Infectado(c))
 		return false;
 	char ht[8];
 	g_HumanTeam.GetString(ht, sizeof(ht));
-	int want = StrEqual(ht, "CT", false) ? CS_TEAM_CT : StrEqual(ht, "T", false) ? CS_TEAM_T : Comp_TeamFor(c);
+	int want = StrEqual(ht, "CT", false) ? CS_TEAM_CT : StrEqual(ht, "T", false) ? CS_TEAM_T : Comp_Placement(c);
 	if (want == 0 || GetClientTeam(c) == want)
 	{
 		Comp_BalanceBots(false);

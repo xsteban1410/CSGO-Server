@@ -1,4 +1,5 @@
 # Metadata for cfg/modo_retake.cfg
+# Fixed sides, part of the rules: humans on CT, bots on T.
 category = "objective"
 name = { en = "Retake", es = "Retake" }
 description = { en = "The bomb is already planted and you (CT) must defuse it against 5 bots guarding it", es = "La bomba ya está plantada y tú (CT) debes desactivarla contra 5 bots que la protegen" }

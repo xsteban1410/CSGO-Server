@@ -115,7 +115,8 @@ impl Kind {
             Kind::Demolition => "demolicion",
             Kind::Guardian => "guardian",
             Kind::DangerZone => "dz",
-            Kind::Competitive | Kind::Casual | Kind::Wingman => "",
+            Kind::Wingman => "wingman",
+            Kind::Competitive | Kind::Casual => "",
         }
     }
 
@@ -163,6 +164,10 @@ pub struct Server {
     pub skins: bool,
     /// Internet/Community profiles: open the port on the router via UPnP at startup.
     pub upnp: bool,
+    /// VPN profile: most friends the bridge serves at once.
+    pub bridge_max_clients: u32,
+    /// VPN profile: networks allowed through the bridge, as IP/bits. Empty = the VPN range (100.64.0.0/10) and this PC.
+    pub bridge_allow: Vec<String>,
 }
 
 impl Default for Server {
@@ -183,6 +188,8 @@ impl Default for Server {
             workshop_authkey: String::new(),
             skins: true,
             upnp: false,
+            bridge_max_clients: 64,
+            bridge_allow: Vec::new(),
         }
     }
 }
@@ -199,7 +206,7 @@ pub struct Defaults {
 
 impl Default for Defaults {
     fn default() -> Self {
-        Defaults { mode: "awp".into(), humans: 2, map: "de_dust2".into(), kind: Kind::Competitive, difficulty: 3 }
+        Defaults { mode: "awp".into(), humans: 0, map: "de_dust2".into(), kind: Kind::Competitive, difficulty: 3 }
     }
 }
 
@@ -221,9 +228,14 @@ impl Language {
     }
 }
 
+const CONFIG_VERSION: u32 = 1;
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct Config {
+    /// Format of this file; see `migrate`.
+    #[serde(default)]
+    pub version: u32,
     pub language: Language,
     pub server: Server,
     pub defaults: Defaults,
@@ -261,6 +273,7 @@ impl Config {
     pub fn load_from(path: &Path) -> crate::Result<Config> {
         if !path.exists() {
             let mut c = migrate_legacy().unwrap_or_default();
+            c.migrate();
             if c.server.rcon_password.is_empty() || c.server.rcon_password == "cambia_esto" {
                 c.server.rcon_password = random_password();
             }
@@ -275,8 +288,23 @@ impl Config {
         if c.server.install_dir.as_os_str().is_empty() {
             c.server.install_dir = paths::data_dir().join("server");
         }
+        c.migrate();
         c.validate()?;
+        // an empty rcon password turns rcon off, and the app cannot do anything without it
+        if c.server.rcon_password.is_empty() {
+            c.server.rcon_password = random_password();
+            c.save_to(path)?;
+        }
         Ok(c)
+    }
+
+    /// Brings a config written by an older version up to date.
+    fn migrate(&mut self) {
+        // Version 0 saved humans = 2 as a plain default, which made every warmup wait for two players.
+        if self.version < 1 {
+            self.defaults.humans = 0;
+        }
+        self.version = CONFIG_VERSION;
     }
 
     pub fn save(&self) -> crate::Result<()> {
@@ -308,6 +336,7 @@ impl Config {
             ("tags", &s.tags),
             ("rcon_password", &s.rcon_password),
             ("gslt", &s.gslt),
+            ("workshop_authkey", &s.workshop_authkey),
         ] {
             if v.contains(['"', ';', '\n', '\r']) {
                 bail!("{name} cannot contain quotes, ; or line breaks");
@@ -324,6 +353,12 @@ impl Config {
         }
         if self.defaults.difficulty > 3 {
             bail!("difficulty must be 0 to 3");
+        }
+        if !(1..=1024).contains(&s.bridge_max_clients) {
+            bail!("bridge_max_clients must be 1 to 1024");
+        }
+        for n in &s.bridge_allow {
+            crate::bridge::Cidr::parse(n)?;
         }
         Ok(())
     }
@@ -383,6 +418,53 @@ fn migrate_legacy() -> Option<Config> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn invalid_values_are_refused() {
+        let check = |f: &dyn Fn(&mut Config)| {
+            let mut c = Config::default();
+            f(&mut c);
+            c.validate()
+        };
+        assert!(check(&|_| {}).is_ok());
+        for bad in ["a\"b", "a;quit", "a\nb", "a\rb"] {
+            assert!(check(&|c| c.server.password = bad.into()).is_err(), "{bad:?}");
+            assert!(check(&|c| c.server.rcon_password = bad.into()).is_err(), "{bad:?}");
+            assert!(check(&|c| c.server.workshop_authkey = bad.into()).is_err(), "{bad:?}");
+            assert!(check(&|c| c.server.hostname = bad.into()).is_err(), "{bad:?}");
+        }
+        assert!(check(&|c| c.server.rcon_password = "with space".into()).is_err());
+        assert!(check(&|c| c.server.port = 0).is_err());
+        assert!(check(&|c| c.server.port = u16::MAX).is_err());
+        assert!(check(&|c| c.server.max_players = 0).is_err());
+        assert!(check(&|c| c.server.max_players = 65).is_err());
+        assert!(check(&|c| c.defaults.difficulty = 4).is_err());
+        assert!(check(&|c| c.server.bridge_max_clients = 0).is_err());
+        assert!(check(&|c| c.server.bridge_allow = vec!["nonsense".into()]).is_err());
+        assert!(check(&|c| c.server.bridge_allow = vec!["10.0.0.0/8".into()]).is_ok());
+    }
+
+    #[test]
+    fn an_empty_rcon_password_gets_one() {
+        let p = std::env::temp_dir().join(format!("csls-rcon-{}.toml", std::process::id()));
+        std::fs::write(&p, "[server]\nrcon_password = \"\"\n").unwrap();
+        let made = Config::load_from(&p).unwrap().server.rcon_password;
+        assert!(!made.is_empty());
+        assert_eq!(Config::load_from(&p).unwrap().server.rcon_password, made, "kept");
+        std::fs::remove_file(p).unwrap();
+    }
+
+    #[test]
+    fn old_configs_stop_waiting_for_two_humans() {
+        let p = std::env::temp_dir().join(format!("csls-migrate-{}.toml", std::process::id()));
+        std::fs::write(&p, "[defaults]\nhumans = 2\n").unwrap();
+        let c = Config::load_from(&p).unwrap();
+        assert_eq!((c.defaults.humans, c.version), (0, CONFIG_VERSION));
+        // from this version on it is the user's choice
+        std::fs::write(&p, format!("version = {CONFIG_VERSION}\n[defaults]\nhumans = 2\n")).unwrap();
+        assert_eq!(Config::load_from(&p).unwrap().defaults.humans, 2);
+        std::fs::remove_file(p).unwrap();
+    }
 
     #[test]
     fn migrates_config_env() {

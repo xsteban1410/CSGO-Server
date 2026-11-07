@@ -1,4 +1,5 @@
 # Metadata for cfg/modo_ninjas.cfg
+# Fixed sides, part of the rules: humans on CT, ninjas on T.
 category = "pve"
 name = { en = "Ninjas", es = "Ninjas" }
 description = { en = "Fast, almost invisible bots with knives hunt you. Buy what you want and listen for them", es = "Bots rápidos y casi invisibles con cuchillo te cazan. Compra lo que quieras y escúchalos" }

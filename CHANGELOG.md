@@ -10,6 +10,10 @@ The section of each version becomes the notes of its GitHub release, so keep the
 
 ### Changed
 
+- Nothing is forced any more, as on a Valve or community server: everyone picks their team, bots fill the empty seats and warmup runs out by itself. Only modes whose rules need sides fix them (`retake`, `defensa`, `clutch`, `zombies`, `ninjas`, `aim`, Guardian). Configs saved earlier stop waiting for two humans; presets keep what they saved.
+- `competitivo` and `premier` start humans balanced, one on each side, and `--teams` only says where a human starts: it no longer moves anyone back or along with a teammate.
+- `competitivo` and `premier` end in a draw at 15-15 and 12-12 unless the new `--no-draw` rule (**No draws** in the wizard) is on, which plays overtime until someone wins.
+- `--no-bots` (**No bots** in the wizard) plays humans only, and the Wingman match type fills four seats.
 - `tools/test-modes.sh` turns off hibernation by itself and polls instead of waiting, so all modes take about 12 minutes instead of about an hour.
 - All code comments, messages, logs, tests and documentation are now in English. The app, plugin messages and `README.es.md`
   are still translated into Spanish, but errors coming from the core now always appear in English.
@@ -23,6 +27,10 @@ The section of each version becomes the notes of its GitHub release, so keep the
 
 ### Added
 
+- `doctor` and `start` warn about weak or shared passwords, rcon open to the network, a public server without a password and loose file permissions. Empty rcon passwords are generated, and secret commands stay out of the console history.
+- The bridge has limits per server, per IP and per second, an address allowlist (`bridge_allow`, VPN range and loopback by default, `bridge_max_clients`) and `bridge --status`.
+- Installs write a manifest, `install.json`, with versions and hashes. SourceMod and Metamod are checked, extracted aside and swapped as a whole, and a failed update restores the previous version.
+- Installs check free disk space first and during SteamCMD, and say so clearly when the disk fills up.
 - Shell completions for bash, zsh and fish: `completions <shell>`, installed by the packages.
 - `docs/TROUBLESHOOTING.md`, and `docs/PRIVACY.md` with what is stored and what the app contacts.
 - CI builds and tests the core and CLI on Debian and Fedora, audits dependencies and fails on clippy warnings.
@@ -54,6 +62,9 @@ The section of each version becomes the notes of its GitHub release, so keep the
 - `doctor` warns if rcon can be reached from other machines, and a GSLT with quotes or `;` is rejected.
 
 ### Fixed
+
+- Stopping the server no longer signals an unrelated process when its PID was reused, and leftover servers are found and stopped. `status` says why the server stopped last.
+- Rcon reports wrong passwords and lost connections as such, and reconnects during a deploy.
 
 - Skins and knives did nothing when the installed package and the repo were mixed: `deploy` compared file dates, kept an old
   `.smx` with newer phrases, and the menus failed with `Language phrase not found`. It now compares a hash of the sources and

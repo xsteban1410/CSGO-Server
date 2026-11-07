@@ -213,9 +213,15 @@ fn options_page(w: &Wr) -> adw::NavigationPage {
     let g = adw::PreferencesGroup::new();
     g.set_title(&mode.name(csls_core::lang()));
 
-    let humans = adw::SpinRow::with_range(1.0, 64.0, 1.0);
-    humans.set_title(&t("Humans needed to start"));
+    let humans = adw::SpinRow::with_range(0.0, 64.0, 1.0);
+    humans.set_title(&t("Humans to wait for"));
+    humans.set_subtitle(&t("0 = the warmup runs out by itself"));
     humans.set_value(o.humans as f64);
+    let no_bots = adw::SwitchRow::builder()
+        .title(t("No bots"))
+        .subtitle(t("Humans only, bots do not fill the empty seats"))
+        .active(o.bots == Some(0))
+        .build();
     let bots_on = adw::SwitchRow::builder().title(t("Bots")).subtitle(t("Default")).active(false).build();
     let bots = adw::SpinRow::with_range(0.0, 63.0, 1.0);
     bots.set_title(&t("Number of bots"));
@@ -242,10 +248,21 @@ fn options_page(w: &Wr) -> adw::NavigationPage {
     site.set_visible(mode.has_option("site"));
     let teams = adw::ComboRow::builder()
         .title(t("Teams"))
-        .subtitle(t("Humans; bots fill the empty seats"))
-        .model(&gtk::StringList::new(&[&t("Together"), &t("Against each other"), &t("Each one chooses")]))
+        .subtitle(t("Where humans start; anyone can switch afterwards"))
+        .model(&gtk::StringList::new(&[&t("Balanced, one on each side"), &t("Together"), &t("Each one chooses")]))
         .build();
     teams.set_visible(mode.has_option("teams"));
+    // the mode's own choice unless this launch says otherwise
+    let mode_teams = std::fs::read_to_string(&mode.cfg)
+        .ok()
+        .and_then(|c| csls_core::modes::CfgDoc::parse(&c).get("modo_equipos").and_then(Teams::parse));
+    teams.set_selected(match o.teams.or(mode_teams) {
+        Some(Teams::Together) => 1,
+        Some(Teams::Free) => 2,
+        _ => 0,
+    });
+    let no_draw = adw::SwitchRow::builder().title(t("No draws")).subtitle(t("Overtime until someone wins")).active(o.no_draw).build();
+    no_draw.set_visible(mode.has_option("nodraw"));
     let precision = adw::SwitchRow::builder().title(t("Infinite accuracy")).subtitle(t("No spread and no recoil for everyone")).build();
     let anarchy = adw::SwitchRow::builder().title(t("Anarchy")).subtitle(t("Nobody is kicked or banned automatically")).build();
     let extra = adw::EntryRow::builder().title(t("Extra variables")).build();
@@ -254,8 +271,10 @@ fn options_page(w: &Wr) -> adw::NavigationPage {
     for r in [
         humans.upcast_ref::<gtk::Widget>(),
         teams.upcast_ref(),
+        no_draw.upcast_ref(),
         diff.upcast_ref(),
         site.upcast_ref(),
+        no_bots.upcast_ref(),
         bots_on.upcast_ref(),
         bots.upcast_ref(),
         preset.upcast_ref(),
@@ -281,7 +300,8 @@ fn options_page(w: &Wr) -> adw::NavigationPage {
             {
                 let mut o = w.opts.borrow_mut();
                 o.humans = humans.value() as u32;
-                o.bots = bots_on.is_active().then(|| bots.value() as u32);
+                o.bots = if no_bots.is_active() { Some(0) } else { bots_on.is_active().then(|| bots.value() as u32) };
+                o.no_draw = no_draw.is_visible() && no_draw.is_active();
                 o.difficulty = diff.selected() as u8;
                 o.rounds = (rounds.value() > 0.0).then(|| rounds.value() as u32);
                 o.kind = kinds.get(kind.selected() as usize).copied().unwrap_or_default();
@@ -292,7 +312,7 @@ fn options_page(w: &Wr) -> adw::NavigationPage {
                     }
                 }
                 o.site = site.is_visible().then(|| [Site::Random, Site::A, Site::B][site.selected().min(2) as usize]);
-                o.teams = teams.is_visible().then(|| [Teams::Together, Teams::Versus, Teams::Free][teams.selected().min(2) as usize]);
+                o.teams = teams.is_visible().then(|| [Teams::Versus, Teams::Together, Teams::Free][teams.selected().min(2) as usize]);
                 o.precision = precision.is_active();
                 o.anarchy = anarchy.is_active();
                 o.cvars.clear();

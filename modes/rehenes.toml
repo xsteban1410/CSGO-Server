@@ -1,6 +1,6 @@
 # Metadata for cfg/modo_rehenes.cfg
 category = "objective"
 name = { en = "Hostages", es = "Rehenes" }
-description = { en = "You (CT) rescue the hostages from 5 bots, on cs_ maps", es = "Tú (CT) rescatas a los rehenes de 5 bots, en mapas cs_" }
+description = { en = "Rescue or guard the hostages, on cs_ maps", es = "Rescata o protege a los rehenes, en mapas cs_" }
 map_prefixes = ["cs_"]
 default_map = "cs_office"

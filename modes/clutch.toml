@@ -1,4 +1,5 @@
 # Metadata for cfg/modo_clutch.cfg
+# Fixed sides, part of the rules: humans on CT, bots on T.
 category = "pve"
 name = { en = "Clutch", es = "Clutch" }
 description = { en = "Each round you win adds a bot, each round you lose removes one. How many can you beat?", es = "Cada ronda que ganas suma un bot y cada una que pierdes quita uno. ¿A cuántos puedes vencer?" }

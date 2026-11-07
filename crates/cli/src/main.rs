@@ -21,7 +21,7 @@ struct Cli {
 struct Game {
     /// Game mode (see `modes`)
     mode: Option<String>,
-    /// Humans needed to start: a number or `alone`
+    /// Humans to wait for before the match starts: a number or `alone` (default: Valve's timed warmup)
     humans: Option<String>,
     #[arg(short, long)]
     map: Option<String>,
@@ -33,14 +33,20 @@ struct Game {
     difficulty: Option<u8>,
     #[arg(short, long)]
     bots: Option<u32>,
+    /// Humans only: no bots fill the empty seats
+    #[arg(long, conflicts_with = "bots")]
+    no_bots: bool,
     #[arg(short, long)]
     rounds: Option<u32>,
     /// Retake/post-plant site: a | b | random
     #[arg(short, long)]
     site: Option<String>,
-    /// Competitive modes: together | versus | free
+    /// Competitive modes, where humans start: versus (one on each side) | together | free
     #[arg(long)]
     teams: Option<String>,
+    /// Competitive and Premier: overtime until someone wins
+    #[arg(long)]
+    no_draw: bool,
     /// Infinite accuracy: no spread and no recoil for everyone
     #[arg(short, long)]
     precision: bool,
@@ -59,6 +65,9 @@ struct Game {
     /// Save these options as a preset with this name
     #[arg(long)]
     save_preset: Option<String>,
+    /// `mode` only: print the rcon commands as JSON without applying them
+    #[arg(long, hide = true)]
+    plan: bool,
 }
 
 #[derive(Subcommand)]
@@ -129,12 +138,21 @@ enum Cmd {
         /// Check that a server answers at IP:PORT (through a bridge too) and exit
         #[arg(long, value_name = "IP:PORT")]
         test: Option<String>,
+        /// Print the clients and traffic of the running bridge as JSON and exit
+        #[arg(long)]
+        status: bool,
     },
     /// Generate the bot navigation mesh of the current map (workshop maps without .nav)
     Nav {
         /// Also regenerate maps that already have one (official maps have better hand-made ones)
         #[arg(long)]
         force: bool,
+    },
+    /// For tools/testkit: prints how to start a test instance. Prints the rcon password, so only for a pipe.
+    #[command(hide = true)]
+    TestInstance {
+        #[arg(long)]
+        port: u16,
     },
     /// Add or remove bots with the server running: bots +2 | bots -1
     Bots {
@@ -234,7 +252,8 @@ fn options(g: &Game, cfg: &Config) -> Result<LaunchOptions> {
     if let Some(d) = g.difficulty {
         o.difficulty = d;
     }
-    o.bots = g.bots.or(o.bots);
+    o.bots = if g.no_bots { Some(0) } else { g.bots.or(o.bots) };
+    o.no_draw |= g.no_draw;
     o.rounds = g.rounds.or(o.rounds);
     if let Some(s) = &g.site {
         o.site = Some(Site::parse(s).context("--site is a, b or random")?);
@@ -357,6 +376,9 @@ fn main() -> Result<()> {
                 return Ok(());
             }
             if srv.state() == State::Stopped {
+                if let Some(s) = csls_core::server::last_stop() {
+                    println!("{}", s.describe());
+                }
                 println!("Stopped.");
                 return Ok(());
             }
@@ -373,8 +395,16 @@ fn main() -> Result<()> {
             }
             let modes = Modes::load()?;
             let o = options(&g, &cfg)?;
+            if g.plan {
+                o.validate(&modes, &cfg)?;
+                let map = o.pick_map(&modes, &cfg, None, &srv.maps_dir())?;
+                let mut commands = csls_core::server::mode_commands(&o, modes.get(&o.mode)?);
+                commands.push(csls_core::server::load_command(&o, &map));
+                println!("{}", serde_json::json!({ "map": map, "commands": commands }));
+                return Ok(());
+            }
             let map = srv.change(&modes, &o)?;
-            println!("Mode {} on {map}; starts with {} human(s). Settings: {}", o.mode, o.humans, o.extra(modes.get(&o.mode)?));
+            println!("Mode {} on {map}. Settings: {}", o.mode, o.extra(modes.get(&o.mode)?));
         }
         Cmd::Modes => {
             for m in Modes::load()?.0.values() {
@@ -422,17 +452,27 @@ fn main() -> Result<()> {
                 None => bail!("no answer from {addr}"),
             }
         }
+        Cmd::Bridge { status: true, .. } => {
+            let s = bridge::read_stats().context("no bridge has published its numbers")?;
+            println!("{}", serde_json::to_string(&s)?);
+        }
         Cmd::Bridge { listen, to, .. } => {
             let log = |m: String| println!("{m}");
+            let max = cfg.server.bridge_max_clients as usize;
             match (listen, to) {
                 (Some(p), Some(t)) => {
                     let target = t.parse().context("expected VPN_IP:PORT")?;
-                    bridge::run(p, target, "0.0.0.0".parse()?, log)?;
+                    bridge::run(p, target, "0.0.0.0".parse()?, bridge::Limits::new(max, bridge::friend_allow()), log)?;
                 }
                 (None, None) => {
                     let ip = net::local_ip().context("no local IP")?;
                     let port = cfg.server.port;
-                    bridge::run(port + 1, (ip, port).into(), ip, log)?;
+                    let allow = if cfg.server.bridge_allow.is_empty() {
+                        bridge::default_server_allow()
+                    } else {
+                        cfg.server.bridge_allow.iter().map(|n| bridge::Cidr::parse(n)).collect::<Result<_>>()?
+                    };
+                    bridge::run(port + 1, (ip, port).into(), ip, bridge::Limits::new(max, allow), log)?;
                 }
                 _ => bail!("friend side needs both: bridge <listen-port> <VPN_IP:PORT>"),
             }
@@ -504,6 +544,7 @@ fn main() -> Result<()> {
             let m = srv.generate_nav(Duration::from_secs(600), force)?;
             println!("Saved {m}.nav and reloaded the map.");
         }
+        Cmd::TestInstance { port } => println!("{}", srv.test_instance_json(&Modes::load()?, port)?),
         Cmd::Bots { delta } => println!("bot_quota {}", srv.add_bots(delta)?),
         Cmd::Round { warmup } => {
             if warmup {

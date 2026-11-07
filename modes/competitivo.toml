@@ -1,8 +1,8 @@
 # Metadata for cfg/modo_competitivo.cfg
 category = "competitive"
 name = { en = "Competitive", es = "Competitivo" }
-description = { en = "The real thing: 5v5 with economy, first to 16, sides swap at half time and overtime. Bots fill the empty seats", es = "Lo de verdad: 5v5 con economía, a 16 rondas, cambio de lado al descanso y prórroga. Los bots ocupan los sitios libres" }
+description = { en = "The real thing: 5v5 with economy, first to 16 and sides swap at half time. Humans start balanced, bots fill the empty seats. A 15-15 is a draw unless you turn on the no-draw rule", es = "Lo de verdad: 5v5 con economía, a 16 rondas y cambio de lado al descanso. Los humanos empiezan repartidos y los bots ocupan los sitios libres. Un 15-15 es empate salvo que actives la regla sin empate" }
 game_type = 0
 game_mode = 1
 map_prefixes = ["de_", "cs_"]
-options = ["teams"]
+options = ["teams", "nodraw"]

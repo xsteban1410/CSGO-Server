@@ -1,4 +1,4 @@
 # Metadata for cfg/modo_normal.cfg
 category = "classic"
 name = { en = "Normal", es = "Normal" }
-description = { en = "Rounds against 5 bots with $16000 every round, so you can always buy anything", es = "Rondas contra 5 bots con 16000 $ cada ronda, así que siempre puedes comprar de todo" }
+description = { en = "Rounds with $16000 every round, so you can always buy anything", es = "Rondas con 16000 $ cada ronda, así que siempre puedes comprar de todo" }

@@ -375,7 +375,6 @@ fn editor(a: &AppRc, from: Option<&Mode>, reload: Rc<dyn Fn()>) {
                         let modes = a.modes.borrow().clone();
                         let mut o = LaunchOptions::from_config(&cfg);
                         o.mode = id;
-                        o.humans = 1;
                         bg(
                             move || Server::new(&cfg).change(&modes, &o),
                             glib::clone!(

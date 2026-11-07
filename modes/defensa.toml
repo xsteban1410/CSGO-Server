@@ -1,4 +1,5 @@
 # Metadata for cfg/modo_defensa.cfg
+# Fixed sides, part of the rules: humans on T, bots on CT.
 category = "objective"
 name = { en = "Post-plant", es = "Defensa" }
 description = { en = "The opposite of Retake: the bomb is planted and you (T) defend it from 5 bots coming to defuse", es = "Al revés que Retake: la bomba está plantada y tú (T) la defiendes de 5 bots que vienen a desactivarla" }

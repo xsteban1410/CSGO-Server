@@ -33,10 +33,11 @@ in `OnConfigsExecuted`, in this order:
 `mp_buy_anywhere 0` makes deathmatch bots stand still forever, trying to buy. The queue is only processed while the server
 is not hibernating, so to test without players use `sv_hibernate_when_empty 0`.
 
-`modo_clasico.cfg` sets `mp_halftime 0` because most modes force the humans' team, and a side swap would fight
-`FixHumanTeam`. Competitive modes turn it back on with `mp_humanteam any`, `bot_join_team any` and `bot_quota_mode fill`, which
-counts humans in the quota, so `bot_quota 10` is a 5v5. `modo_equipos` (`--teams`) places humans and `Comp_BalanceBots`
-moves bots to keep the teams even; `modo_veto` runs the map bans in warmup and `modo_listos` lets `!ready` end it. All of that
+Nothing is forced by default: `modo_base.cfg` sets `mp_humanteam any`, `bot_join_team any` and `bot_quota_mode fill`, which
+counts humans in the quota, so `bot_quota 10` is a 5v5. Only modes whose rules need sides set `mp_humanteam` in their own cfg,
+and `FixHumanTeam` holds those. `modo_equipos` (`--teams`) places a human once, on their first spawn on a map, and never moves
+them again; `Comp_BalanceBots` moves bots to keep the teams even. `modo_humanos` is 0 unless asked for, so warmup is Valve's
+timed one. `modo_clasico.cfg` sets `mp_halftime 0` and competitive modes turn it back on; `modo_veto` runs the map bans in warmup and `modo_listos` lets `!ready` end it. All of that
 is in `plugin/modos_competitivo.sp`. `competitivo` and `premier` are `game_type 0`, `game_mode 1`; a mode's own `.cfg` still
 runs last, so a mode can change any of it.
 

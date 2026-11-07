@@ -1,4 +1,5 @@
 # Metadata for cfg/modo_aim.cfg
+# Fixed sides, part of the rules: humans on CT, targets on T.
 category = "classic"
 name = { en = "Aim practice", es = "Puntería" }
 description = { en = "Bots stand still and do not shoot, you have infinite ammo and !guns. Warm up your aim", es = "Los bots están quietos y no disparan, tienes munición infinita y !armas. Para calentar la puntería" }

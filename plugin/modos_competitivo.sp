@@ -3,6 +3,7 @@
 
 ConVar g_Equipos, g_Listos, g_Veto, g_VetoMapas, g_VetoTiempo;
 bool g_Listo[MAXPLAYERS + 1];
+bool g_Colocado[MAXPLAYERS + 1];  // already placed by modo_equipos on this map
 
 ArrayList g_VetoQuedan;         // maps still in play; null = no bans running
 Handle g_VetoTimer;
@@ -12,7 +13,7 @@ char g_VetoFinal[64];
 
 void Comp_Start()
 {
-	g_Equipos    = CreateConVar("modo_equipos", "", "Teams of humans: juntos, contra, libre (empty = mp_humanteam decides)");
+	g_Equipos    = CreateConVar("modo_equipos", "", "Where humans start when they join: contra (balanced), juntos, libre. They can switch afterwards");
 	g_Listos     = CreateConVar("modo_listos", "0", "1 = warmup ends when every human says !ready, or when its time runs out");
 	g_Veto       = CreateConVar("modo_veto", "0", "1 = humans ban maps in warmup and the match is played on the last one");
 	g_VetoMapas  = CreateConVar("modo_veto_mapas", "de_inferno de_train de_mirage de_nuke de_dust2 de_overpass de_vertigo", "Maps of the bans, separated by spaces");
@@ -25,7 +26,10 @@ void Comp_Start()
 void Comp_MapStart()
 {
 	for (int i = 0; i <= MaxClients; i++)
+	{
 		g_Listo[i] = false;
+		g_Colocado[i] = false;
+	}
 	delete g_VetoQuedan;
 	g_VetoTimer = null;  // TIMER_FLAG_NO_MAPCHANGE already removed it
 	// the map change the bans asked for is the same match; any other starts a new one
@@ -38,12 +42,12 @@ void Comp_MapStart()
 void Comp_ClientGone(int c)
 {
 	g_Listo[c] = false;
+	g_Colocado[c] = false;
 }
 
 // --- teams ------------------------------------------------------------------
 
-// Team this human should be on according to modo_equipos (0 = whichever they are on).
-// It looks at the other humans, so it stays right after the half-time swap.
+// Team this human starts on according to modo_equipos (0 = whichever they are on).
 int Comp_TeamFor(int c)
 {
 	char e[16];
@@ -65,6 +69,16 @@ int Comp_TeamFor(int c)
 	if (juntos)
 		return t > ct ? CS_TEAM_T : CS_TEAM_CT;
 	return t < ct ? CS_TEAM_T : CS_TEAM_CT;
+}
+
+// Only the first spawn on a map counts, so nobody gets moved back or dragged along later,
+// and the half-time swap is left alone.
+int Comp_Placement(int c)
+{
+	if (g_Colocado[c])
+		return 0;
+	g_Colocado[c] = true;
+	return Comp_TeamFor(c);
 }
 
 int Comp_BotOn(int team)
@@ -97,7 +111,10 @@ void Comp_BalanceBots(bool roundStart)
 	g_Equipos.GetString(e, sizeof(e));
 	if (roundStart)
 		Comp_BotsToJoinTeam();
-	if (!e[0])
+	// With free sides bots keep the teams even too, except where the mode has no teams of its own.
+	char j[8];
+	FindConVar("bot_join_team").GetString(j, sizeof(j));
+	if (!e[0] && !(g_GameType.IntValue == 0 && StrEqual(j, "any", false)))
 		return;
 	bool warmup = GameRules_GetProp("m_bWarmupPeriod") != 0;
 	if (!roundStart && !warmup && !GameRules_GetProp("m_bFreezePeriod"))
