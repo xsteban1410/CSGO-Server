@@ -1,7 +1,7 @@
 name: Release
 
 # When a new version in Cargo.toml reaches master (tools/version.sh bump): runs CI, creates the tag and publishes the release
-# with the package and the changelog notes. Without a new version it does nothing.
+# with the packages, SHA256SUMS and the changelog notes. Without a new version it does nothing.
 on:
   push:
     branches: [master]
@@ -50,14 +50,24 @@ jobs:
         with:
           name: package
           path: dist
+      - uses: actions/download-artifact@v8
+        with:
+          name: bundles
+          path: bundles
+      - uses: actions/download-artifact@v8
+        with:
+          name: flatpak
+          path: bundles
       - name: Publish
         run: |
           set -euo pipefail
           version=${TAG#v}
           pkg=$(basename dist/csgo-legacy-server-"$version"-*-x86_64.pkg.tar.zst)
-          (cd dist && sha256sum "$pkg" > "$pkg.sha256")
+          # shortcut: these carry the Slint app, so they wait until it replaces GTK; drop the condition then
+          if [ ! -d crates/gtk ]; then mv bundles/* dist/; fi
+          (cd dist && sha256sum -- * > SHA256SUMS)
           {
             tools/version.sh notes "$version"
             printf '\n## Install on Arch Linux\n\n```bash\nsudo pacman -U https://github.com/%s/releases/download/%s/%s\n```\n' "$GITHUB_REPOSITORY" "$TAG" "$pkg"
           } > notes.md
-          gh release create "$TAG" dist/"$pkg" dist/"$pkg.sha256" --target "$GITHUB_SHA" --title "csgo-legacy-server $version" --notes-file notes.md
+          gh release create "$TAG" dist/* --target "$GITHUB_SHA" --title "csgo-legacy-server $version" --notes-file notes.md

@@ -47,16 +47,16 @@ jobs:
       matrix:
         include:
           - image: rust:slim
-            deps: apt-get update && apt-get install -y --no-install-recommends ca-certificates curl gcc libc6-dev libsqlite3-dev pkg-config
+            deps: apt-get update && apt-get install -y --no-install-recommends ca-certificates curl gcc libc6-dev libsqlite3-dev pkg-config libfontconfig-dev libfreetype-dev libxkbcommon-dev libwayland-dev
           - image: fedora:latest
-            deps: dnf install -y cargo gcc sqlite-devel pkgconf-pkg-config tar
+            deps: dnf install -y cargo gcc sqlite-devel pkgconf-pkg-config tar fontconfig-devel freetype-devel libxkbcommon-devel wayland-devel
     container: ${{ matrix.image }}
     steps:
       - name: Dependencies
         run: ${{ matrix.deps }}
       - uses: actions/checkout@v7
       - name: Build and test
-        run: cargo test --locked -p csls-core -p csgo-legacy-server
+        run: cargo test --locked -p csls-core -p csgo-legacy-server -p csgo-legacy-server-app
 
   go:
     runs-on: ubuntu-latest
@@ -102,7 +102,7 @@ jobs:
         run: |
           set -e
           inc=addons/sourcemod/scripting/include
-          for p in game/plugin/modos.sp game/plugin/modos_cheats.sp game/plugin/skins.sp game/plugin/csls_directconnect/csls_directconnect.sp; do
+          for p in game/plugin/modos.sp game/plugin/modos_cheats.sp game/plugin/csls_events.sp game/plugin/skins.sp game/plugin/csls_directconnect/csls_directconnect.sp; do
             addons/sourcemod/scripting/spcomp64 -i$inc -igame/plugin "$p" -o/tmp/out.smx
           done
 
@@ -111,7 +111,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Shell scripts
-        run: shellcheck tools/*.sh packaging/*.sh packaging/aur/*.sh
+        run: shellcheck tools/*.sh packaging/*.sh packaging/aur/*.sh packaging/appimage/AppRun
       - name: Version is the same everywhere
         run: tools/version.sh check
       - name: Promotion rules
@@ -130,7 +130,7 @@ jobs:
     container: archlinux:latest
     steps:
       - name: Dependencies
-        run: pacman -Syu --noconfirm --needed base-devel git rust gtk4 libadwaita sqlite curl namcap
+        run: pacman -Syu --noconfirm --needed base-devel git rust go gtk4 libadwaita sqlite curl namcap
       - uses: actions/checkout@v7
       - name: Build package
         # makepkg does not run as root; tests already passed in the rust job
@@ -146,4 +146,65 @@ jobs:
         with:
           name: package
           path: dist/*.pkg.tar.zst
+          if-no-files-found: error
+
+  bundles:
+    needs: [rust, go, plugins, scripts]
+    runs-on: ubuntu-latest
+    # the oldest system these packages support: they do not run on an older glibc than the one they were built on
+    container: rust:slim-bookworm
+    steps:
+      - name: Dependencies
+        run: apt-get update && apt-get install -y --no-install-recommends ca-certificates curl gcc libc6-dev pkg-config squashfs-tools libsqlite3-dev libfontconfig-dev libfreetype-dev libxkbcommon-dev libwayland-dev
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go/go.mod
+          cache-dependency-path: go/go.sum
+      - name: Build the .deb and the AppImage
+        run: packaging/build-bundles.sh dist
+      - name: Try them
+        run: |
+          apt-get install -y --no-install-recommends ./dist/*.deb
+          csgo-legacy-server modes > /dev/null
+          ! ldd /usr/bin/csgo-legacy-server-app | grep 'not found'
+          APPIMAGE_EXTRACT_AND_RUN=1 dist/*.AppImage modes > /dev/null
+          CSLS_SCREENSHOT=/tmp/app.png csgo-legacy-server-app
+          test -s /tmp/app.png
+      - uses: actions/upload-artifact@v7
+        with:
+          name: bundles
+          path: dist/*
+          if-no-files-found: error
+
+  flatpak:
+    needs: [rust, go, plugins, scripts]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends flatpak flatpak-builder
+          # flatpak's sandbox needs user namespaces, which Ubuntu restricts
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+      - name: Build
+        run: |
+          flatpak-builder --user --install-deps-from=flathub --disable-rofiles-fuse --repo=repo build packaging/flatpak/io.github.xsteban1410.CsgoLegacyServer.yml
+          version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          mkdir dist
+          flatpak build-bundle repo "dist/csgo-legacy-server-$version-x86_64.flatpak" io.github.xsteban1410.CsgoLegacyServer --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo
+      - name: Try it in the sandbox
+        run: |
+          id=io.github.xsteban1410.CsgoLegacyServer
+          flatpak install --user -y --noninteractive dist/*.flatpak
+          flatpak install --user -y --noninteractive flathub org.freedesktop.Platform.Compat.i386//25.08
+          flatpak run --command=csgo-legacy-server "$id" modes > /dev/null
+          # what the install and the server need from the runtime, and the 32-bit loader for srcds and steamcmd
+          flatpak run --command=sh "$id" -c 'command -v curl tar sha256sum setsid xdg-open && /lib/ld-linux.so.2 --version'
+      - uses: actions/upload-artifact@v7
+        with:
+          name: flatpak
+          path: dist/*.flatpak
           if-no-files-found: error
