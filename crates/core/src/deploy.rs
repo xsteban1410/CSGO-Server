@@ -244,19 +244,17 @@ pub fn deploy(cfg: &Config, force: bool, reload: bool) -> crate::Result<Report> 
         }
     }
 
-    if reload && (r.translations || !(r.compiled.is_empty() && r.removed.is_empty())) {
-        if let Ok(mut rc) = crate::rcon::Rcon::from_config(cfg) {
-            let phrases = r.translations.then(|| "sm_reload_translations".to_string());
-            let unload = r.compiled.iter().chain(&r.removed).map(|n| format!("sm plugins unload {n}"));
-            let load = r.compiled.iter().map(|n| format!("sm plugins load {n}"));
-            for c in phrases.into_iter().chain(unload).chain(load).collect::<Vec<_>>() {
-                // loading a plugin can take longer than the rcon timeout, and the command is applied anyway
-                if rc.exec(&c).is_err() {
-                    rc = crate::rcon::Rcon::from_config(cfg)?;
-                }
-            }
-            r.reloaded = true;
+    let changed = r.translations || !(r.compiled.is_empty() && r.removed.is_empty());
+    if reload && changed && crate::rcon::Rcon::from_config(cfg).is_ok() {
+        let mut rc = crate::rcon::RconSession::new(cfg);
+        let phrases = r.translations.then(|| "sm_reload_translations".to_string());
+        let unload = r.compiled.iter().chain(&r.removed).map(|n| format!("sm plugins unload {n}"));
+        let load = r.compiled.iter().map(|n| format!("sm plugins load {n}"));
+        for c in phrases.into_iter().chain(unload).chain(load).collect::<Vec<_>>() {
+            // loading a plugin can take longer than the rcon timeout; loading it again does no harm
+            rc.exec(&c)?;
         }
+        r.reloaded = true;
     }
     Ok(r)
 }

@@ -81,6 +81,10 @@ pub fn run(cfg: &Config) -> Vec<Check> {
     let running = srv.state() == State::Running;
     let mut v = Vec::new();
 
+    for f in crate::security::preflight(cfg) {
+        v.push(Check { status: if f.warn { Status::Problem } else { Status::Info }, name: "Security", detail: f.text });
+    }
+
     let missing = install::missing_deps();
     v.push(if missing.is_empty() {
         check(true, "Dependencies", "installed")

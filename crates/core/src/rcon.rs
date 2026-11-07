@@ -8,6 +8,35 @@ const AUTH: i32 = 3;
 const EXEC: i32 = 2;
 const RESPONSE: i32 = 0;
 
+/// What can go wrong talking to the server, for code that reacts differently to each.
+#[derive(Debug)]
+pub enum RconError {
+    /// Wrong password: retrying cannot help.
+    Auth,
+    /// The connection went away during a command, for example on a map change.
+    Lost(std::io::Error),
+}
+
+impl std::fmt::Display for RconError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RconError::Auth => write!(f, "rcon: wrong password"),
+            RconError::Lost(e) => write!(f, "rcon: connection lost: {e}"),
+        }
+    }
+}
+
+impl std::error::Error for RconError {}
+
+pub fn is_auth_error(e: &anyhow::Error) -> bool {
+    e.chain().any(|c| matches!(c.downcast_ref::<RconError>(), Some(RconError::Auth)))
+}
+
+/// Commands that carry a secret: the console must not echo them or keep them in its history.
+pub fn hides_secret(cmd: &str) -> bool {
+    matches!(cmd.split_whitespace().next(), Some("rcon_password" | "sv_password" | "sv_setsteamaccount"))
+}
+
 #[derive(Debug)]
 pub struct Rcon {
     stream: TcpStream,
@@ -55,7 +84,7 @@ impl Rcon {
             let (id, kind, _) = read_full(&mut stream).context("rcon: no answer to authentication")?;
             if kind == 2 {
                 if id == -1 {
-                    bail!("rcon: wrong password");
+                    return Err(RconError::Auth.into());
                 }
                 break;
             }
@@ -71,7 +100,7 @@ impl Rcon {
         for ip in crate::net::rcon_candidates(configured_host) {
             match Rcon::connect_addr(SocketAddr::new(ip, port), password) {
                 Ok(r) => return Ok(r),
-                Err(e) if e.to_string().contains("password") => return Err(e),
+                Err(e) if is_auth_error(&e) => return Err(e),
                 Err(e) => last = Some(e),
             }
         }
@@ -101,7 +130,7 @@ impl Rcon {
         self.stream.write_all(&packet(marker, RESPONSE, ""))?;
         let mut out = String::new();
         loop {
-            let (rid, body) = read_packet(&mut self.stream).context("rcon: connection lost")?;
+            let (rid, body) = read_packet(&mut self.stream).map_err(RconError::Lost)?;
             if rid == marker {
                 break;
             }
@@ -115,6 +144,41 @@ impl Rcon {
 
     pub fn ip(&self) -> IpAddr {
         self.addr.ip()
+    }
+}
+
+/// A connection that comes back by itself: the engine drops rcon on map changes and plugin reloads.
+pub struct RconSession<'a> {
+    cfg: &'a crate::config::Config,
+    conn: Option<Rcon>,
+}
+
+impl<'a> RconSession<'a> {
+    pub fn new(cfg: &'a crate::config::Config) -> Self {
+        RconSession { cfg, conn: None }
+    }
+
+    /// Runs a command, reconnecting and repeating it if the connection was lost: only for commands that can repeat.
+    pub fn exec(&mut self, cmd: &str) -> crate::Result<String> {
+        let mut last = None;
+        for wait_ms in [0, 200, 600, 1500] {
+            std::thread::sleep(Duration::from_millis(wait_ms));
+            let result = match self.conn.take() {
+                Some(c) => Ok(c),
+                None => Rcon::from_config(self.cfg),
+            }
+            .and_then(|mut c| {
+                let o = c.exec(cmd)?;
+                self.conn = Some(c);
+                Ok(o)
+            });
+            match result {
+                Ok(o) => return Ok(o),
+                Err(e) if is_auth_error(&e) => return Err(e),
+                Err(e) => last = Some(e),
+            }
+        }
+        Err(last.unwrap_or_else(|| anyhow::anyhow!("rcon: no attempts")))
     }
 }
 
@@ -163,6 +227,14 @@ mod tests {
 
     #[test]
     fn wrong_password() {
-        assert!(Rcon::connect_addr(fake(), "bad").unwrap_err().to_string().contains("password"));
+        let e = Rcon::connect_addr(fake(), "bad").unwrap_err();
+        assert!(is_auth_error(&e), "{e}");
+        assert!(!is_auth_error(&anyhow::anyhow!("my password is wrong")), "only the real error counts");
+    }
+
+    #[test]
+    fn knows_which_commands_hold_secrets() {
+        assert!(hides_secret("rcon_password abc") && hides_secret("  sv_password x"));
+        assert!(!hides_secret("status") && !hides_secret(""));
     }
 }

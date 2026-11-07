@@ -13,6 +13,7 @@ pub mod paths;
 pub mod players;
 pub mod presets;
 pub mod rcon;
+pub mod security;
 pub mod server;
 pub mod skins;
 pub mod skins_gen;

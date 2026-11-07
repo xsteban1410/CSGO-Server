@@ -63,10 +63,13 @@ pub fn page(a: &AppRc) -> gtk::Widget {
             if cmd.trim().is_empty() {
                 return;
             }
-            history.borrow_mut().push(cmd.clone());
+            let secret = csls_core::rcon::hides_secret(&cmd);
+            if !secret {
+                history.borrow_mut().push(cmd.clone());
+            }
             hpos.set(history.borrow().len());
             e.set_text("");
-            append(&format!("] {cmd}\n"));
+            append(&if secret { format!("] {} ***\n", cmd.split_whitespace().next().unwrap_or("")) } else { format!("] {cmd}\n") });
             let cfg = a.cfg.borrow().clone();
             let ap = append.clone();
             bg(

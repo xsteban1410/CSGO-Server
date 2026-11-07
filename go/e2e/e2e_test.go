@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync/atomic"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -277,7 +278,7 @@ func TestSecretsNotInProcessArguments(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cmdline, err := os.ReadFile("/proc/" + strings.TrimSpace(string(pid)) + "/cmdline")
+	cmdline, err := os.ReadFile("/proc/" + strings.Fields(string(pid))[0] + "/cmdline")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -292,6 +293,80 @@ func TestSecretsNotInProcessArguments(t *testing.T) {
 	}
 	if info.Mode().Perm() != 0o600 {
 		t.Fatalf("secrets file is %v", info.Mode().Perm())
+	}
+}
+
+func pidFile(e *env) string {
+	return filepath.Join(e.root, "run", "csgo-legacy-server", "csgo-legacy-server.pid")
+}
+
+func TestReusedPidIsNotKilled(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t)
+	other := exec.Command("sleep", "30")
+	if err := other.Start(); err != nil {
+		t.Fatal(err)
+	}
+	defer other.Process.Kill()
+	// an old PID file that now points at somebody else's process
+	write(t, pidFile(e), fmt.Sprintf("%d 12345", other.Process.Pid), 0o644)
+	if o := e.must("status"); !strings.Contains(o, "Stopped") {
+		t.Fatalf("took another process for the server:\n%s", o)
+	}
+	e.must("stop")
+	if err := other.Process.Signal(syscall.Signal(0)); err != nil {
+		t.Fatal("stop killed a process that was not ours")
+	}
+}
+
+func TestOrphanIsDetectedAndStopped(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t)
+	e.start()
+	if err := os.Remove(pidFile(e)); err != nil {
+		t.Fatal(err)
+	}
+	e.mustFail("without being tracked", "start", "awp")
+	e.must("stop")
+	if o := e.must("start", "awp"); !strings.Contains(o, "ready") {
+		t.Fatalf("no server after clearing the orphan:\n%s", o)
+	}
+}
+
+func TestCrashIsReported(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t)
+	e.start()
+	_, _ = e.run("rcon", "fake_crash")
+	e.waitStopped()
+	if o := e.must("status"); !strings.Contains(o, "closed by itself") {
+		t.Fatalf("no explanation:\n%s", o)
+	}
+	e.start()
+	e.must("stop")
+	if o := e.must("status"); strings.Contains(o, "closed by itself") {
+		t.Fatalf("a requested stop is no crash:\n%s", o)
+	}
+}
+
+func TestSamePasswordsWarn(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t)
+	e.writeConfig("same-long-password", "same-long-password")
+	if o := e.must("start", "awp"); !strings.Contains(o, "different") {
+		t.Fatalf("no warning:\n%s", o)
+	}
+}
+
+func TestOpenConfigWarns(t *testing.T) {
+	t.Parallel()
+	e := newEnv(t)
+	p := filepath.Join(e.root, "config", "csgo-legacy-server", "config.toml")
+	if err := os.Chmod(p, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if o := e.must("start", "awp"); !strings.Contains(o, "chmod 600") {
+		t.Fatalf("no warning:\n%s", o)
 	}
 }
 
