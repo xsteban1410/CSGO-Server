@@ -10,6 +10,7 @@ The section of each version becomes the notes of its GitHub release, so keep the
 
 ### Changed
 
+- `tools/test-modes.sh` turns off hibernation by itself and polls instead of waiting, so all modes take about 12 minutes instead of about an hour.
 - All code comments, messages, logs, tests and documentation are now in English. The app, plugin messages and `README.es.md`
   are still translated into Spanish, but errors coming from the core now always appear in English.
 - `tools/probar-modos.sh` is now `tools/test-modes.sh`, and `modo_estado` prints `team=`, `health=`, `speed=`, `scale=` and `type=`.

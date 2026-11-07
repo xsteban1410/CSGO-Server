@@ -66,7 +66,7 @@ CI runs these, compiles the plugins and builds the package. To test modes on a r
 ```bash
 ./target/debug/csgo-legacy-server start normal
 ./target/debug/csgo-legacy-server rcon "sv_hibernate_when_empty 0"
-tools/test-modes.sh                  # all of them, about 25 minutes
+tools/test-modes.sh                  # all of them, about 12 minutes
 tools/test-modes.sh dm normal:ffa    # only these (mode or mode:type)
 ```
 
