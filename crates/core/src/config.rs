@@ -177,6 +177,9 @@ pub struct Server {
     /// Automatic backups to keep.
     #[serde(default = "default_backup_keep")]
     pub backup_keep: u32,
+    /// Asks GitHub for the latest release when the app opens. Off unless the user turns it on.
+    #[serde(default)]
+    pub check_updates: bool,
 }
 
 fn default_true() -> bool {
@@ -212,6 +215,7 @@ impl Default for Server {
             stats: true,
             stats_days: 365,
             backup_keep: 5,
+            check_updates: false,
         }
     }
 }

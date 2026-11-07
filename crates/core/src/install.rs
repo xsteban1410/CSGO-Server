@@ -313,7 +313,7 @@ fn retry_wait() -> u64 {
     }
 }
 
-fn sha256(file: &Path) -> crate::Result<String> {
+pub(crate) fn sha256(file: &Path) -> crate::Result<String> {
     let o = Command::new("sha256sum").arg(file).output().context("running sha256sum")?;
     if !o.status.success() {
         bail!("could not read {}", file.display());

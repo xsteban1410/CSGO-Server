@@ -23,6 +23,7 @@ pub mod server;
 pub mod skins;
 pub mod skins_gen;
 pub mod steam_client;
+pub mod updates;
 pub mod workshop;
 
 pub use anyhow::{Error, Result};
