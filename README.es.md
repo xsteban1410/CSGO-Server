@@ -4,38 +4,51 @@
 
 [![CI](https://github.com/xsteban1410/CSGO-Server/actions/workflows/ci.yml/badge.svg)](https://github.com/xsteban1410/CSGO-Server/actions/workflows/ci.yml)
 
-Monta un servidor dedicado de **CS:GO Legacy** (app 740) y juega con amigos contra bots, desde una app GTK o desde la terminal.
+Aloja un servidor dedicado **CS:GO Legacy** (aplicación 740) y juega con amigos contra bots, desde una aplicación de escritorio o la línea de comandos.
 Trae más de 30 modos (francotiradores, zombis por oleadas, retakes, Guardián, cheats aleatorios, anarquía…), guarda las skins
 de cada jugador, compila solo los plugins de SourceMod y busca mapas en el Workshop de Steam.
 
 Funciona en cualquier distro de 64 bits con glibc y librerías de 32 bits. Probado en Arch/CachyOS.
 
-<p><img src="packaging/screenshots/server.png" width="49%" alt="Pestaña Servidor"> <img src="packaging/screenshots/modes.png" width="49%" alt="Modes"></p>
+<p><img src="packaging/screenshots/server.png" width="49%" alt="Server tab"> <img src="packaging/screenshots/wizard.png" width="49%" alt="Choosing a mode"></p>
+<p><img src="packaging/screenshots/console.png" width="49%" alt="Console"> <img src="packaging/screenshots/modes.png" width="49%" alt="Mode editor"></p>
+<p><img src="packaging/screenshots/players.png" width="49%" alt="Players"> <img src="packaging/screenshots/plugins.png" width="49%" alt="Plugins"></p>
 
 ## Instalación
 
 **Arch Linux:** abre la [última versión](https://github.com/xsteban1410/CSGO-Server/releases/latest) y ejecuta el comando
 `sudo pacman -U …` de sus notas. El paquete del AUR todavía no está publicado.
 
-**Desde el código** (cualquier distro; necesita Rust, GTK 4 ≥ 4.14 y libadwaita ≥ 1.6 con sus archivos de desarrollo):
+Los siguientes paquetes vienen con versiones posteriores a la 1.1.0:
+
+**Debian 12 o posterior, Ubuntu 24.04 o posterior:** descargue el `.deb` de la versión y ejecute `sudo apt install ./csgo-legacy-server_*_amd64.deb`.
+
+**Cualquier distribución, AppImage:** descárgala, `chmod +x` y ejecútala. Necesita fontconfig, freetype y glibc 2.36 o posterior. Con argumentos es la línea de comando: `./csgo-legacy-server-*.AppImage status`. No se agrega al menú de su aplicación.
+
+**Cualquier distribución, Flatpak:** `flatpak install --user csgo-legacy-server-*.flatpak`. Está en un espacio aislado: el servidor se detiene cuando cierras la aplicación, abres el juego tú mismo y escribes el comando `connect` que se muestra.
+
+Cada versión tiene un archivo `SHA256SUMS`: `sha256sum -c SHA256SUMS --ignore-missing`.
+
+**Desde la fuente** (cualquier distribución; necesita Rust, Go para el agente y los archivos de desarrollo fontconfig, freetype, xkbcommon y Wayland):
 
 ```bash
 git clone https://github.com/xsteban1410/CSGO-Server.git && cd CSGO-Server
 cargo build --release
-./target/release/csgo-legacy-server-gtk       # desde el repo encuentra cfg/, modes/ y plugin/
+(cd go && go build -o ../target/release/csgo-legacy-server-agent ./cmd/agent)   # optional: history and scheduled tasks
+./target/release/csgo-legacy-server-app       # run from the repo: it finds game/ here
 ```
 
-Para instalarlo en otro sitio, copia `cfg/ modes/ plugin/ data/` a `<prefijo>/share/csgo-legacy-server/` junto a
+Para instalar en otro lugar, copie `cfg/ modes/ plugin/ data/` de `game/` a `<prefix>/share/csgo-legacy-server/` junto a
 `<prefijo>/bin`, o apunta `CSLS_RESOURCES` a una carpeta que los tenga.
 
 ### Primer arranque
 
-No se descarga nada hasta que lo pidas. La app pregunta **Crear un servidor** o **Solo unirme a servidores**:
+No se descarga nada hasta que usted lo solicite. La aplicación ofrece **Crear un servidor** o **Únase únicamente a servidores**:
 
 - *Crear un servidor* busca antes una instalación existente (cualquier carpeta con `srcds_run`) y la reutiliza. Si no hay,
   eliges carpeta (~40 GB libres) y descarga SteamCMD, el servidor dedicado (~33 GB), Metamod:Source y SourceMod, y compila
   los plugins. La descarga sigue en segundo plano si cierras la app y se reanuda si se corta.
-- *Solo unirme* se salta todo eso: es para los amigos que solo juegan.
+- *Solo unirse* se salta todo eso y permanece elegido: es para amigos que solo juegan. **Inicio** ofrece la descarga si cambias de opinión.
 
 Sin pantalla: `csgo-legacy-server install` hace lo mismo, y `csgo-legacy-server doctor` dice qué falta y el comando
 exacto para tu distro (apt, pacman, dnf, zypper, xbps, emerge).
@@ -47,15 +60,22 @@ El botón **Jugar** de la app (o `csgo-legacy-server play local`) abre CS:GO Leg
 
 | Pestaña | |
 |---|---|
-| Servidor | estado, dirección para conectar, Iniciar (modo → mapa → opciones → red), cambiar modo o mapa en vivo, reiniciar ronda, acabar calentamiento, añadir/quitar bots, presets |
-| Jugadores | expulsar, banear (minutos o permanente, con motivo), lista de baneos y desbanear, skins guardadas de cada jugador |
-| Modos | crea tus modos o duplica uno de serie; importa/exporta en `.toml` para compartirlos |
+| Servidor | estado, jugadores, CPU, RAM, rcon y agente, advertencias y eventos recientes, dirección de conexión, inicio (modo → mapa → opciones → red), cambiar modo o mapa en vivo, reiniciar ronda, finalizar calentamiento, agregar/eliminar bots, ajustes preestablecidos |
+| Jugadores | patear, prohibir (minutos o permanente, con motivo), lista de prohibiciones y desbanear, máscaras guardadas, historial de conexiones, sanciones con notas, exportar a CSV y JSON |
+| Modos | crea tus propios modos o duplica uno integrado, con armas, salud, velocidad, tiempo de ronda, bots y una vista previa del cfg; bloques de reglas como "cuando ocurre una muerte, agrega 25 de salud"; importar/exportar como `.toml` para compartirlos |
 | Workshop | busca mapas sin clave de API, instala por ID o enlace (también colecciones), genera la navegación de bots, importa un `.bsp` local |
-| Consola | log del servidor en vivo y comandos rcon |
+| Consola | registro del servidor en vivo con filtros y búsqueda, comandos rcon con autocompletar, historial, favoritos y alias, guarde el registro |
+| Complementos | encender y apagar, instalar `.sp` o `.smx`, recargar, volver a una versión anterior; Los errores de compilación se muestran aquí. |
+| Tareas | reinicios programados, cambios de mapa o modo, comandos rcon, copias de seguridad e implementaciones de complementos, con ejecuciones recientes (necesita el agente) |
+| Copias de seguridad | crear, restaurar con una vista previa de los cambios, mantener la última N |
+| Estadística | jugadores por día, actividad por hora, mapas y modos; almacenado solo en esta PC, nunca en direcciones IP, y puede borrarlo (necesita el agente) |
+| Actualizaciones | solicite a GitHub una nueva versión, solo cuando lo presione o active la marca; nada se instala solo |
 | Unirse | entrar al servidor de un amigo; con una IP 100.x activa solo el puente VPN, prueba la conexión y da el `connect` exacto |
 | Ajustes | nombre, contraseña, perfil de red, puerto, tickrate, GSLT, plugin de skins, actualizar el servidor |
 
-El servidor corre como unidad `systemd --user`: sigue encendido aunque cierres la app.
+El servidor se ejecuta como una unidad `systemd --user`, por lo que sigue ejecutándose cuando cierras la aplicación (no en Flatpak).
+
+Al cerrar la ventana, la aplicación queda en la bandeja del sistema, con el estado, iniciar, detener y salir. La bandeja necesita un host StatusNotifier: GNOME necesita la extensión AppIndicator y, sin una bandeja que cierre la ventana, sale de la aplicación.
 
 ## Perfiles de red
 
@@ -180,7 +200,7 @@ de compilación salen con su línea y el servidor sigue con la versión anterior
 
 ### Copias de seguridad
 
-`backup create` (o **Configuración → Copias de seguridad**) guarda su configuración, modos, complementos, ajustes preestablecidos y máscaras en `~/.local/share/csgo-legacy-server/backups/`, nunca en el servidor. `install --update` hace uno primero y se queda con los últimos cinco automáticos. `restore --dry-run` muestra lo que cambiaría, y una restauración guarda primero los archivos actuales y deja los archivos que la copia de seguridad no tiene. Las copias de seguridad contienen sus contraseñas, así que no las comparta.
+`backup create` (o la pestaña **Copias de seguridad**) guarda su configuración, modos, complementos, ajustes preestablecidos y máscaras en `~/.local/share/csgo-legacy-server/backups/`, nunca en el servidor. `install --update` hace uno primero y se queda con los últimos cinco automáticos. `restore --dry-run` muestra lo que cambiaría, y una restauración guarda primero los archivos actuales y deja los archivos que la copia de seguridad no tiene. Las copias de seguridad contienen sus contraseñas, así que no las comparta.
 
 ## Mapas del workshop
 
@@ -206,7 +226,7 @@ Se guarda por SteamID y se aplica cada vez que entras. Los mensajes salen en el 
 |---|---|
 | `~/.config/csgo-legacy-server/config.toml` | ajustes (lleva la contraseña rcon, permisos 600) |
 | `~/.config/csgo-legacy-server/{modes,plugins,presets.toml}` | tus modos, plugins y presets |
-| `crates/core`, `crates/cli`, `crates/gtk`, `crates/app` | Rust: biblioteca principal, línea de comandos, aplicación GTK y la aplicación Slint que la reemplazará |
+| `crates/core`, `crates/cli`, `crates/app` | Rust: biblioteca principal, línea de comandos, aplicación de escritorio Slint |
 | `game/plugin/`, `game/cfg/`, `game/modes/` | Complementos de SourceMod, configuraciones de modo, metadatos de modo |
 | `go/` | El agente y las herramientas de prueba. |
 | `docs/ARCHITECTURE.md`, `docs/TROUBLESHOOTING.md`, `docs/PRIVACY.md` | Cómo encajan las piezas, cómo solucionar problemas y qué datos se conservan |
@@ -222,7 +242,7 @@ Se guarda por SteamID y se aplica cada vez que entras. Los mensajes salen en el 
   found" y habrá que volver a sacarlas. La idea viene de [NoLobbyReservation](https://github.com/vanz666/NoLobbyReservation).
 - El servidor arranca con `-insecure` (sin VAC). Las skins son cosméticas y solo se ven en este servidor; los skin changers van
   contra las normas de Valve en servidores públicos con GSLT, por eso en Ajustes se puede desactivar el plugin de skins.
-- Probado en Arch Linux y CachyOS. CI construye el núcleo y la CLI en Debian y Fedora, pero no se ha probado nada más allí. No probado en distribuciones musl o SteamOS (sistema de solo lectura: use distrobox). Sin guantes.
+- Jugado en Arch Linux y CachyOS. CI compila y prueba todo en Debian y Fedora, y prueba `.deb`, AppImage y Flatpak, pero nadie ha jugado con ellos todavía. No probado en distribuciones musl o SteamOS (sistema de solo lectura: use distrobox). Sin guantes.
 
 ## Ramas
 
