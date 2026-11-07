@@ -32,6 +32,7 @@ modules:
         CARGO_HOME: /run/build/csgo-legacy-server/cargo
         GOPATH: /run/build/csgo-legacy-server/gopath
         CGO_ENABLED: '0'
+        GOFLAGS: -modcacherw
       # shortcut: downloads crates while building, which Flathub refuses; generate the source lists if this goes to Flathub
       build-args:
         - --share=network
