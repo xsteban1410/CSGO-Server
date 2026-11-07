@@ -206,7 +206,8 @@ Se guarda por SteamID y se aplica cada vez que entras. Los mensajes salen en el 
 |---|---|
 | `~/.config/csgo-legacy-server/config.toml` | ajustes (lleva la contraseña rcon, permisos 600) |
 | `~/.config/csgo-legacy-server/{modes,plugins,presets.toml}` | tus modos, plugins y presets |
-| `~/.local/share/csgo-legacy-server/` | servidor (ubicación por defecto), SteamCMD, logs, caché del workshop |
+| `crates/core`, `crates/cli`, `crates/gtk`, `crates/app` | Rust: biblioteca principal, línea de comandos, aplicación GTK y la aplicación Slint que la reemplazará |
+| `go/` | Ir: el agente opcional y las herramientas de prueba |
 | `game/plugin/`, `game/cfg/`, `game/modes/` | Complementos de SourceMod, configuraciones de modo, metadatos de modo |
 | `go/` | El agente y las herramientas de prueba. |
 | `docs/ARCHITECTURE.md`, `docs/TROUBLESHOOTING.md`, `docs/PRIVACY.md` | Cómo encajan las piezas, cómo solucionar problemas y qué datos se conservan |
