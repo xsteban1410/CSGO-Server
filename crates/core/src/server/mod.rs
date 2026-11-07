@@ -13,7 +13,7 @@ use std::time::{Duration, Instant};
 mod process;
 mod secrets;
 
-pub use process::{cli_exe, last_stop, process_stats, running, spawn_bg, systemd_available, LastStop, ProcStats};
+pub use process::{appimage, cli_exe, last_stop, process_stats, running, spawn_bg, systemd_available, LastStop, ProcStats};
 use process::{kill_bg, orphans, stop_pids};
 use secrets::SECRETS_CFG;
 
@@ -414,18 +414,23 @@ pub fn load_command(opts: &LaunchOptions, map: &str) -> String {
 const AGENT_EXE: &str = "csgo-legacy-server-agent";
 pub const AGENT_UNIT: &str = "csgo-legacy-server-agent";
 
-/// The agent next to the CLI. It is optional: without one the app and the CLI work, with no history or schedule.
-fn agent_exe() -> Option<PathBuf> {
-    cli_exe().parent().map(|d| d.join(AGENT_EXE)).filter(|p| p.is_file())
+/// What starts the agent: inside the AppImage, or next to the CLI. It is optional: without one the app and the CLI work,
+/// with no history or schedule.
+fn agent_program() -> Option<Vec<String>> {
+    if process::appimage().is_some() {
+        return Some(vec![cli_exe().to_string_lossy().into_owned(), "--agent".into()]);
+    }
+    let exe = cli_exe().parent()?.join(AGENT_EXE);
+    exe.is_file().then(|| vec![exe.to_string_lossy().into_owned()])
 }
 
 /// Starts the agent unless it is running. Says whether it is there to start.
 pub fn start_agent() -> crate::Result<bool> {
-    let Some(exe) = agent_exe() else {
+    let Some(mut cmd) = agent_program() else {
         return Ok(false);
     };
     if !running(AGENT_UNIT) {
-        let cmd = [exe.to_string_lossy().into_owned(), "--cli".into(), cli_exe().to_string_lossy().into_owned()];
+        cmd.extend(["--cli".into(), cli_exe().to_string_lossy().into_owned()]);
         spawn_bg(AGENT_UNIT, &paths::data_dir(), &[], &cmd, &paths::data_dir().join("agent.log"))?;
     }
     Ok(true)

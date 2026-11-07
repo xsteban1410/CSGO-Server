@@ -41,6 +41,12 @@ fn check_passwords(rcon: &str, join: &str) -> Vec<Finding> {
 
 pub fn preflight(cfg: &Config) -> Vec<Finding> {
     let mut v = check_passwords(&cfg.server.rcon_password, &cfg.server.password);
+    if std::env::var_os("FLATPAK_ID").is_some() {
+        v.push(Finding {
+            warn: false,
+            text: "In the Flatpak the server, the agent and scheduled tasks stop when you close the app".into(),
+        });
+    }
     let csgo = cfg.install_dir().join("csgo");
     let backups = crate::backup::list().unwrap_or_default();
     let secret_files = [config_path(), csgo.join("cfg/csls_secrets.cfg"), csgo.join("cfg/server.cfg"), csgo.join("webapi_authkey.txt")];

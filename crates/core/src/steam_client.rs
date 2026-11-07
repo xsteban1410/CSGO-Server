@@ -137,6 +137,13 @@ pub fn launch_csgo(connect: Option<&str>) -> crate::Result<Option<JoinHandle<boo
     if connect.is_some_and(|c| !valid_address(c)) {
         bail!("invalid address '{}'", connect.unwrap_or_default());
     }
+    if in_sandbox() {
+        // through the portal steam://connect would open CS2 if the game is closed, and csgo.sh cannot be reached from here
+        match connect {
+            Some(addr) => bail!("the Flatpak cannot open the game: open CS:GO Legacy yourself and type in its console: connect {addr}"),
+            None => bail!("the Flatpak cannot open the game: open CS:GO Legacy yourself"),
+        }
+    }
     let s = find_steam().context("Steam folder not found")?;
     if !steam_running() {
         bail!("open Steam first");
@@ -208,6 +215,11 @@ pub fn launch_csgo(connect: Option<&str>) -> crate::Result<Option<JoinHandle<boo
     })))
 }
 
+/// Inside this app's own Flatpak, where Steam's folders and processes are out of reach.
+fn in_sandbox() -> bool {
+    std::env::var_os("FLATPAK_ID").is_some()
+}
+
 /// The Steam executable, to pass it a steam:// URL.
 fn steam_command(flavor: &Flavor) -> Command {
     match flavor {
@@ -222,6 +234,10 @@ fn steam_command(flavor: &Flavor) -> Command {
 
 /// Opens CS2 (what Steam's Play button does).
 pub fn launch_cs2() -> crate::Result<()> {
+    if in_sandbox() {
+        Command::new("xdg-open").arg("steam://rungameid/730").stdout(Stdio::null()).stderr(Stdio::null()).spawn()?;
+        return Ok(());
+    }
     let s = find_steam().context("Steam not found")?;
     steam_command(&s.flavor).arg("steam://rungameid/730").stdout(Stdio::null()).stderr(Stdio::null()).spawn()?;
     Ok(())

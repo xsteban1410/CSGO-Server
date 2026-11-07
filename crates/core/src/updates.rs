@@ -17,8 +17,8 @@ pub enum Channel {
 }
 
 pub fn channel() -> Channel {
-    if let Some(p) = std::env::var_os("APPIMAGE") {
-        return Channel::AppImage(p.into());
+    if let Some(p) = crate::server::appimage() {
+        return Channel::AppImage(p);
     }
     if std::env::var_os("FLATPAK_ID").is_some() {
         return Channel::Flatpak;

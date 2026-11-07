@@ -51,8 +51,27 @@ fn pid_alive(name: &str) -> Option<u32> {
     check_pid_file(&std::fs::read_to_string(pid_file(name)).ok()?, proc_identity)
 }
 
-/// CLI executable (to launch the bridge as a separate process).
+/// The AppImage that holds `exe`. `$APPIMAGE` alone proves nothing: a terminal opened from another AppImage passes it on.
+fn appimage_of(appimage: Option<PathBuf>, appdir: Option<PathBuf>, exe: Option<PathBuf>) -> Option<PathBuf> {
+    let (image, dir, exe) = (appimage?, appdir?, exe?);
+    (exe.starts_with(dir) && image.is_file()).then_some(image)
+}
+
+/// The AppImage this process runs from, if any.
+pub fn appimage() -> Option<PathBuf> {
+    appimage_of(
+        std::env::var_os("APPIMAGE").map(PathBuf::from),
+        std::env::var_os("APPDIR").map(PathBuf::from),
+        std::env::current_exe().ok(),
+    )
+}
+
+/// CLI executable (to launch the bridge as a separate process). In an AppImage it is the file itself, whose AppRun
+/// starts the CLI when given arguments: the mount folder goes away with the app.
 pub fn cli_exe() -> PathBuf {
+    if let Some(image) = appimage() {
+        return image;
+    }
     std::env::current_exe()
         .ok()
         .and_then(|e| e.parent().map(|d| d.join("csgo-legacy-server")))
@@ -292,6 +311,21 @@ pub fn process_stats(port: u16) -> Option<ProcStats> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn an_appimage_only_counts_when_this_process_lives_in_it() {
+        let dir = std::env::temp_dir().join(format!("csls-appimage-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let image = dir.join("a.AppImage");
+        std::fs::write(&image, "").unwrap();
+        let p = |s: &str| Some(PathBuf::from(s));
+        assert_eq!(appimage_of(Some(image.clone()), p("/tmp/.mount_a"), p("/tmp/.mount_a/usr/bin/app")), Some(image.clone()));
+        // a terminal opened from another AppImage passes the variables on to a system install
+        assert_eq!(appimage_of(Some(image.clone()), p("/tmp/.mount_a"), p("/usr/bin/app")), None);
+        assert_eq!(appimage_of(Some(image), None, p("/usr/bin/app")), None);
+        assert_eq!(appimage_of(Some(dir.join("gone")), p("/tmp/.mount_a"), p("/tmp/.mount_a/usr/bin/app")), None);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
 
     #[test]
     fn reads_proc_stat() {
