@@ -79,6 +79,7 @@ csgo-legacy-server mode-file export|import|delete      compartir modos propios
 csgo-legacy-server presets [--delete nombre]           opciones de arranque guardadas
 csgo-legacy-server backup create | list | restore <file> [--dry-run]   your config, modes, plugins, presets and skins
 csgo-legacy-server deploy [--force] [--watch]          compilar plugins, copiar configs
+csgo-legacy-server agent start | stop | status        optional helper: history and scheduled tasks
 csgo-legacy-server nav [--force]                       navegación de bots del mapa actual
 csgo-legacy-server skins                               rehacer la lista de skins tras actualizar el juego
 csgo-legacy-server rcon "comando" | play [cs2|local|IP:PUERTO] | bridge | doctor | install [--update]
@@ -203,7 +204,8 @@ Se guarda por SteamID y se aplica cada vez que entras. Los mensajes salen en el 
 | `~/.config/csgo-legacy-server/config.toml` | ajustes (lleva la contraseña rcon, permisos 600) |
 | `~/.config/csgo-legacy-server/{modes,plugins,presets.toml}` | tus modos, plugins y presets |
 | `~/.local/share/csgo-legacy-server/` | servidor (ubicación por defecto), SteamCMD, logs, caché del workshop |
-| `crates/core`, `crates/cli`, `crates/gtk` | Rust: núcleo, terminal y app GTK |
+| `game/plugin/`, `game/cfg/`, `game/modes/` | Complementos de SourceMod, configuraciones de modo, metadatos de modo |
+| `go/` | El agente y las herramientas de prueba. |
 | `docs/ARCHITECTURE.md`, `docs/TROUBLESHOOTING.md`, `docs/PRIVACY.md` | Cómo encajan las piezas, cómo solucionar problemas y qué datos se conservan |
 
 ## Notas y límites
@@ -212,7 +214,7 @@ Se guarda por SteamID y se aplica cada vez que entras. Los mensajes salen en el 
 - `doctor --report` imprime un informe sobre problemas con contraseñas, IP e ID de Steam ocultos, y `status --json` está destinado a scripts.
 - Los paquetes instalan terminaciones de shell. De la fuente: `csgo-legacy-server completions fish > ~/.config/fish/completions/csgo-legacy-server.fish` (también `bash` y `zsh`).
 
-- `plugin/csls_directconnect` parchea el motor en memoria para que se pueda entrar por IP sin lobby de matchmaking. Sus firmas
+- `game/plugin/csls_directconnect` parchea el motor en la memoria para que los jugadores puedan unirse por IP sin un lobby de emparejamiento. Es Linux
   para Linux corresponden al `engine.so` actual; si Valve actualiza los binarios del servidor, el log dirá "signature not
   found" y habrá que volver a sacarlas. La idea viene de [NoLobbyReservation](https://github.com/vanz666/NoLobbyReservation).
 - El servidor arranca con `-insecure` (sin VAC). Las skins son cosméticas y solo se ven en este servidor; los skin changers van
