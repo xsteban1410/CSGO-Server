@@ -1,4 +1,4 @@
-//! csgo-legacy-server: CLI for headless servers (the GTK app uses the same core).
+//! csgo-legacy-server: CLI for headless servers (the desktop app uses the same core).
 use anyhow::{bail, Context, Result};
 use clap::{Args, CommandFactory, Parser, Subcommand};
 use csls_core::config::{Config, Kind};

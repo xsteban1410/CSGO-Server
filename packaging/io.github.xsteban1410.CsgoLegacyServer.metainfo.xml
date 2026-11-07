@@ -31,7 +31,7 @@
   <launchable type="desktop-id">io.github.xsteban1410.CsgoLegacyServer.desktop</launchable>
   <provides>
     <binary>csgo-legacy-server</binary>
-    <binary>csgo-legacy-server-gtk</binary>
+    <binary>csgo-legacy-server-app</binary>
   </provides>
   <screenshots>
     <screenshot type="default">
@@ -39,8 +39,12 @@
       <image>https://raw.githubusercontent.com/xsteban1410/CSGO-Server/master/packaging/screenshots/server.png</image>
     </screenshot>
     <screenshot>
-      <caption>Custom modes</caption>
+      <caption>Mode editor with rule blocks</caption>
       <image>https://raw.githubusercontent.com/xsteban1410/CSGO-Server/master/packaging/screenshots/modes.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Live console with filters and aliases</caption>
+      <image>https://raw.githubusercontent.com/xsteban1410/CSGO-Server/master/packaging/screenshots/console.png</image>
     </screenshot>
   </screenshots>
   <url type="homepage">https://github.com/xsteban1410/CSGO-Server</url>

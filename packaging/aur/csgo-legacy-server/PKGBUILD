@@ -2,12 +2,12 @@
 pkgname=csgo-legacy-server
 pkgver=1.1.0
 pkgrel=1
-pkgdesc="Host a CS:GO Legacy dedicated server with bots: GTK app and command line"
+pkgdesc="Host a CS:GO Legacy dedicated server with bots: desktop app and command line"
 arch=('x86_64')
 url="https://github.com/xsteban1410/CSGO-Server"
 license=('GPL-3.0-or-later')
 # srcds and steamcmd are 32-bit; curl/tar to download SteamCMD, SourceMod and maps
-depends=('gtk4' 'libadwaita' 'sqlite' 'curl' 'tar' 'lib32-glibc' 'lib32-gcc-libs')
+depends=('fontconfig' 'freetype2' 'libxkbcommon' 'wayland' 'sqlite' 'curl' 'tar' 'lib32-glibc' 'lib32-gcc-libs')
 makedepends=('cargo' 'go')
 optdepends=('steamcmd: use the system SteamCMD instead of downloading it'
             'steam: play on this PC (CS:GO Legacy is the csgo_legacy beta of CS2)'
@@ -30,7 +30,7 @@ build() {
   cd "$_dir"
   export RUSTUP_TOOLCHAIN=stable
   export CARGO_TARGET_DIR=target
-  cargo build --frozen --release -p csgo-legacy-server -p csgo-legacy-server-gtk
+  cargo build --frozen --release -p csgo-legacy-server -p csgo-legacy-server-app
   (cd go && CGO_ENABLED=0 go build -trimpath -mod=readonly -modcacherw -o ../target/release/csgo-legacy-server-agent ./cmd/agent)
 }
 
@@ -38,12 +38,12 @@ check() {
   cd "$_dir"
   export RUSTUP_TOOLCHAIN=stable
   export CARGO_TARGET_DIR=target
-  cargo test --frozen --release -p csls-core -p csgo-legacy-server -p csgo-legacy-server-gtk
+  cargo test --frozen --release -p csls-core -p csgo-legacy-server -p csgo-legacy-server-app
 }
 
 package() {
   cd "$_dir"
-  install -Dm755 target/release/csgo-legacy-server target/release/csgo-legacy-server-gtk target/release/csgo-legacy-server-agent -t "$pkgdir/usr/bin/"
+  install -Dm755 target/release/csgo-legacy-server target/release/csgo-legacy-server-app target/release/csgo-legacy-server-agent -t "$pkgdir/usr/bin/"
   local share="$pkgdir/usr/share/csgo-legacy-server"
   install -d "$share"
   cp -r --no-preserve=ownership game/cfg game/modes game/plugin game/data "$share/"

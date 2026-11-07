@@ -11,9 +11,8 @@ share=$prefix/share/csgo-legacy-server
 install -d "$share"
 cp -r --no-preserve=ownership "$root"/game/{cfg,modes,plugin,data} "$share/"
 find "$share" -type d -exec chmod 755 {} + && find "$share" -type f -exec chmod 644 {} +
-# shortcut: the entries still name the GTK binary that the Arch package ships; goes away when the Slint app replaces it
-sed 's/csgo-legacy-server-gtk/csgo-legacy-server-app/' "$root/packaging/$id.desktop" | install -Dm644 /dev/stdin "$prefix/share/applications/$id.desktop"
-sed 's/csgo-legacy-server-gtk/csgo-legacy-server-app/' "$root/packaging/$id.metainfo.xml" | install -Dm644 /dev/stdin "$prefix/share/metainfo/$id.metainfo.xml"
+install -Dm644 "$root/packaging/$id.desktop" -t "$prefix/share/applications/"
+install -Dm644 "$root/packaging/$id.metainfo.xml" -t "$prefix/share/metainfo/"
 install -Dm644 "$root/packaging/$id.svg" -t "$prefix/share/icons/hicolor/scalable/apps/"
 for s in 32 48 64 128 256 512; do
     install -Dm644 "$root/packaging/icons/$s.png" "$prefix/share/icons/hicolor/${s}x${s}/apps/$id.png"

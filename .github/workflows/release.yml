@@ -63,11 +63,15 @@ jobs:
           set -euo pipefail
           version=${TAG#v}
           pkg=$(basename dist/csgo-legacy-server-"$version"-*-x86_64.pkg.tar.zst)
-          # shortcut: these carry the Slint app, so they wait until it replaces GTK; drop the condition then
-          if [ ! -d crates/gtk ]; then mv bundles/* dist/; fi
+          mv bundles/* dist/
           (cd dist && sha256sum -- * > SHA256SUMS)
           {
             tools/version.sh notes "$version"
-            printf '\n## Install on Arch Linux\n\n```bash\nsudo pacman -U https://github.com/%s/releases/download/%s/%s\n```\n' "$GITHUB_REPOSITORY" "$TAG" "$pkg"
+            base="https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG"
+            printf '\n## Install\n\n'
+            printf 'Arch Linux:\n\n```bash\nsudo pacman -U %s/%s\n```\n\n' "$base" "$pkg"
+            printf 'Debian 12 or newer, Ubuntu 24.04 or newer: download the `.deb`, then `sudo apt install ./csgo-legacy-server_%s_amd64.deb`\n\n' "$version"
+            printf 'Any distro: the `.AppImage` (`chmod +x`, then run it), or the `.flatpak` (`flatpak install --user`, sandboxed: the server stops when you close the app).\n\n'
+            printf 'Check a download with `sha256sum -c SHA256SUMS --ignore-missing`.\n'
           } > notes.md
           gh release create "$TAG" dist/* --target "$GITHUB_SHA" --title "csgo-legacy-server $version" --notes-file notes.md
