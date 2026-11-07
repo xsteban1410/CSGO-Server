@@ -207,7 +207,6 @@ Choices are saved per SteamID and applied every time you join. The language chos
 | `~/.config/csgo-legacy-server/{modes,plugins,presets.toml}` | your modes, plugins and presets |
 | `~/.local/share/csgo-legacy-server/` | server (default location), SteamCMD, logs, workshop cache |
 | `crates/core`, `crates/cli`, `crates/gtk`, `crates/app` | Rust: core library, command line, GTK app, and the Slint app that will replace it |
-| `go/` | Go: the optional agent and the test tools |
 | `game/plugin/`, `game/cfg/`, `game/modes/` | SourceMod plugins, mode configs, mode metadata |
 | `go/` | The agent and the test tools |
 | `docs/ARCHITECTURE.md`, `docs/TROUBLESHOOTING.md`, `docs/PRIVACY.md` | How the pieces fit together, fixing problems, and what data is kept |
