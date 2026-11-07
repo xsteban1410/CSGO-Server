@@ -1,6 +1,6 @@
 # Maintainer: xsteban1410 <esteban1410dev at gmail dot com>
 pkgname=csgo-legacy-server
-pkgver=1.1.0
+pkgver=1.3.0
 pkgrel=1
 pkgdesc="Host a CS:GO Legacy dedicated server with bots: desktop app and command line"
 arch=('x86_64')

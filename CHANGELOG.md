@@ -8,6 +8,8 @@ The section of each version becomes the notes of its GitHub release, so keep the
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-07
+
 ### Added
 
 - A new desktop app built with Slint replaces the GTK one, with a tray icon. The program is now `csgo-legacy-server-app`. On top of the old tabs it has:
@@ -156,7 +158,8 @@ First release as a GTK app and command line in Rust, replacing the old shell scr
 
 - License changed to GPL-3.0-or-later.
 
-[Unreleased]: https://github.com/xsteban1410/CSGO-Server/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/xsteban1410/CSGO-Server/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/xsteban1410/CSGO-Server/compare/v1.1.0...v1.3.0
 [1.1.0]: https://github.com/xsteban1410/CSGO-Server/compare/v1.0.2...v1.1.0
 [1.0.2]: https://github.com/xsteban1410/CSGO-Server/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/xsteban1410/CSGO-Server/compare/v1.0.0...v1.0.1
