@@ -62,4 +62,8 @@ package() {
     install -Dm644 "packaging/icons/$s.png" "$pkgdir/usr/share/icons/hicolor/${s}x${s}/apps/$id.png"
   done
   install -Dm644 README.md README.es.md CHANGELOG.md -t "$pkgdir/usr/share/doc/$pkgname/"
+  local bin=target/release/csgo-legacy-server
+  "$bin" completions bash | install -Dm644 /dev/stdin "$pkgdir/usr/share/bash-completion/completions/csgo-legacy-server"
+  "$bin" completions zsh | install -Dm644 /dev/stdin "$pkgdir/usr/share/zsh/site-functions/_csgo-legacy-server"
+  "$bin" completions fish | install -Dm644 /dev/stdin "$pkgdir/usr/share/fish/vendor_completions.d/csgo-legacy-server.fish"
 }

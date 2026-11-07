@@ -23,6 +23,7 @@ The section of each version becomes the notes of its GitHub release, so keep the
 
 ### Added
 
+- Shell completions for bash, zsh and fish: `completions <shell>`, installed by the packages.
 - `docs/TROUBLESHOOTING.md`, and `docs/PRIVACY.md` with what is stored and what the app contacts.
 - CI builds and tests the core and CLI on Debian and Fedora, audits dependencies and fails on clippy warnings.
 - **Language** in Settings (`language` in `config.toml`): English by default, Spanish if you choose it. It no longer depends on the

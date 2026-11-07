@@ -1,6 +1,6 @@
 //! csgo-legacy-server: CLI for headless servers (the GTK app uses the same core).
 use anyhow::{bail, Context, Result};
-use clap::{Args, Parser, Subcommand};
+use clap::{Args, CommandFactory, Parser, Subcommand};
 use csls_core::config::{Config, Kind};
 use csls_core::launch::{parse_cvar, LaunchOptions, Site, Teams};
 use csls_core::modes::Modes;
@@ -152,6 +152,8 @@ enum Cmd {
     Skins,
     /// Print the config file path
     Config,
+    /// Print shell completions: bash, zsh or fish
+    Completions { shell: clap_complete::Shell },
 }
 
 #[derive(Subcommand)]
@@ -252,6 +254,11 @@ fn options(g: &Game, cfg: &Config) -> Result<LaunchOptions> {
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
+    // Before anything reads the config: packaging runs this with no home.
+    if let Cmd::Completions { shell } = cli.cmd {
+        clap_complete::generate(shell, &mut Cli::command(), "csgo-legacy-server", &mut std::io::stdout());
+        return Ok(());
+    }
     let cfg = Config::load()?;
     let srv = Server::new(&cfg);
     let lang = csls_core::lang();
@@ -506,6 +513,7 @@ fn main() -> Result<()> {
             deploy::deploy(&cfg, false, true)?;
         }
         Cmd::Config => println!("{}", csls_core::config::config_path().display()),
+        Cmd::Completions { .. } => unreachable!("handled before loading the config"),
     }
     Ok(())
 }

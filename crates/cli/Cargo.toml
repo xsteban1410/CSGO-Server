@@ -13,3 +13,4 @@ path = "src/main.rs"
 anyhow.workspace = true
 csls-core.workspace = true
 clap = { version = "4", features = ["derive"] }
+clap_complete = "4"
