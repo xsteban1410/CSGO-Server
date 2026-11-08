@@ -128,7 +128,7 @@ jobs:
       - name: English outside translation files
         run: |
           ! git grep -nIP '[áéíóúñÁÉÍÓÚÑ¿¡]' -- . ':!README.es.md' ':!crates/app/lang/*' ':!game/plugin/translations/*' ':!game/plugin/*/translations/*' ':!crates/core/tests/fixtures/*' \
-            ':!crates/core/src/skins_gen.rs' ':!packaging/*.metainfo.xml' ':!.github/workflows/ci.yml' | grep -v 'Español'
+            ':!crates/core/src/skins_gen.rs' ':!packaging/*.metainfo.xml' ':!.github/workflows/ci.yml' ':!tools/sync_readme.py' ':!tools/test_sync_readme.py' | grep -v 'Español'
       - name: README translation
         run: python3 tools/test_sync_readme.py
 
