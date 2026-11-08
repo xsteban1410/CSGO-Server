@@ -177,7 +177,7 @@ pub fn launch_csgo(connect: Option<&str>) -> crate::Result<Option<JoinHandle<boo
         }
         Flavor::Snap => {
             let mut c = Command::new("snap");
-            c.args(["run", "--shell", "steam", "-c"]).arg(args.iter().map(|a| format!("'{a}'")).collect::<Vec<_>>().join(" "));
+            c.args(["run", "--shell", "steam", "-c"]).arg(shell_words(&args));
             c
         }
         Flavor::Native => {
@@ -233,6 +233,11 @@ fn steam_command(flavor: &Flavor) -> Command {
 }
 
 /// Opens CS2 (what Steam's Play button does).
+/// Arguments as one POSIX shell line: each in single quotes, with its own quotes written as '\''.
+fn shell_words(args: &[String]) -> String {
+    args.iter().map(|a| format!("'{}'", a.replace('\'', r"'\''"))).collect::<Vec<_>>().join(" ")
+}
+
 pub fn launch_cs2() -> crate::Result<()> {
     if in_sandbox() {
         Command::new("xdg-open").arg("steam://rungameid/730").stdout(Stdio::null()).stderr(Stdio::null()).spawn()?;
@@ -246,6 +251,14 @@ pub fn launch_cs2() -> crate::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn shell_words_survive_quotes() {
+        let args: Vec<String> = ["/home/o'neil/steam", "a b", "$HOME;x"].map(String::from).to_vec();
+        let line = shell_words(&args);
+        let out = Command::new("sh").args(["-c", &format!("printf '%s\\n' {line}")]).output().unwrap();
+        assert_eq!(String::from_utf8_lossy(&out.stdout), "/home/o'neil/steam\na b\n$HOME;x\n");
+    }
 
     #[test]
     fn addresses() {
