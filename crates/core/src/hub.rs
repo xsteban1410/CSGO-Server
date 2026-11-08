@@ -606,7 +606,8 @@ mod tests {
         b.item.requires = vec!["a".into()];
         assert!(Index { format: API, items: vec![a, b] }.with_requirements("a").is_err());
         assert!(parse_index(r#"{"format": 99, "items": []}"#).is_err());
-        let ix = parse_index(&format!(r#"{{"format": {API}, "items": [{{"id": "x"}}, {{"id": "y", "changes": {{"en": "Faster"}}}}]}}"#)).unwrap();
+        let ix = parse_index(&format!(r#"{{"format": {API}, "items": [{{"id": "x"}}, {{"id": "y", "changes": {{"en": "Faster"}}}}]}}"#))
+            .unwrap();
         assert_eq!(ix.items[0].item.changes.get("es"), "");
         assert_eq!(ix.items[1].item.changes.get("es"), "Faster");
         let mut it = Item { id: "x".into(), api: API, min_engine: "999.0.0".into(), ..Default::default() };
