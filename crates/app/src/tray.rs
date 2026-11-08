@@ -88,7 +88,10 @@ fn quit(a: &AppRc) {
                 Ok(()) => {
                     let _ = slint::quit_event_loop();
                 }
-                Err(e) => a2.error(&e),
+                Err(e) => {
+                    a2.stop_requested.set(false);
+                    a2.error(&e);
+                }
             },
         );
     });

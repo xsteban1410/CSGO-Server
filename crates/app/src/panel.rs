@@ -105,7 +105,10 @@ pub fn ask_stop(a: &AppRc) {
             move |r| {
                 match r {
                     Ok(()) => a.toast(&t("Server stopped")),
-                    Err(e) => a.error(&e),
+                    Err(e) => {
+                        a.stop_requested.set(false);
+                        a.error(&e);
+                    }
                 }
                 a.refresh();
             },
@@ -218,6 +221,8 @@ pub fn init(a: &AppRc) {
         s.set_st_state(
             if !l.running {
                 t("Stopped")
+            } else if app.stop_requested.get() {
+                t("Stopping…")
             } else if l.rcon_ok {
                 t("Running")
             } else {

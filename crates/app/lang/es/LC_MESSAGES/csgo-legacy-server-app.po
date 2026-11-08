@@ -251,6 +251,9 @@ msgstr "Apagado"
 msgid "Starting…"
 msgstr "Arrancando…"
 
+msgid "Stopping…"
+msgstr "Deteniendo…"
+
 msgid "Mode"
 msgstr "Modo"
 
