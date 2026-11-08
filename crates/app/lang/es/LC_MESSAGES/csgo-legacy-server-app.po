@@ -1507,6 +1507,9 @@ msgstr "Iniciar puente"
 msgid "Tags"
 msgstr "Etiquetas"
 
+msgid "What's new"
+msgstr "Novedades"
+
 msgid "They lose their admin commands on the server."
 msgstr "Pierde sus comandos de admin en el servidor."
 

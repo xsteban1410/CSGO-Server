@@ -4,7 +4,7 @@ export { ActionRow, Btn }
 
 export struct ConsoleLine { text: string, category: string }
 export struct Card { id: string, title: string, badge: string, kind: string, can: bool, installed: bool, thumb: image, tip: string }
-export struct HubCard { id: string, title: string, kind: string, version: string, description: string, author: string, requires: string, tags: string, installed: bool, update: bool, code: bool, compatible: bool, busy: bool, thumb: image }
+export struct HubCard { id: string, title: string, kind: string, version: string, description: string, author: string, requires: string, tags: string, installed: bool, update: bool, code: bool, compatible: bool, busy: bool, thumb: image, changes: string }
 export struct KeyValue { key: string, value: string, warn: bool }
 export struct ModeItem { id: string, title: string, subtitle: string, heading: bool }
 export struct RuleEdit { event: int, action: int, value: string }

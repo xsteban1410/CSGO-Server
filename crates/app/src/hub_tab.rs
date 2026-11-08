@@ -64,6 +64,7 @@ fn card(e: &Entry, installed: Option<&str>, thumb: Image) -> HubCard {
         compatible: hub::compatible(it).is_ok(),
         busy: false,
         thumb,
+        changes: it.changes.get(lang).into(),
     }
 }
 

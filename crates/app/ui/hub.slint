@@ -160,6 +160,7 @@ export component HubDetail {
                 ValueRow { title: @tr("Author"); value: S.hb-detail.author; }
                 if S.hb-detail.requires != "": ValueRow { title: @tr("Installs too"); value: S.hb-detail.requires; }
                 if S.hb-detail.tags != "": ValueRow { title: @tr("Tags"); value: S.hb-detail.tags; }
+                if S.hb-detail.changes != "": ValueRow { title: @tr("What's new"); value: S.hb-detail.changes; }
                 if S.hb-detail.code: Text {
                     text: @tr("Brings SourceMod plugin code, compiled on this PC and run by your server.");
                     color: Theme.warn;
