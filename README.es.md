@@ -4,8 +4,8 @@
 
 [![CI](https://github.com/xsteban1410/CSGO-Server/actions/workflows/ci.yml/badge.svg)](https://github.com/xsteban1410/CSGO-Server/actions/workflows/ci.yml)
 
-Aloja un servidor dedicado **CS:GO Legacy** (aplicación 740) y juega con amigos contra bots, desde una aplicación de escritorio o la línea de comandos.
-Los modos de juego, complementos y herramientas de administración provienen de [CSGO-Hub](https://github.com/xsteban1410/CSGO-Hub) (francotiradores, oleadas de zombies, retomas, Guardian, trucos aleatorios, máscaras…), que se instalan desde la pestaña Hub de la aplicación. Compila complementos de SourceMod por sí mismo, tiene administradores con roles y su propio antitrampas, y busca mapas en Steam Workshop.
+Monta un servidor dedicado de **CS:GO Legacy** (app 740) y juega con amigos contra bots, desde una app de escritorio o la terminal.
+Los modos de juego, plugins y herramientas de admin vienen de [CSGO-Hub](https://github.com/xsteban1410/CSGO-Hub) (francotiradores, oleadas de zombies, retakes, Guardian, cheats aleatorios, skins…) y se instalan desde la pestaña Hub de la app. Compila los plugins de SourceMod por su cuenta, tiene admins con roles y anticheat propio, y busca mapas en el Steam Workshop.
 
 Funciona en cualquier distro de 64 bits con glibc y librerías de 32 bits. Probado en Arch/CachyOS.
 
@@ -15,36 +15,36 @@ Funciona en cualquier distro de 64 bits con glibc y librerías de 32 bits. Proba
 
 ## Instalación
 
-**Arch Linux:** abre la [última versión](https://github.com/xsteban1410/CSGO-Server/releases/latest) y ejecuta el comando
-`sudo pacman -U …` de sus notas. El paquete del AUR todavía no está publicado.
+**Arch Linux:** abre la [última release](https://github.com/xsteban1410/CSGO-Server/releases/latest) y ejecuta el comando
+`sudo pacman -U …` de sus notas. El paquete del AUR aún no está publicado.
 
-Los siguientes paquetes vienen con versiones posteriores a la 1.1.0:
+Los siguientes paquetes vienen en las releases posteriores a la 1.1.0:
 
-**Debian 12 o posterior, Ubuntu 24.04 o posterior:** descargue el `.deb` de la versión y ejecute `sudo apt install ./csgo-legacy-server_*_amd64.deb`.
+**Debian 12 o posterior, Ubuntu 24.04 o posterior:** descarga el `.deb` de la release y ejecuta `sudo apt install ./csgo-legacy-server_*_amd64.deb`.
 
-**Cualquier distribución, AppImage:** descárgala, `chmod +x` y ejecútala. Necesita fontconfig, freetype y glibc 2.36 o posterior. Con argumentos es la línea de comando: `./csgo-legacy-server-*.AppImage status`. No se agrega al menú de su aplicación.
+**Cualquier distro, AppImage:** descárgala, dale `chmod +x` y ejecútala. Necesita fontconfig, freetype y glibc 2.36 o posterior. Con argumentos funciona como la terminal: `./csgo-legacy-server-*.AppImage status`. No se añade al menú de aplicaciones.
 
-**Cualquier distribución, Flatpak:** `flatpak install --user csgo-legacy-server-*.flatpak`. Está en un espacio aislado: el servidor se detiene cuando cierras la aplicación, abres el juego tú mismo y escribes el comando `connect` que se muestra.
+**Cualquier distro, Flatpak:** `flatpak install --user csgo-legacy-server-*.flatpak`. Va aislado: el servidor se para al cerrar la app, y el juego lo abres tú y escribes el comando `connect` que te muestra.
 
-Cada versión tiene un archivo `SHA256SUMS`: `sha256sum -c SHA256SUMS --ignore-missing`.
+Cada release trae un archivo `SHA256SUMS`: `sha256sum -c SHA256SUMS --ignore-missing`.
 
-**Desde la fuente** (cualquier distribución; necesita Rust, Go para el agente y los archivos de desarrollo fontconfig, freetype, xkbcommon y Wayland):
+**Desde el código** (cualquier distro; necesita Rust, Go para el agente y los archivos de desarrollo de fontconfig, freetype, xkbcommon y Wayland):
 
 ```bash
 git clone https://github.com/xsteban1410/CSGO-Server.git && cd CSGO-Server
 cargo build --release
-(cd go && go build -o ../target/release/csgo-legacy-server-agent ./cmd/agent)   # optional: history and scheduled tasks
-./target/release/csgo-legacy-server-app       # run from the repo: it finds game/ here
+(cd go && go build -o ../target/release/csgo-legacy-server-agent ./cmd/agent)   # opcional: historial y tareas programadas
+./target/release/csgo-legacy-server-app       # desde el repo: encuentra game/ aquí
 ```
 
-Para instalar en otro lugar, copie `cfg/ modes/ plugin/ data/` de `game/` a `<prefix>/share/csgo-legacy-server/` junto a
+Para instalarlo en otro sitio, copia `cfg/ modes/ plugin/ data/` de `game/` a `<prefijo>/share/csgo-legacy-server/` junto a
 `<prefijo>/bin`, o apunta `CSLS_RESOURCES` a una carpeta que los tenga.
 
 ### Primer arranque
 
-No se descarga nada hasta que usted lo solicite. **Crear un servidor** busca primero una instalación existente (cualquier carpeta con `srcds_run`) y la reutiliza. De lo contrario, elija una carpeta (~40 GB libres) y descargará SteamCMD, el servidor dedicado (~33 GB), Metamod:Source y SourceMod, luego compilará los complementos. La descarga continúa en segundo plano si cierra la aplicación y se reanuda si se interrumpe.
+No se descarga nada hasta que lo pidas. **Crear un servidor** busca primero una instalación existente (cualquier carpeta con `srcds_run`) y la reutiliza. Si no, elige una carpeta (~40 GB libres) y descarga SteamCMD, el servidor dedicado (~33 GB), Metamod:Source y SourceMod, y luego compila los plugins. La descarga sigue en segundo plano si cierras la app y se reanuda si se corta.
 
-La aplicación viene sin modos de juego: la pestaña Servidor ofrece **Instalar todos los modos**, o selecciónelos en la pestaña **Hub** (`csgo-legacy-server hub install pack-all` desde la línea de comando).
+La app viene sin modos de juego: la pestaña Servidor ofrece **Instalar todos los modos**, o elígelos en la pestaña **Hub** (`csgo-legacy-server hub install pack-all` desde la terminal).
 
 Sin pantalla: `csgo-legacy-server install` hace lo mismo, y `csgo-legacy-server doctor` dice qué falta y el comando
 exacto para tu distro (apt, pacman, dnf, zypper, xbps, emerge).
@@ -56,29 +56,29 @@ El botón **Jugar** de la app (o `csgo-legacy-server play local`) abre CS:GO Leg
 
 | Pestaña | |
 |---|---|
-| Servidor | estado, jugadores, CPU, RAM, rcon y agente, advertencias y eventos recientes, dirección de conexión, inicio (modo → mapa → opciones → red), cambiar modo o mapa en vivo, reiniciar ronda, finalizar calentamiento, agregar/eliminar bots, ajustes preestablecidos, el puente al servidor de un amigo a través de VPN |
-| Jugadores | expulsar, prohibir (minutos o permanente, con motivo), lista de prohibiciones y desbancar, administradores y sus roles, máscaras guardadas, historial de conexiones, sanciones (también detecciones anti-trampas) con notas, exportar a CSV y JSON |
-| Modos | crea tus propios modos o duplica uno instalado, con armas, salud, velocidad, tiempo de ronda, bots y una vista previa del cfg; bloques de reglas como "cuando ocurre una muerte, agrega 25 de salud"; importar/exportar como `.toml` para compartirlos |
-| Centro | modos de juego, complementos, herramientas de administración y paquetes de CSGO-Hub, con vistas previas: instalar con lo que necesitan, actualizar, eliminar |
-| Workshop | busca mapas sin clave de API, instala por ID o enlace (también colecciones), genera la navegación de bots, importa un `.bsp` local |
-| Consola | registro del servidor en vivo con filtros y búsqueda, comandos rcon con autocompletar, historial, favoritos y alias, guarde el registro |
-| Complementos | encender y apagar, instalar `.sp` o `.smx`, recargar, volver a una versión anterior; Los errores de compilación se muestran aquí. |
-| Tareas | reinicios programados, cambios de mapa o modo, comandos rcon, copias de seguridad e implementaciones de complementos, con ejecuciones recientes (necesita el agente) |
-| Copias de seguridad | crear, restaurar con una vista previa de los cambios, mantener la última N |
-| Estadística | jugadores por día, actividad por hora, mapas y modos; almacenado solo en esta PC, nunca en direcciones IP, y puede borrarlo (necesita el agente) |
-| Actualizaciones | solicite a GitHub una nueva versión, solo cuando lo presione o active la marca; nada se instala solo |
-| Ajustes | nombre, contraseña, perfil de red, puerto, tickrate, GSLT, complemento de máscaras, anticheat, actualizar el servidor |
+| Servidor | estado, jugadores, CPU, RAM, rcon y agente, avisos y eventos recientes, dirección para conectar, Iniciar (modo → mapa → opciones → red), cambiar de modo o mapa en marcha, reiniciar la ronda, acabar el calentamiento, añadir/quitar bots, presets, el puente al server de un amigo por VPN |
+| Jugadores | expulsar, banear (minutos o permanente, con motivo), lista de baneos y desbanear, admins y sus roles, skins guardadas, historial de conexiones, sanciones (también las detecciones del anticheat) con notas, exportar a CSV y JSON |
+| Modos | crea tus propios modos o duplica uno instalado, con armas, vida, velocidad, tiempo de ronda, bots y una vista previa del cfg; bloques de reglas como "cuando hay una kill, suma 25 de vida"; importar/exportar como `.toml` para compartirlos |
+| Hub | modos de juego, plugins, herramientas de admin y packs de CSGO-Hub, con previews: instalar con lo que necesitan, actualizar, quitar |
+| Workshop | busca mapas sin clave de API, instala por ID o enlace (también colecciones), genera la navegación de los bots, importa un `.bsp` local |
+| Consola | log del servidor en directo con filtros y búsqueda, comandos rcon con autocompletado, historial, favoritos y alias, guardar el log |
+| Plugins | activar y desactivar, instalar `.sp` o `.smx`, recargar, volver a una versión anterior; aquí salen los errores de compilación |
+| Tareas | reinicios programados, cambios de mapa o modo, comandos rcon, copias de seguridad y despliegues de plugins, con las últimas ejecuciones (necesita el agente) |
+| Copias de seguridad | crear, restaurar viendo antes qué cambia, conservar las últimas N |
+| Estadísticas | jugadores por día, actividad por hora, mapas y modos; se guardan solo en este PC, nunca con direcciones IP, y puedes borrarlas (necesita el agente) |
+| Actualizaciones | pregunta a GitHub por una release nueva, solo cuando pulsas el botón o activas la comprobación; nada se instala solo |
+| Ajustes | nombre, contraseña, perfil de red, puerto, tickrate, GSLT, plugin de skins, anticheat, actualizar el servidor |
 
-El servidor se ejecuta como una unidad `systemd --user`, por lo que sigue ejecutándose cuando cierras la aplicación (no en Flatpak).
+El servidor corre como unidad `systemd --user`, así que sigue en marcha cuando cierras la app (no en el Flatpak).
 
-Al cerrar la ventana, la aplicación queda en la bandeja del sistema, con el estado, iniciar, detener y salir. La bandeja necesita un host StatusNotifier: GNOME necesita la extensión AppIndicator y, sin una bandeja que cierre la ventana, sale de la aplicación.
+Al cerrar la ventana, la app se queda en la bandeja del sistema, con estado, iniciar, parar y salir. La bandeja necesita un host StatusNotifier: GNOME necesita la extensión AppIndicator, y sin bandeja cerrar la ventana cierra la app.
 
 ## Perfiles de red
 
 | Perfil | Para qué |
 |---|---|
 | LAN | jugadores de tu red local (`sv_lan 1`) |
-| Amigos a través de VPN | Tailscale, ZeroTier…: Steam descarta clientes que se conectan a una IP VPN, por lo que el servidor permanece en modo LAN y un puente UDP en PORT+1 reenvía a tus amigos. Cada amigo inicia el puente en la pestaña Servidor (**El servidor de un amigo a través de VPN** o `csgo-legacy-server bridge 27030 <your VPN IP>:27031`) y se conecta a **su propia** IP local |
+| Amigos por VPN | Tailscale, ZeroTier…: Steam echa a los clientes que conectan a una IP de VPN, así que el servidor sigue en modo LAN y un puente UDP en PUERTO+1 reenvía a tus amigos. Cada amigo arranca el puente en la pestaña Servidor (**El server de un amigo por VPN**, o `csgo-legacy-server bridge 27030 <tu IP de VPN>:27031`) y conecta a **su propia** IP local |
 | Internet | puerto UDP abierto; muestra tu IP pública, te da el comando del cortafuegos (ufw/firewalld) y puede abrir el puerto del router por UPnP (`miniupnpc`) |
 | Comunitario | Internet + un [token GSLT](https://steamcommunity.com/dev/managegameservers) (app 730) para salir en el navegador de servidores de Steam |
 
@@ -86,28 +86,28 @@ Al cerrar la ventana, la aplicación queda en la bandeja del sistema, con el est
 
 ```
 csgo-legacy-server start [modo] [alone|N] [opciones]   arrancar el servidor
-csgo-legacy-server mode  <modo> [alone|N] [opciones]   cambiar de modo/mapa encendido
+csgo-legacy-server mode  <modo> [alone|N] [opciones]   cambiar de modo/mapa en marcha
 csgo-legacy-server stop | status | players | maps | modes
 csgo-legacy-server kick <userid> | ban <userid> <minutos> [motivo] | unban <STEAM_1:x:y>
 csgo-legacy-server bots +2 | bots -1 | round [--warmup]
-csgo-legacy-server hub list|search|info|install|update|remove   modes and plugins from CSGO-Hub
-csgo-legacy-server admins list|add|remove|role|password          admins and roles for the game
+csgo-legacy-server hub list|search|info|install|update|remove   modos y plugins de CSGO-Hub
+csgo-legacy-server admins list|add|remove|role|password          admins y roles del juego
 csgo-legacy-server workshop search|install|list|remove|import
 csgo-legacy-server mode-file export|import|delete      compartir modos propios
 csgo-legacy-server presets [--delete nombre]           opciones de arranque guardadas
-csgo-legacy-server backup create | list | restore <file> [--dry-run]   your config, modes, plugins, presets and skins
+csgo-legacy-server backup create | list | restore <archivo> [--dry-run]   tu config, modos, plugins, presets y skins
 csgo-legacy-server deploy [--force] [--watch]          compilar plugins, copiar configs
-csgo-legacy-server agent start | stop | status        optional helper: history and scheduled tasks
-csgo-legacy-server alias [name command...] [--delete] console shortcuts, also for rcon
-csgo-legacy-server plugins list|enable|disable|install|reload   plugins on the server
-csgo-legacy-server updates [--json]                   ask GitHub for the latest release
+csgo-legacy-server agent start | stop | status         ayudante opcional: historial y tareas programadas
+csgo-legacy-server alias [nombre comando...] [--delete] atajos de consola, también para rcon
+csgo-legacy-server plugins list|enable|disable|install|reload   plugins del servidor
+csgo-legacy-server updates [--json]                    pregunta a GitHub por la última release
 csgo-legacy-server nav [--force]                       navegación de bots del mapa actual
 csgo-legacy-server skins                               rehacer la lista de skins tras actualizar el juego
-csgo-legacy-server rcon "command" | play [local|IP:PORT] | bridge | doctor | install [--update]
+csgo-legacy-server rcon "comando" | play [local|IP:PUERTO] | bridge | doctor | install [--update]
 ```
 
 Opciones de start/mode: `-m/--map`, `-t/--type competitive|short|casual|wingman|dm|ffa|tdm|armsrace|demolition|guardian|dz`, `-d/--difficulty 0-3`, `-b/--bots`,
-`-r/--rounds`, `-s/--site a|b|random`, `--no-bots`, `--teams versus|together|free` (modos competitivos, donde comienzan los humanos), `--no-draw` (`competitivo` y `premier`: tiempo extra hasta que alguien gane), `-p/--precision` (sin propagación ni retroceso para todos), `--anarchy`,
+`-r/--rounds`, `-s/--site a|b|random`, `--no-bots`, `--teams versus|together|free` (modos competitivos, dónde empiezan los humanos), `--no-draw` (`competitivo` y `premier`: prórroga hasta que alguien gane), `-p/--precision` (sin dispersión ni retroceso para nadie), `--anarchy`,
 `-w/--workshop ID`, `--set cvar=valor` (repetible), `--preset NOMBRE`, `--save-preset NOMBRE`.
 
 ```bash
@@ -119,54 +119,53 @@ csgo-legacy-server start premier 2 --teams versus
 
 ## Modos
 
-Los modos se encuentran en [CSGO-Hub](https://github.com/xsteban1410/CSGO-Hub), por lo que se puede arreglar o agregar un modo sin una nueva versión de la aplicación: `pack-all` los tiene todos, `pack-valve` los oficiales, y cada elemento dice qué es y qué necesita. `csgo-legacy-server modes` enumera los instalados.
+Los modos están en [CSGO-Hub](https://github.com/xsteban1410/CSGO-Hub), así que un modo se puede arreglar o añadir sin sacar una versión nueva de la app: `pack-all` los trae todos, `pack-valve` los oficiales, y cada item dice qué es y qué necesita. `csgo-legacy-server modes` lista los instalados.
 
-Cada uno elige su propio equipo, como en un servidor comunitario o de Valve. Los bots (expertos) llenan los asientos vacíos y se van cuando se une un humano; `--no-bots` solo juega con humanos. El calentamiento termina solo a menos que le pidas que espere a los jugadores (`start awp 2`). Sólo los modos cuyas reglas necesitan bandos las arreglan.
+Cada uno elige su equipo, como en un servidor de Valve o comunitario. Los bots (expertos) llenan los huecos y se van cuando entra un humano; `--no-bots` juega solo con humanos. El calentamiento se acaba solo, salvo que le pidas esperar a los jugadores (`start awp 2`). Solo fijan los bandos los modos cuyas reglas los necesitan.
 
-**Partidos competitivos** (`competitivo`, `premier`, `wingman`, `duelo`) son partidos normales, no reglas personalizadas: economía e intercambio de lados en el medio tiempo. `competitivo` y `premier` inician a los humanos equilibrados, por lo que dos humanos obtienen un lado cada uno; `--teams` (o **Equipos** en el asistente) cambia el lugar donde comienzan y cualquiera puede cambiar de equipo después. Los robots llenan los asientos vacíos. Un empate es un empate, a menos que actives `--no-draw` (**No hay empates** en el asistente), que juega tiempo extra hasta que alguien gana. En `competitivo`, `premier` y `wingman` el partido comienza cuando todos escriben `!ready` o cuando finaliza el calentamiento; `duelo` termina su calentamiento. En `premier`, los humanos se turnan para prohibir mapas durante el calentamiento, a menos que elijas un mapa al comenzar. No tiene clasificación CS ni emparejamiento, que necesitan los servidores de Valve.
+**Partidas competitivas** (`competitivo`, `premier`, `wingman`, `duelo`) son partidas normales, no reglas propias: economía y cambio de lado en el descanso. `competitivo` y `premier` reparten a los humanos, así que dos humanos quedan uno en cada lado; `--teams` (o **Equipos** en el asistente) cambia dónde empiezan, y cualquiera puede cambiarse de equipo después. Los bots llenan los huecos. Un empate es empate, salvo que actives `--no-draw` (**Sin empate** en el asistente), que juega prórroga hasta que alguien gane. En `competitivo`, `premier` y `wingman` la partida empieza cuando todos escriben `!ready` o cuando acaba el calentamiento; `duelo` agota su calentamiento. En `premier`, los humanos vetan mapas por turnos durante el calentamiento, salvo que elijas mapa al arrancar. No tiene CS Rating ni matchmaking, que necesitan los servidores de Valve.
 
-Ajustes por equipo para tus modos o `--set` (`t` o `ct`): `modo_<eq>_quitar`, `_arma`, `_pistola`, `_objeto`,
-`_vida`, `_velocidad`, `_color` (`R,G,B`).
+Ajustes por equipo para tus modos o `--set` (`t` o `ct`): `modo_<eq>_quitar`, `_arma`, `_pistola`,
+`_objeto`, `_vida`, `_velocidad`, `_color` (`R,G,B`).
 
-**Anarquía** (`--anarchy` con cualquier modo): sin expulsiones ni prohibiciones automáticas (inactivo, muertes en equipo, expulsión de votos, inundación, espacios reservados). Las patadas y prohibiciones que realices desde la aplicación seguirán funcionando.
+**Anarquía** (`--anarchy` con cualquier modo): sin expulsiones ni baneos automáticos (inactividad, matar compañeros, votación de expulsión, flood, plazas reservadas). Las expulsiones y baneos que hagas desde la app siguen funcionando.
 
-### Administradores y antitrampas
+### Admins y anticheat
 
-Los administradores son SteamID con una función (pestaña Jugadores o `csgo-legacy-server admins add STEAM_1:0:123 --name Ana --role admin`). Los roles otorgan `console`, `kick`, `ban`, `map`, `slay`, `chat`, `cheats`, `bots` o `root`; los valores predeterminados son `owner`, `admin`, `moderator` y `cheats`. El servidor se ejecuta con `-insecure`, donde se puede falsificar un SteamID, por lo que los roles con la consola del servidor (`sm_rcon`) también deben escribirse `sm_login <password>` en la consola de juegos: se expulsan tres contraseñas incorrectas y se expulsa a un segundo jugador con un SteamID de administrador. Las herramientas de administración como `!am` (aimbot) y `!wh` (wallhack) son elementos centrales (`pack-admin`) y necesitan el permiso `cheats`.
+Los admins son SteamIDs con un rol (pestaña Jugadores, o `csgo-legacy-server admins add STEAM_1:0:123 --name Ana --role admin`). Los roles dan `console`, `kick`, `ban`, `map`, `slay`, `chat`, `cheats`, `bots` o `root`; los de serie son `owner`, `admin`, `moderator` y `cheats`. El servidor corre con `-insecure`, donde una SteamID se puede falsificar, así que los roles con la consola del servidor (`sm_rcon`) además tienen que escribir `sm_login <contraseña>` en la consola del juego: tres contraseñas mal expulsan, y se expulsa a un segundo jugador con la SteamID de un admin. Las herramientas de admin como `!am` (aimbot) y `!wh` (wallhack) son items del hub (`pack-admin`) y necesitan el permiso `cheats`.
 
-El antitrampas (Configuración, o `[anticheat]` en la configuración) busca ángulos de visión imposibles, apunta justo antes de matar, saltos de conejo programados, cvars de cliente speedhack y wallhack, y registros, patadas o prohibiciones. No puede ver un wallhack que solo se dibuja en la PC del jugador. Las detecciones se muestran en la pestaña Jugadores con las sanciones.
+El anticheat (Ajustes, o `[anticheat]` en la config) busca ángulos de vista imposibles, giros bruscos de mira justo antes de una kill, bunny hops con script, speedhack y cvars de cliente de wallhack, y registra, expulsa o banea. No puede ver un wallhack que solo se dibuja en el PC del jugador. Las detecciones salen en la pestaña Jugadores, con las sanciones.
 
 ### Tus modos y plugins
 
-- Elementos del Hub: `~/.local/share/csgo-legacy-server/hub/<id>/`, administrados por la pestaña Hub o `hub install|remove`.
-- Modos: `~/.config/csgo-legacy-server/modes/<id>.toml` + `<id>.cfg` (la pestaña Modos los escribe por usted). Ganan en un modo hub con la misma identificación.
-- Complementos: coloque un `.sp` (o `name/name.sp`) en `~/.config/csgo-legacy-server/plugins/`, o use `plugins install`.
+- Items del hub: `~/.local/share/csgo-legacy-server/hub/<id>/`, gestionados desde la pestaña Hub o con `hub install|remove`.
+- Modos: `~/.config/csgo-legacy-server/modes/<id>.toml` + `<id>.cfg` (la pestaña Modos los escribe por ti). Ganan a un modo del hub con el mismo id.
+- Plugins: deja un `.sp` (o `nombre/nombre.sp`) en `~/.config/csgo-legacy-server/plugins/`, o usa `plugins install`.
 
 Con la app abierta (o `deploy --watch`) lo nuevo o cambiado se compila y se recarga en el servidor encendido; los errores
 de compilación salen con su línea y el servidor sigue con la versión anterior. Los plugins borrados se descargan.
 
 ### Copias de seguridad
 
-`backup create` (o la pestaña **Copias de seguridad**) guarda su configuración, modos, complementos, ajustes preestablecidos y máscaras en `~/.local/share/csgo-legacy-server/backups/`, nunca en el servidor. `install --update` hace uno primero y se queda con los últimos cinco automáticos. `restore --dry-run` muestra lo que cambiaría, y una restauración guarda primero los archivos actuales y deja los archivos que la copia de seguridad no tiene. Las copias de seguridad contienen sus contraseñas, así que no las comparta.
+`backup create` (o la pestaña **Copias de seguridad**) guarda tu config, modos, plugins, presets y skins en `~/.local/share/csgo-legacy-server/backups/`, nunca el servidor. `install --update` hace una antes y conserva las cinco automáticas más recientes. `restore --dry-run` muestra qué cambiaría, y una restauración guarda antes los archivos actuales y deja los que la copia no tiene. Las copias llevan tus contraseñas, así que no las compartas.
 
-## Mapas del workshop
+## Mapas del Workshop
 
 Busca en la pestaña Workshop o con `csgo-legacy-server workshop search aim`. Los mapas de CS2 (Source 2) no funcionan en
 CS:GO Legacy y salen marcados como incompatibles. Los instalados van a `maps/csls/<id>/` y aparecen en el paso de mapa. Los
-bots solo se mueven en mapas con malla de navegación: pulsa **Generar .nav** (o `nav`) con el mapa cargado. Los mapas de
-surf, bhop y KZ no sirven para bots.
+bots solo se mueven en mapas con malla de navegación: pulsa **Generar .nav** (o `nav`) con el mapa cargado. Los mapas de surf, bhop y KZ no sirven para bots.
 
 ## Comandos en el chat del juego
 
 | | |
-| `!ready` / `!listo` | comenzar el partido sin esperar a que termine el calentamiento (modos competitivos) |
-| `sm_login <password>` | en la consola (~): desbloquea la consola del servidor para tu rol de administrador |
-| `!ws`, `!knife` | pieles y cuchillos, con el elemento central `skins` |
-| `!guns` / `!armas` | cualquier arma (modos de juego libre y práctica de puntería, desde el centro) |
-| `!am`, `!wh`, `!nc`, `!god`, `!tp`, `!bring`, `!respawn`, `!hp`, `!bots` | herramientas de administración de `pack-admin`, para roles con permiso |
-| `!armas` / `!guns` | cualquier arma (solo en el modo libre) |
-Las opciones se guardan por SteamID y se aplican cada vez que te unes. El idioma elegido en Configuración (inglés por defecto o español) se aplica a la aplicación, la línea de comando, los nombres de los skins y los mensajes del juego para cada jugador.
-Se guarda por SteamID y se aplica cada vez que entras. Los mensajes salen en el idioma del juego de cada jugador (inglés/español).
+|---|---|
+| `!ready` / `!listo` | empezar la partida sin esperar a que acabe el calentamiento (modos competitivos) |
+| `sm_login <contraseña>` | en la consola (~): desbloquea la consola del servidor para tu rol de admin |
+| `!ws`, `!knife` | skins y cuchillos, con el item `skins` del hub |
+| `!guns` / `!armas` | cualquier arma (modos de juego libre y de práctica de puntería, del hub) |
+| `!am`, `!wh`, `!nc`, `!god`, `!tp`, `!bring`, `!respawn`, `!hp`, `!bots` | herramientas de admin de `pack-admin`, para roles con el permiso |
+
+Lo que eliges se guarda por SteamID y se aplica cada vez que entras. El idioma elegido en Ajustes (inglés por defecto, o español) se aplica a la app, la terminal, los nombres de las skins y los mensajes del juego para todos los jugadores.
 
 ## Archivos
 
@@ -174,29 +173,30 @@ Se guarda por SteamID y se aplica cada vez que entras. Los mensajes salen en el 
 |---|---|
 | `~/.config/csgo-legacy-server/config.toml` | ajustes (lleva la contraseña rcon, permisos 600) |
 | `~/.config/csgo-legacy-server/{modes,plugins,presets.toml}` | tus modos, plugins y presets |
-| `crates/core`, `crates/cli`, `crates/app` | Rust: biblioteca principal, línea de comandos, aplicación de escritorio Slint |
-| `game/plugin/`, `game/cfg/` | Los complementos y la API de SourceMod del motor (`include/csls.inc`) y las configuraciones en las que se ejecuta cada modo |
-| `go/` | El agente y las herramientas de prueba. |
-| `docs/ARCHITECTURE.md`, `docs/HUB.md`, `docs/TROUBLESHOOTING.md`, `docs/PRIVACY.md` | Cómo encajan las piezas, el formato del centro, cómo solucionar problemas y qué datos se conservan |
+| `~/.local/share/csgo-legacy-server/` | servidor (ubicación por defecto), SteamCMD, logs, caché del Workshop |
+| `crates/core`, `crates/cli`, `crates/app` | Rust: biblioteca principal, terminal, app de escritorio Slint |
+| `game/plugin/`, `game/cfg/` | Los plugins de SourceMod del motor y su API (`include/csls.inc`), y las configs sobre las que corre cada modo |
+| `go/` | El agente y las herramientas de pruebas |
+| `docs/ARCHITECTURE.md`, `docs/HUB.md`, `docs/TROUBLESHOOTING.md`, `docs/PRIVACY.md` | Cómo encajan las piezas, el formato del hub, cómo resolver problemas y qué datos se guardan |
 
 ## Notas y límites
 
-- Sin demorarse, systemd detiene los servicios del usuario cuando cierra la sesión, y el servidor con ellos. Para que siga funcionando, ejecute `loginctl enable-linger`; `doctor` te indica si está apagado.
-- `doctor --report` imprime un informe sobre problemas con contraseñas, IP e ID de Steam ocultos, y `status --json` está destinado a scripts.
-- Los paquetes instalan terminaciones de shell. De la fuente: `csgo-legacy-server completions fish > ~/.config/fish/completions/csgo-legacy-server.fish` (también `bash` y `zsh`).
+- Sin lingering, systemd para los servicios de usuario al cerrar sesión, y el servidor con ellos. Para que siga en marcha, ejecuta `loginctl enable-linger`; `doctor` te avisa si está desactivado.
+- `doctor --report` imprime un informe para issues con contraseñas, IPs y SteamIDs ocultas, y `status --json` es para scripts.
+- Los paquetes instalan el autocompletado de la shell. Desde el código: `csgo-legacy-server completions fish > ~/.config/fish/completions/csgo-legacy-server.fish` (también `bash` y `zsh`).
 
-- `game/plugin/csls_directconnect` parchea el motor en la memoria para que los jugadores puedan unirse por IP sin un lobby de emparejamiento. Es Linux
+- `game/plugin/csls_directconnect` parchea el motor en memoria para que se pueda entrar por IP sin un lobby de matchmaking. Sus firmas
   para Linux corresponden al `engine.so` actual; si Valve actualiza los binarios del servidor, el log dirá "signature not
   found" y habrá que volver a sacarlas. La idea viene de [NoLobbyReservation](https://github.com/vanz666/NoLobbyReservation).
-- El servidor arranca con `-insecure` (sin VAC). Las skins son cosméticas y solo se ven en este servidor; los skin changers van
-  reglas para servidores GSLT públicos, por lo que las máscaras son un elemento central que puede omitir o desactivar en Configuración. Herramientas de administración como
-  El aimbot solo funciona en su propio servidor `-insecure`, para los roles a los que le dio ese permiso.
-- Jugado en Arch Linux y CachyOS. CI compila y prueba todo en Debian y Fedora, y prueba `.deb`, AppImage y Flatpak, pero nadie ha jugado con ellos todavía. No probado en distribuciones musl o SteamOS (sistema de solo lectura: use distrobox). Sin guantes.
+- El servidor arranca con `-insecure` (sin VAC). Las skins son cosméticas y solo se ven en este servidor; los skin changers incumplen
+  las reglas de Valve para servidores públicos con GSLT, así que las skins son un item del hub que puedes no instalar o desactivar en Ajustes. Las herramientas de admin como
+  el aimbot solo funcionan en tu propio servidor `-insecure`, para los roles a los que diste ese permiso.
+- Jugado en Arch Linux y CachyOS. La CI compila y prueba todo en Debian y Fedora, y prueba el `.deb`, la AppImage y el Flatpak, pero nadie ha jugado aún con ellos. Sin probar en distros con musl ni en SteamOS (sistema de solo lectura: usa distrobox). Sin guantes.
 
 ## Ramas
 
 `master` es la versión estable, y las releases salen de ella. Lo nuevo y las contribuciones van primero a `pre-releases`, que
-pasa sola a `master` tras tres días sin problemas. Los detalles están en [CONTRIBUTING.md](CONTRIBUTING.md#branches).
+pasa sola a `master` tras un día sin problemas. Los detalles están en [CONTRIBUTING.md](CONTRIBUTING.md#branches).
 
 ## Licencia
 
