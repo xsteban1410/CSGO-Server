@@ -8,6 +8,10 @@ The section of each version becomes the notes of its GitHub release, so keep the
 
 ## [Unreleased]
 
+### Fixed
+
+- Admins got no permissions when Steam did not authorize them, as with `-insecure`, or after `sm_reloadadmins`: `sm_login` said it worked and commands such as `!am` were still refused.
+
 ## [1.4.0] - 2026-11-08
 
 ### Added

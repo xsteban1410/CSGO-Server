@@ -27,6 +27,7 @@ public void OnPluginStart()
 	LoadTranslations("csls_admins.phrases");
 	RegConsoleCmd("sm_login", Cmd_Login, "sm_login <password>: unlock your role's console permissions");
 	LoadAdmins();
+	GrantAll(0);
 }
 
 void LoadAdmins()
@@ -40,11 +41,21 @@ void LoadAdmins()
 }
 
 // sm_reloadadmins rebuilds the cache, which drops the admins this plugin made: read the file again.
-// SourceMod then checks every connected player again, which calls OnClientPostAdminFilter.
+// SourceMod only checks again the players Steam authorized, so everyone in game is granted here too.
 public void OnRebuildAdminCache(AdminCachePart part)
 {
 	if (part == AdminCache_Admins)
+	{
 		LoadAdmins();
+		RequestFrame(GrantAll);
+	}
+}
+
+void GrantAll(any unused)
+{
+	for (int i = 1; i <= MaxClients; i++)
+		if (IsClientInGame(i))
+			Grant(i);
 }
 
 public void OnClientConnected(int client)
@@ -85,6 +96,18 @@ bool OtherWithAccount(int client)
 }
 
 public void OnClientPostAdminFilter(int client)
+{
+	Grant(client);
+}
+
+// With -insecure a player may never be authorized, and then SourceMod runs no admin checks for them.
+public void OnClientPutInServer(int client)
+{
+	Grant(client);
+}
+
+// Gives an admin the flags of their role. Safe to repeat.
+void Grant(int client)
 {
 	if (IsFakeClient(client) || !JumpTo(client))
 		return;
@@ -157,9 +180,7 @@ public Action Cmd_Login(int client, int args)
 	}
 	g_LoggedIn[client] = true;
 	g_Tries[client] = 0;
-	AdminId admin = GetUserAdmin(client);
-	if (admin != INVALID_ADMIN_ID)
-		AddFlags(admin, login);
+	Grant(client);
 	LogAction(client, -1, "\"%L\" logged in as admin", client);
 	ReplyToCommand(client, "%T", "admin_login_ok", client);
 	return Plugin_Handled;
