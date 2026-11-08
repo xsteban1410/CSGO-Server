@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: A game mode, plugin or admin tool
+    url: https://github.com/xsteban1410/CSGO-Hub/issues/new/choose
+    about: Modes and plugins live in CSGO-Hub. Propose or report them there.
   - name: Security problem
     url: https://github.com/xsteban1410/CSGO-Server/security/policy
     about: Please report vulnerabilities privately, not in an issue.

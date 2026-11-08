@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Before reporting, run `csgo-legacy-server doctor`. Over a VPN, the friend must use the **Join** tab with your VPN address, not type it in the game. **Remove passwords and tokens from anything you paste.**
+        Before reporting, run `csgo-legacy-server doctor`. Over a VPN, the friend must start the bridge in the Server tab (**A friend's server over VPN**) with your VPN address, not type it in the game. **Remove passwords and tokens from anything you paste.**
   - type: dropdown
     id: network
     attributes:
@@ -28,7 +28,7 @@ body:
   - type: dropdown
     id: test
     attributes:
-      label: Result of "Test connection" in the Join tab
+      label: What the bridge said when started (Server tab, "A friend's server over VPN")
       options: [The server answers, No answer, Did not try]
     validations:
       required: true

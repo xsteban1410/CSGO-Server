@@ -5,8 +5,9 @@
 [![CI](https://github.com/xsteban1410/CSGO-Server/actions/workflows/ci.yml/badge.svg)](https://github.com/xsteban1410/CSGO-Server/actions/workflows/ci.yml)
 
 Host a **CS:GO Legacy** dedicated server (app 740) and play with friends against bots, from a desktop app or the command line.
-It ships more than 30 game modes (snipers, zombie waves, retakes, Guardian, random cheats, anarchy…), remembers every
-player's skins, compiles SourceMod plugins by itself and browses the Steam Workshop for maps.
+Game modes, plugins and admin tools come from [CSGO-Hub](https://github.com/xsteban1410/CSGO-Hub) (snipers, zombie waves,
+retakes, Guardian, random cheats, skins…), installed from the app's Hub tab. It compiles SourceMod plugins by itself, has
+admins with roles and its own anticheat, and browses the Steam Workshop for maps.
 
 Works on any 64-bit glibc distro with 32-bit libraries. Tested on Arch/CachyOS.
 
@@ -43,12 +44,13 @@ To install elsewhere, copy `cfg/ modes/ plugin/ data/` from `game/` to `<prefix>
 
 ### First run
 
-Nothing is downloaded until you ask. The app offers **Create a server** or **Only join servers**:
+Nothing is downloaded until you ask. **Create a server** looks for an existing install first (any folder with `srcds_run`)
+and reuses it. Otherwise pick a folder (~40 GB free), and it downloads SteamCMD, the dedicated server (~33 GB),
+Metamod:Source and SourceMod, then compiles the plugins. The download keeps going in the background if you close the app,
+and resumes if it is interrupted.
 
-- *Create a server* looks for an existing install first (any folder with `srcds_run`) and reuses it. Otherwise pick a
-  folder (~40 GB free), and it downloads SteamCMD, the dedicated server (~33 GB), Metamod:Source and SourceMod, then compiles
-  the plugins. The download keeps going in the background if you close the app, and resumes if it is interrupted.
-- *Only join* skips all of that and stays chosen: it is for friends who only play. **Start** offers the download if you change your mind.
+The app comes without game modes: the Server tab offers **Install every mode**, or pick them in the **Hub** tab
+(`csgo-legacy-server hub install pack-all` from the command line).
 
 Headless: `csgo-legacy-server install` does the same, and `csgo-legacy-server doctor` tells you what is missing and the
 exact command for your distro (apt, pacman, dnf, zypper, xbps, emerge).
@@ -60,9 +62,10 @@ The app's **Play** button (or `csgo-legacy-server play local`) opens CS:GO Legac
 
 | Tab | |
 |---|---|
-| Server | status, players, CPU, RAM, rcon and agent, warnings and recent events, connect address, Start (mode → map → options → network), change mode or map live, restart round, end warmup, add/remove bots, presets |
-| Players | kick, ban (minutes or permanent, with reason), bans list and unban, saved skins, connection history, sanctions with notes, export to CSV and JSON |
-| Modes | make your own modes or duplicate a built-in one, with weapons, health, speed, round time, bots and a preview of the cfg; rule blocks such as "when a kill happens, add 25 health"; import/export as `.toml` to share them |
+| Server | status, players, CPU, RAM, rcon and agent, warnings and recent events, connect address, Start (mode → map → options → network), change mode or map live, restart round, end warmup, add/remove bots, presets, the bridge to a friend's server over VPN |
+| Players | kick, ban (minutes or permanent, with reason), bans list and unban, admins and their roles, saved skins, connection history, sanctions (anticheat detections too) with notes, export to CSV and JSON |
+| Modes | make your own modes or duplicate an installed one, with weapons, health, speed, round time, bots and a preview of the cfg; rule blocks such as "when a kill happens, add 25 health"; import/export as `.toml` to share them |
+| Hub | game modes, plugins, admin tools and packs from CSGO-Hub, with previews: install with what they need, update, remove |
 | Workshop | search maps without an API key, install by ID or link (collections too), generate bot navigation, import a local `.bsp` |
 | Console | live server log with filters and search, rcon commands with autocomplete, history, favorites and aliases, save the log |
 | Plugins | turn on and off, install `.sp` or `.smx`, reload, go back to an earlier version; compile errors are shown here |
@@ -70,8 +73,7 @@ The app's **Play** button (or `csgo-legacy-server play local`) opens CS:GO Legac
 | Backups | create, restore with a preview of what changes, keep the last N |
 | Statistics | players per day, activity by hour, maps and modes; stored only on this PC, never IP addresses, and you can erase it (needs the agent) |
 | Updates | ask GitHub for a new release, only when you press it or turn the check on; nothing installs by itself |
-| Join | join a friend's server; with a 100.x IP it turns the VPN bridge on, tests the connection and gives the exact `connect` |
-| Settings | name, password, network profile, port, tickrate, GSLT, skins plugin, update the server |
+| Settings | name, password, network profile, port, tickrate, GSLT, skins plugin, anticheat, update the server |
 
 The server runs as a `systemd --user` unit, so it keeps running when you close the app (not in the Flatpak).
 
@@ -82,7 +84,7 @@ Closing the window leaves the app in the system tray, with status, start, stop a
 | Profile | Use it for |
 |---|---|
 | LAN | players on your local network (`sv_lan 1`) |
-| Friends over VPN | Tailscale, ZeroTier…: Steam drops clients that connect to a VPN IP, so the server stays in LAN mode and a UDP bridge on PORT+1 forwards your friends. Each friend opens the **Join** tab (or runs `csgo-legacy-server bridge 27030 <your VPN IP>:27031`) and connects to **their own** local IP |
+| Friends over VPN | Tailscale, ZeroTier…: Steam drops clients that connect to a VPN IP, so the server stays in LAN mode and a UDP bridge on PORT+1 forwards your friends. Each friend starts the bridge in the Server tab (**A friend's server over VPN**, or `csgo-legacy-server bridge 27030 <your VPN IP>:27031`) and connects to **their own** local IP |
 | Internet | open UDP port; shows your public IP, tells you the firewall command (ufw/firewalld) and can open the router port with UPnP (`miniupnpc`) |
 | Community | Internet + a [GSLT token](https://steamcommunity.com/dev/managegameservers) (app 730) so the server shows up in Steam's server browser |
 
@@ -94,6 +96,8 @@ csgo-legacy-server mode  <mode> [alone|N] [options]   change mode/map while runn
 csgo-legacy-server stop | status | players | maps | modes
 csgo-legacy-server kick <userid> | ban <userid> <minutes> [reason] | unban <STEAM_1:x:y>
 csgo-legacy-server bots +2 | bots -1 | round [--warmup]
+csgo-legacy-server hub list|search|info|install|update|remove   modes and plugins from CSGO-Hub
+csgo-legacy-server admins list|add|remove|role|password          admins and roles for the game
 csgo-legacy-server workshop search|install|list|remove|import
 csgo-legacy-server mode-file export|import|delete     share custom modes
 csgo-legacy-server presets [--delete name]            saved start options
@@ -105,7 +109,7 @@ csgo-legacy-server plugins list|enable|disable|install|reload   plugins on the s
 csgo-legacy-server updates [--json]                   ask GitHub for the latest release
 csgo-legacy-server nav [--force]                      bot navigation for the current map
 csgo-legacy-server skins                              rebuild the skins list after a game update
-csgo-legacy-server rcon "command" | play [cs2|local|IP:PORT] | bridge | doctor | install [--update]
+csgo-legacy-server rcon "command" | play [local|IP:PORT] | bridge | doctor | install [--update]
 ```
 
 Start/mode options: `-m/--map`, `-t/--type competitive|short|casual|wingman|dm|ffa|tdm|armsrace|demolition|guardian|dz`, `-d/--difficulty 0-3`, `-b/--bots`,
@@ -121,78 +125,37 @@ csgo-legacy-server start premier 2 --teams versus
 
 ## Modes
 
-Everyone picks their own team, as on a Valve or community server. Bots (expert) fill the empty seats and leave when a human joins; `--no-bots` plays humans only. Warmup runs out by itself unless you ask it to wait for players (`start awp 2`). Only modes whose rules need sides fix them: `retake`, `defensa`, `clutch`, `zombies`, `ninjas`, `aim` and Guardian.
+Modes live in [CSGO-Hub](https://github.com/xsteban1410/CSGO-Hub), so a mode can be fixed or added without a new
+version of the app: `pack-all` has all of them, `pack-valve` the official ones, and each item says what it is and what it
+needs. `csgo-legacy-server modes` lists the installed ones.
 
-| Mode | |
-|---|---|
-| `aim` | **Aim practice** — Bots stand still and do not shoot, you have infinite ammo and !guns. Warm up your aim |
-| `aleatorio` | **Random weapon** — Each round everyone gets the same random weapon, from AWP to Zeus |
-| `anarquia` | **Anarchy** — Chaos: everyone against everyone with friendly fire, respawn, buy anywhere, and nobody gets kicked |
-| `armsrace` | **Arms Race** — Official: each kill gives you the next weapon, the first to the golden knife wins. Its own ar_ maps |
-| `autosniper` | **Auto-sniper** — Everyone gets a SCAR-20 and a Deagle. Short rounds, no buying |
-| `awp` | **AWP** — Everyone gets an AWP and a Deagle. Short rounds, no buying |
-| `awpdm` | **AWP deathmatch** — Deathmatch with only AWP and Deagle |
-| `cheats` | **Random cheats** — Grab glowing power-ups for a random cheat for 30 s: wallhack, aimbot, god mode… |
-| `clutch` | **Clutch** — Each round you win adds a bot, each round you lose removes one. How many can you beat? |
-| `competitivo` | **Competitive** — The real thing: 5v5 with economy, first to 16, sides swap at half time and overtime. Bots fill the empty seats |
-| `cuchillo` | **Knives** — Knife only. Short rounds |
-| `dangerzone` | **Danger Zone** — Official battle royale on dz_ maps: find gear, avoid the storm, be the last one standing |
-| `decoy` | **Decoy** — Deathmatch with 1 HP and endless decoys: a direct hit kills |
-| `defensa` | **Post-plant** — The opposite of Retake: the bomb is planted and you (T) defend it from 5 bots coming to defuse |
-| `demolicion` | **Demolition** — Official: bomb rounds where you get a new weapon each round for your kills. Small maps |
-| `dm` | **Deathmatch** — Official deathmatch: buy from the menu, respawn at once, 10 minutes |
-| `dmcabeza` | **Headshot deathmatch** — Deathmatch where only shots to the head do damage |
-| `dmcuchillo` | **Knife deathmatch** — Deathmatch with knives only |
-| `duelo` | **Duel** — You against your friend, no bots. Same random weapon each round, first to 10 wins |
-| `escopetas` | **Shotguns** — Everyone gets an XM1014 and a P250. Short rounds, no buying |
-| `ffa` | **Free-for-all** — Deathmatch where everyone is your enemy, your friend too |
-| `flyingscout` | **Flying Scoutsman** — Official War Game: SSG 08, very low gravity, bunny hops and perfect accuracy in the air |
-| `guardian` | **Guardian** — Official co-op: defend the zone against waves of bots, on gd_ maps |
-| `hardcore` | **Hardcore** — Competitive rules without radar: bullets hit 60% harder and friendly fire does full damage |
-| `headshot` | **Headshots only** — AK-47 and Deagle, and only shots to the head do damage |
-| `jefe` | **Boss** — Normal rounds, but one bot each round is a slow red giant with 5000 HP |
-| `libre` | **Free play** — No rules: respawn, buy anywhere, and any weapon with !guns. Good for trying things |
-| `luna` | **Moon** — AWP and Deagle with very low gravity, as if on the Moon |
-| `negev` | **Negev** — Everyone gets a Negev and nothing else. Short rounds, no buying |
-| `ninjas` | **Ninjas** — Fast, almost invisible bots with knives hunt you. Buy what you want and listen for them |
-| `normal` | **Normal** — Rounds with $16000 every round, so you can always buy anything |
-| `pesados` | **Heavy armor** — Everyone in a Heavy Assault Suit with an M249: tough and slow |
-| `pistolas` | **Deagle** — Everyone gets only a Deagle. Short rounds, no buying |
-| `premier` | **Premier** — Premier rules: 5v5, first to 13, overtime and map bans in warmup. No CS Rating, that needs Valve's servers |
-| `rehenes` | **Hostages** — Rescue or guard the hostages, on cs_ maps |
-| `retake` | **Retake** — The bomb is already planted and you (CT) must defuse it against 5 bots guarding it |
-| `rifles` | **Rifles** — Everyone gets an AK-47 and a Deagle. Short rounds, no buying |
-| `scout` | **Scout** — Everyone gets an SSG 08 and a P250. Short rounds, no buying |
-| `stabzap` | **Stab Stab Zap** — Official War Game: only a knife and a Zeus that recharges in 30 s |
-| `tdm` | **Team deathmatch** — Deathmatch where kills score for your team and the best team wins |
-| `trigger` | **Trigger Discipline** — Official War Game: every shot that misses hurts you, but it never kills you |
-| `unabala` | **One in the Chamber** — Deathmatch with a Deagle and one bullet. Any hit kills, and each kill gives you a bullet |
-| `vampiro` | **Vampire** — AK-47 and Deagle, and half the damage you deal heals you (up to 200 HP) |
-| `wingman` | **Wingman** — Official 2v2 on one bomb site, sixteen rounds. Small maps work best |
-| `zeus` | **Zeus** — Deathmatch with a Zeus that never runs out |
-| `zombies` | **Zombies** — Survive five waves of zombie bots with all the guns and infinite ammo. If you die, you turn |
+Everyone picks their own team, as on a Valve or community server. Bots (expert) fill the empty seats and leave when a human joins; `--no-bots` plays humans only. Warmup runs out by itself unless you ask it to wait for players (`start awp 2`). Only modes whose rules need sides fix them.
 
 **Competitive matches** (`competitivo`, `premier`, `wingman`, `duelo`) are normal matches, not custom rules: economy and side swap at half time. `competitivo` and `premier` start humans balanced, so two humans get one side each; `--teams` (or **Teams** in the wizard) changes where they start, and anyone can switch team afterwards. Bots fill the empty seats. A tie is a draw, unless you turn on `--no-draw` (**No draws** in the wizard), which plays overtime until someone wins. In `competitivo`, `premier` and `wingman` the match starts when everyone types `!ready` or when the warmup ends; `duelo` runs its warmup out. In `premier`, humans take turns banning maps during warmup unless you choose a map when you start. It has no CS Rating or matchmaking, which need Valve's servers.
 
 Per-team settings for your own modes or `--set` (`t` or `ct`): `modo_<team>_quitar`, `_arma`, `_pistola`,
 `_objeto`, `_vida`, `_velocidad`, `_color` (`R,G,B`).
 
-**Zombies:** each wave is a round. Zombie bots (T) only carry knives and respawn endlessly; you (CT) have infinite money and
-ammo. Survive the wave time to move on; lose and the wave repeats. Normal, runner (fast, weak) and tank (big, slow, triple
-health) zombies; bullets push them back and fire burns them; killed players come back as zombies; fog.
-Settings: `modo_z_oleadas` (5), `modo_z_base`/`modo_z_incremento` (6/2), `modo_z_vida`/`modo_z_vida_oleada` (250/75),
-`modo_z_velocidad` (1.2), `modo_z_retroceso` (1.0), `modo_z_infeccion` (1), `modo_z_niebla` (1), `mp_roundtime` (1.5).
-
-**Random cheats:** glowing power-ups appear around the map; grabbing one gives a random cheat for 30 s (wallhack, aimbot,
-infinite ammo, speed, low gravity, god mode, invisibility, one-shot kills, autobhop, super jump, regeneration).
-Settings: `modo_cheats_duracion`, `_cantidad`, `_reaparicion`, `_bots`, `_lista`.
-
-**Anarchy** (mode or `--anarchy` with any mode): no automatic kicks or bans (idle, team kills, vote kick, flood,
+**Anarchy** (`--anarchy` with any mode): no automatic kicks or bans (idle, team kills, vote kick, flood,
 reserved slots). Kicks and bans you make from the app still work.
+
+### Admins and anticheat
+
+Admins are SteamIDs with a role (Players tab, or `csgo-legacy-server admins add STEAM_1:0:123 --name Ana --role admin`).
+Roles grant `console`, `kick`, `ban`, `map`, `slay`, `chat`, `cheats`, `bots` or `root`; the defaults are `owner`, `admin`,
+`moderator` and `cheats`. The server runs with `-insecure`, where a SteamID can be faked, so the roles with the server
+console (`sm_rcon`) also need `sm_login <password>` typed in the game console: three wrong passwords kick, and a second
+player with an admin's SteamID is kicked. Admin tools such as `!am` (aimbot) and `!wh` (wallhack) are hub items
+(`pack-admin`) and need the `cheats` permission.
+
+The anticheat (Settings, or `[anticheat]` in the config) looks for impossible view angles, aim snaps right before
+kills, scripted bunny hops, speedhack and wallhack client cvars, and logs, kicks or bans. It cannot see a wallhack that
+only draws on the player's PC. Detections show in the Players tab with the sanctions.
 
 ### Your own modes and plugins
 
-- Modes: `~/.config/csgo-legacy-server/modes/<id>.toml` + `<id>.cfg` (the Modes tab writes them for you).
+- Hub items: `~/.local/share/csgo-legacy-server/hub/<id>/`, managed by the Hub tab or `hub install|remove`.
+- Modes: `~/.config/csgo-legacy-server/modes/<id>.toml` + `<id>.cfg` (the Modes tab writes them for you). They win over a hub mode with the same id.
 - Plugins: drop a `.sp` (or `name/name.sp`) into `~/.config/csgo-legacy-server/plugins/`, or use `plugins install`.
 
 With the app open (or `deploy --watch`) new or changed files are compiled and reloaded in the running server; compile
@@ -212,10 +175,11 @@ navigation mesh: press **Generate .nav** (or `nav`) with the map loaded. Surf, b
 
 | | |
 |---|---|
-| `!ws` | skin for the weapon in your hand (or any other); the most wanted ones come first |
-| `!knife` | knife model (Karambit, Butterfly, M9…) and its skin |
-| `!guns` / `!armas` | any weapon (free play and aim practice modes only) |
 | `!ready` / `!listo` | start the match without waiting for the warmup to end (competitive modes) |
+| `sm_login <password>` | in the console (~): unlock the server console for your admin role |
+| `!ws`, `!knife` | skins and knives, with the `skins` hub item |
+| `!guns` / `!armas` | any weapon (free play and aim practice modes, from the hub) |
+| `!am`, `!wh`, `!nc`, `!god`, `!tp`, `!bring`, `!respawn`, `!hp`, `!bots` | admin tools from `pack-admin`, for roles with the permission |
 
 Choices are saved per SteamID and applied every time you join. The language chosen in Settings (English by default, or Spanish) applies to the app, the command line, skin names and in-game messages for every player.
 
@@ -227,9 +191,9 @@ Choices are saved per SteamID and applied every time you join. The language chos
 | `~/.config/csgo-legacy-server/{modes,plugins,presets.toml}` | your modes, plugins and presets |
 | `~/.local/share/csgo-legacy-server/` | server (default location), SteamCMD, logs, workshop cache |
 | `crates/core`, `crates/cli`, `crates/app` | Rust: core library, command line, Slint desktop app |
-| `game/plugin/`, `game/cfg/`, `game/modes/` | SourceMod plugins, mode configs, mode metadata |
+| `game/plugin/`, `game/cfg/` | The engine's SourceMod plugins and API (`include/csls.inc`), and the configs every mode runs on |
 | `go/` | The agent and the test tools |
-| `docs/ARCHITECTURE.md`, `docs/TROUBLESHOOTING.md`, `docs/PRIVACY.md` | How the pieces fit together, fixing problems, and what data is kept |
+| `docs/ARCHITECTURE.md`, `docs/HUB.md`, `docs/TROUBLESHOOTING.md`, `docs/PRIVACY.md` | How the pieces fit together, the hub format, fixing problems, and what data is kept |
 
 ## Notes and limits
 
@@ -241,7 +205,8 @@ Choices are saved per SteamID and applied every time you join. The language chos
   signatures match the current `engine.so`; if Valve updates the server binaries it will log "signature not found" and they
   must be found again. The idea comes from [NoLobbyReservation](https://github.com/vanz666/NoLobbyReservation).
 - The server runs with `-insecure` (no VAC). Skins are cosmetic and only visible on this server; skin changers break Valve's
-  rules for public GSLT servers, so the Settings tab lets you turn the skins plugin off.
+  rules for public GSLT servers, so skins are a hub item you can leave out or turn off in Settings. Admin tools such as
+  the aimbot only work on your own `-insecure` server, for roles you gave that permission.
 - Played on Arch Linux and CachyOS. CI builds and tests everything on Debian and Fedora, and tries the `.deb`, AppImage and Flatpak, but nobody has played on them yet. Not tested on musl distros or SteamOS (read-only system: use distrobox). No gloves.
 
 ## Branches

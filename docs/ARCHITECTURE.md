@@ -7,22 +7,37 @@
 | `crates/core` | Library with all the logic: config, modes, rcon, deploy, install, server, bridge, Workshop, launching the game |
 | `crates/cli` | `csgo-legacy-server`, a thin layer over `core` |
 | `crates/app` | `csgo-legacy-server-app`, the Slint desktop app, also over `core` |
-| `game/plugin/` | SourceMod plugins, compiled at deploy time on the user's PC |
-| `game/cfg/` | Server configs. `modo_<id>.cfg` is a mode; `modo_base`, `modo_clasico` and `modo_tipo_*` are helpers |
-| `game/modes/` | Metadata of each mode: name, category, description, game type and maps |
-| `game/data/` | Data files installed with the app |
+| `game/plugin/` | The engine's SourceMod plugins (`modos`, `csls_events`, `csls_directconnect`, `csls_admins`, `csls_anticheat`) and `include/csls.inc`, the API for hub plugins. Compiled at deploy time on the user's PC |
+| `game/cfg/` | Configs every mode runs on: `modo_base`, `modo_clasico`, `modo_tipo_*` |
+| `game/data/` | `pinned.toml`, the SourceMod and Metamod builds |
 | `packaging/` | Desktop entry, metainfo, icons, PKGBUILDs and the package build script |
 | `tools/` | Developer scripts: release versions and promotion |
 
+Game modes, their plugins, skins and admin tools are not here: they are items of
+[CSGO-Hub](https://github.com/xsteban1410/CSGO-Hub), described in [HUB.md](HUB.md).
+
 The server runs as a `systemd --user` transient unit (`csgo-legacy-server`), so it survives closing the app. Without systemd
 it falls back to a process group with a PID file.
+
+## Layers of modes and plugins
+
+Modes and plugins come from three places, later ones winning over earlier ones with the same id:
+
+1. the engine (`game/`): no modes, only the engine plugins;
+2. the hub (`~/.local/share/csgo-legacy-server/hub/<id>/`, `paths::hub_dir()`, or `CSLS_HUB_DIR`);
+3. the user (`~/.config/csgo-legacy-server/{modes,plugins}`).
+
+`Modes::load` reads them all and skips a broken mode with a warning instead of failing. A hub item cannot ship a plugin
+with an engine plugin's name. Deploy keeps `user_plugins.txt` and `deployed_cfgs.txt` with what it put on the server, so
+what was uninstalled is removed on the next deploy.
 
 ## How a mode is applied
 
 Valve's `gamemode_*.cfg` runs first when a map loads, chosen by `game_type` and `game_mode`. Then the `modos` plugin queues,
 in `OnConfigsExecuted`, in this order:
 
-1. `modo_base.cfg` resets the plugin's convars and anything Valve's configs do not set.
+1. The `CSLS_OnModeReset` forward: each hub plugin puts its own convars back. Then `modo_base.cfg` resets the engine's
+   convars and anything Valve's configs do not set.
 2. `modo_clasico.cfg`, only with `game_type 0`: classic round rules.
 3. `guardian_<map>.cfg`, only with `game_type 4`. Deploy copies it from `maps/cfg`, where `exec` cannot reach.
 4. `modo_tipo_<type>.cfg`, for the match type chosen when the mode does not set its own `game_type`.
@@ -41,10 +56,41 @@ timed one. `modo_clasico.cfg` sets `mp_halftime 0` and competitive modes turn it
 is in `game/plugin/modos_competitivo.sp`. `competitivo` and `premier` are `game_type 0`, `game_mode 1`; a mode's own `.cfg` still
 runs last, so a mode can change any of it.
 
+## The plugin API
+
+`game/plugin/include/csls.inc` (`CSLS_API 1`) is what hub plugins build against. A change that breaks them raises
+`CSLS_API`, and the hub index says which API each item needs.
+
+- `CSLS_OnModeReset()`: before each map's chain of mode cfgs.
+- `CSLS_OnEquip(client)`: after a player got the mode's weapons, health and speed.
+- `CSLS_OnPlaceHuman(client)`: before a human is moved to the mode's side; `Plugin_Handled` keeps them.
+- `CSLS_Exempt(client, seconds)`: tells the anticheat a plugin moves this player's aim or speed on purpose.
+
+The `modo_*` convars are the rest of the API, and their names never change.
+
+## Admins
+
+`[[admins.users]]` and `[[admins.roles]]` in `config.toml` (`core::admins`). Deploy writes
+`addons/sourcemod/configs/csls_admins.cfg` (mode 600) with each Steam account id, the flags its role gives by SteamID, and
+the flags that need `sm_login`; then `sm_reloadadmins`. `csls_admins.sp` grants them in `OnClientPostAdminFilter`, reading
+the account id with `GetSteamAccountID`, since SourceMod gives no SteamID on LAN. The server runs `-insecure`, where a
+SteamID can be faked, so `console` and `root` (`sm_rcon`, `sm_cvar`, everything) wait for the password; three wrong ones
+kick, and a second player with a connected admin's account is kicked. Permissions map to flags: `cheats` is `CUSTOM1`,
+`bots` is `CUSTOM2`.
+
+## Anticheat
+
+`csls_anticheat.sp`, set by `[anticheat]` through `cfg/sourcemod/csls_anticheat.cfg`. It checks view angles (pitch beyond
+±89 or roll), aim jumps of more than 45° in the ticks before a kill (four in 30 s), perfect bunny hops in a row, more user
+commands a second than the tickrate allows (four seconds in a row), and the client cvars `r_drawothermodels`,
+`mat_wireframe` and `mat_fullbright`. It skips bots, `sv_cheats 1`, players a plugin exempted and the `cheats`
+permission. Each detection writes an `ac` line to the events file, which the agent stores as a sanction. A wallhack that
+only draws on the client cannot be seen from the server.
+
 ## Language
 
 `language` in `config.toml` is the only source: `csls_core::lang()` reads it once, and the system locale does not count. `deploy`
-copies `game/data/skins.<lang>.cfg` (or the copy generated from the game files in the data folder), and `modo_inicio.cfg` sets `csls_language`, which `modos.sp` applies to each client with `SetClientLanguage` so every plugin's phrases follow it.
+copies the skins catalog `skins.<lang>.cfg` (the copy generated from the game files in the data folder, or the one the skins hub item brings), and `modo_inicio.cfg` sets `csls_language`, which `modos.sp` applies to each client with `SetClientLanguage` so every plugin's phrases follow it.
 
 ## Deploying plugins
 
@@ -63,7 +109,7 @@ game ──> friend's own LAN IP:27030 ──> friend's bridge ──VPN──> 
 
 The game thinks it is joining a server on its LAN, and the server sees a LAN client. Both bridges are `crates/core/src/bridge.rs`.
 
-## Joining from the app
+## Opening the game (Play)
 
 `+connect` does not work: it runs before the engine is ready, and the game prints "Deferring connect command!" and discards
 it. The `wait` command does not exist in this build, and the TCP console (`-netconport`) crashes the 64-bit Linux client.

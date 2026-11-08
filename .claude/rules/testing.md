@@ -12,8 +12,9 @@ Run what applies before saying a change works, and report what you ran and what 
 | Version or changelog | `tools/version.sh check` |
 | `game/plugin/` | `./target/debug/csgo-legacy-server deploy` (compiles them; needs an installed server) |
 | `go/` | `go vet ./...` and `go test ./...` from `go/`, after `cargo build` (the e2e tests run the real CLI against a fake server, in seconds) |
-| `game/cfg/`, `game/modes/`, `game/plugin/` | `go run ./cmd/testkit -root .. lint` from `go/`; with an installed server, `... full <mode>` (only what changed runs; all modes take about 3 minutes) |
+| `game/cfg/`, `game/plugin/` | `go run ./cmd/testkit -root .. lint` from `go/`; with an installed server and hub items installed (`hub install pack-all`), `... full <mode>` (only what changed runs; all modes take about 4 minutes) |
+| `crates/core/src/hub.rs` | `cargo test`, and `csgo-legacy-server hub check ~/CSGO-Hub/items/*` |
 
 New logic that is not trivial gets a small test. New user text needs its translation, and `everything_translated` fails without it.
 
-`testkit` proves the game type, that bots move and that they respawn. It does not prove how a mode plays, skins, or joining from another PC: say those are untested unless a person tried them.
+`testkit` proves the game type, that bots move and that they respawn. It does not prove how a mode plays, skins, joining from another PC, `sm_login` and admin commands, or anticheat detections against real cheats: say those are untested unless a person tried them.

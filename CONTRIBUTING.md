@@ -78,12 +78,15 @@ go run ./cmd/testkit -root .. full dm normal:ffa   # only these (mode or mode:ty
 It checks the game type, that bots move and that they respawn. Anything needing a person (aim, feel, skins, joining from
 another PC) has to be played, so say in your pull request what you could not test.
 
-## Adding a game mode
+## Game modes and plugins go to CSGO-Hub
 
-1. Create `game/cfg/modo_<id>.cfg` with the rules, and `game/modes/<id>.toml` with its name and description in English and Spanish.
-2. Only set what your mode changes. Weapons per team go in `modo_t_*` and `modo_ct_*`.
-3. If it needs logic, add it to `game/plugin/modos*.sp` behind a `modo_*` convar, and reset that convar in `game/cfg/modo_base.cfg`.
-4. Add it to the table in both READMEs and run `go run ./cmd/testkit -root .. full <id>` from `go/`.
+Modes, the plugins they need, skins and admin tools are items of
+[CSGO-Hub](https://github.com/xsteban1410/CSGO-Hub): read its CONTRIBUTING and open the pull request there. This
+repository is the engine, and takes a change only when every mode needs it ([docs/HUB.md](docs/HUB.md) has the split).
+
+If a hub item needs something new from the engine (a `modo_*` convar, a forward in `game/plugin/include/csls.inc`), add it
+here first: reset a new convar in `game/cfg/modo_base.cfg`, keep `csls.inc` compatible or raise `CSLS_API`, and run
+`go run ./cmd/testkit -root .. full` from `go/` with the hub items installed.
 
 Do not add Valve's convars to `game/cfg/modo_base.cfg` unless you checked that no `gamemode_*.cfg` relies on them. The
 [architecture notes](docs/ARCHITECTURE.md#how-a-mode-is-applied) explain why.
@@ -91,13 +94,13 @@ Do not add Valve's convars to `game/cfg/modo_base.cfg` unless you checked that n
 ## Translations and text
 
 - App: write English in `@tr("…")` or `t("…")` and add the Spanish to `crates/app/lang/es/LC_MESSAGES/csgo-legacy-server-app.po`. A test fails if one is missing.
-- Plugins: `game/plugin/translations/csls.phrases.txt`.
+- Engine plugins: `game/plugin/translations/csls.phrases.txt`, or the plugin's own `translations/` folder.
 - READMEs: edit one, and a workflow translates the changed lines into the other after the push. Both must keep the same lines in the same order. If you edit both, nothing is translated.
 
 ## Pull request rules
 
 - Fix bugs at their cause, and add a small test for new logic that is not trivial.
-- Everything in the repository is written in English: commit messages, code, comments, logs and documentation. Only translations are in Spanish: `README.es.md`, `crates/app/lang/`, the `es` entries of `game/plugin/translations/csls.phrases.txt` and of `game/modes/*.toml`, and `game/data/skins.es.cfg`. English is the default language everywhere: Spanish only shows when chosen in Settings. CI fails if accented text appears anywhere else.
+- Everything in the repository is written in English: commit messages, code, comments, logs and documentation. Only translations are in Spanish: `README.es.md`, `crates/app/lang/`, and the `es` entries of the plugins' `.phrases.txt` files. English is the default language everywhere: Spanish only shows when chosen in Settings. CI fails if accented text appears anywhere else.
 - One commit per change, with the message `type(scope): what changed`, for example `fix(skins): recompile plugins when sources change`. Types: `feat`, `fix`, `i18n`, `refactor`, `test`, `docs`, `ci`, `chore`. The scope is the area touched: `skins`, `modes`, `deploy`, `app`...
 - Contributions are licensed under [GPL-3.0-or-later](LICENSE).
 
@@ -127,6 +130,9 @@ say exactly how you tested it. CI labels these pull requests `sensitive` and the
 | `crates/core/src/rules.rs`, `game/plugin/modos_reglas.sp` | Rules come with imported modes, so they run what someone else wrote. Keep the catalog closed: no free commands | Tests in `rules.rs` that try to break it, and `full` on a mode with rules |
 | `go/cmd/agent`, `go/internal/sched`, `game/plugin/csls_events.sp` | The agent holds the rcon password and runs commands, and the plugin writes what a player can influence. Keep the list of actions closed, no shell, and no IP in the database | `go test ./...`, and try it on a real server |
 | `crates/core/src/rcon.rs`, `config.rs` | The rcon password gives full control of the server, and the config must stay at mode 600 | Never log secrets or print them |
+| `crates/core/src/hub.rs`, `http.rs` | They download and unpack what other people wrote. Checks on paths, types, sizes and SHA-256 stop a bad zip | Tests in `hub.rs` that try to break them, and `hub check` on every item |
+| `crates/core/src/admins.rs`, `game/plugin/csls_admins/` | They decide who gets the server console in game. A SteamID can be faked with `-insecure`, so `console` and `root` wait for `sm_login` | Tests in `admins.rs`; say plainly if nobody tried `sm_login` with a real client |
+| `game/plugin/csls_anticheat/`, `game/plugin/include/csls.inc` | False positives kick or ban real players, and the API is what every hub plugin builds against | Play with the anticheat on and `action = "log"`; a change to `csls.inc` needs the hub's CI green against it |
 | `crates/core/src/install.rs`, `deploy.rs` | They download and run code, and write into the user's install, which is 33 GB to download again | Test on a copy, and never delete a folder you did not create |
 | `.github/`, `.claude/`, `tools/version.sh`, `tools/promote.sh`, `tools/sync_readme.py`, `packaging/` | They publish what users install | Only the maintainer merges these. Do not add secrets or third-party actions without a good reason |
 
