@@ -3,7 +3,6 @@ use anyhow::{bail, Context};
 use serde_json::Value;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 pub const LATEST_URL: &str = "https://api.github.com/repos/xsteban1410/CSGO-Server/releases/latest";
 
@@ -65,14 +64,8 @@ pub fn parse_release(json: &str) -> crate::Result<Release> {
 
 /// The latest release on GitHub. This is the only request: it sends nothing but the usual client headers.
 pub fn latest() -> crate::Result<Release> {
-    let o = Command::new("curl")
-        .args(["-fsSL", "--max-time", "20", "-H", "Accept: application/vnd.github+json", LATEST_URL])
-        .output()
-        .context("running curl")?;
-    if !o.status.success() {
-        bail!("network error: {}", String::from_utf8_lossy(&o.stderr).trim());
-    }
-    parse_release(&String::from_utf8_lossy(&o.stdout))
+    let args = ["-H".to_string(), "Accept: application/vnd.github+json".into(), LATEST_URL.into()];
+    parse_release(&crate::http::text(&args, crate::http::MB)?)
 }
 
 /// What the user runs to update. `None`: the app does it itself.
