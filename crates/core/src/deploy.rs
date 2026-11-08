@@ -276,7 +276,9 @@ pub fn deploy(cfg: &Config, force: bool, reload: bool) -> crate::Result<Report> 
     // giving special knives with GivePlayerItem requires bypassing Valve's rules
     let core = sm.join("configs/core.cfg");
     if let Ok(t) = std::fs::read_to_string(&core) {
-        let off = (cfg.server.skins && plugins.iter().any(|p| p.name == "skins")) || hub.iter().any(|i| i.item.guidelines_off);
+        // an item that needs them off counts only while its plugins are deployed (skins can be turned off in Settings)
+        let deployed = |i: &crate::hub::Installed| find_plugins(&i.plugin_dir()).iter().all(|p| plugins.iter().any(|q| q.name == p.name));
+        let off = hub.iter().any(|i| i.item.guidelines_off && deployed(i));
         let want = if off { "no" } else { "yes" };
         let n = set_kv(&t, "FollowCSGOServerGuidelines", want);
         if n != t {
