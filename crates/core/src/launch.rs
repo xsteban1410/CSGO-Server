@@ -119,6 +119,15 @@ impl LaunchOptions {
         if self.difficulty > 3 {
             bail!("difficulty must be 0 to 3");
         }
+        if self.humans > cfg.server.max_players {
+            bail!("humans cannot be more than max_players ({})", cfg.server.max_players);
+        }
+        if self.bots.is_some_and(|b| b > 63) {
+            bail!("bots must be 0 to 63");
+        }
+        if self.rounds.is_some_and(|r| !(1..=99).contains(&r)) {
+            bail!("rounds must be 1 to 99");
+        }
         if let Some(m) = &self.map {
             if !valid_map_name(m) {
                 bail!("invalid map name '{m}'");
@@ -210,6 +219,9 @@ impl LaunchOptions {
                 _ => fallback.clone(),
             }
         };
+        if !valid_map_name(&m) {
+            bail!("invalid map name '{m}'");
+        }
         if !mode.accepts_map(&m) {
             bail!("mode {} needs a {} map", mode.id, mode.meta.map_prefixes.join(" or "));
         }
@@ -225,8 +237,12 @@ impl LaunchOptions {
     }
 }
 
+/// A map path relative to `maps/`: `de_dust2` or `workshop/123/de_x`. Each part is a plain name, so the
+/// path can never leave the folder (`maps_dir.join` would drop the base for an absolute one).
 pub fn valid_map_name(m: &str) -> bool {
-    !m.is_empty() && !m.contains("..") && m.bytes().all(|b| b.is_ascii_alphanumeric() || b"_-/.".contains(&b))
+    !m.is_empty()
+        && m.split('/')
+            .all(|c| !c.is_empty() && c != "." && c != ".." && c.bytes().all(|b| b.is_ascii_alphanumeric() || b"_-.".contains(&b)))
 }
 
 /// cvar=value with nothing that allows chaining commands.
@@ -285,6 +301,33 @@ mod tests {
             std::fs::write(maps.join(format!("{n}.bsp")), "").unwrap();
         }
         (m, Config::default(), maps)
+    }
+
+    #[test]
+    fn map_names_stay_in_the_maps_folder() {
+        for ok in ["de_dust2", "workshop/123/de_x", "gd_rialto", "de_x.v2"] {
+            assert!(valid_map_name(ok), "{ok}");
+        }
+        for bad in ["", "/etc/x", "a//b", "../x", "a/../b", "./x", "a/", "de x", "x;quit", "a\\b"] {
+            assert!(!valid_map_name(bad), "{bad}");
+        }
+    }
+
+    #[test]
+    fn limits() {
+        let (modes, cfg, maps) = setup();
+        let _ = std::fs::remove_dir_all(maps);
+        let mut o = LaunchOptions::from_config(&cfg);
+        o.bots = Some(64);
+        assert!(o.validate(&modes, &cfg).is_err());
+        o.bots = Some(10);
+        o.rounds = Some(0);
+        assert!(o.validate(&modes, &cfg).is_err());
+        o.rounds = Some(30);
+        o.humans = cfg.server.max_players + 1;
+        assert!(o.validate(&modes, &cfg).is_err());
+        o.humans = 2;
+        assert!(o.validate(&modes, &cfg).is_ok());
     }
 
     #[test]

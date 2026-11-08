@@ -280,18 +280,13 @@ pub fn saved_language() -> Language {
     std::fs::read_to_string(config_path()).ok().and_then(|t| toml::from_str::<Config>(&t).ok()).map(|c| c.language).unwrap_or_default()
 }
 
-fn random_password() -> String {
+/// A random password from /dev/urandom. Without it there is no safe source, so it fails instead of guessing.
+pub fn random_password() -> crate::Result<String> {
     use std::io::Read;
     const A: &[u8] = b"ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
     let mut buf = [0u8; 20];
-    if std::fs::File::open("/dev/urandom").and_then(|mut f| f.read_exact(&mut buf)).is_err() {
-        // shortcut: without /dev/urandom it uses the time; only happens on very odd systems
-        let t = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_nanos();
-        for (i, b) in buf.iter_mut().enumerate() {
-            *b = (t >> (i % 16 * 8)) as u8 ^ i as u8;
-        }
-    }
-    buf.iter().map(|b| A[*b as usize % A.len()] as char).collect()
+    std::fs::File::open("/dev/urandom").and_then(|mut f| f.read_exact(&mut buf)).context("cannot read /dev/urandom to make a password")?;
+    Ok(buf.iter().map(|b| A[*b as usize % A.len()] as char).collect())
 }
 
 impl Config {
@@ -305,7 +300,7 @@ impl Config {
             let mut c = migrate_legacy().unwrap_or_default();
             c.migrate();
             if c.server.rcon_password.is_empty() || c.server.rcon_password == "cambia_esto" {
-                c.server.rcon_password = random_password();
+                c.server.rcon_password = random_password()?;
             }
             if c.server.install_dir.as_os_str().is_empty() {
                 c.server.install_dir = find_install().unwrap_or_else(|| paths::data_dir().join("server"));
@@ -322,7 +317,7 @@ impl Config {
         c.validate()?;
         // an empty rcon password turns rcon off, and the app cannot do anything without it
         if c.server.rcon_password.is_empty() {
-            c.server.rcon_password = random_password();
+            c.server.rcon_password = random_password()?;
             c.save_to(path)?;
         }
         Ok(c)
@@ -333,6 +328,10 @@ impl Config {
         // Version 0 saved humans = 2 as a plain default, which made every warmup wait for two players.
         if self.version < 1 {
             self.defaults.humans = 0;
+        }
+        // the old config.env took any number; srcds only runs 64 or 128 well
+        if ![64, 128].contains(&self.server.tickrate) {
+            self.server.tickrate = if self.server.tickrate > 64 { 128 } else { 64 };
         }
         self.version = CONFIG_VERSION;
     }
@@ -380,6 +379,12 @@ impl Config {
         }
         if !(1..=64).contains(&s.max_players) {
             bail!("max_players must be 1 to 64");
+        }
+        if ![64, 128].contains(&s.tickrate) {
+            bail!("tickrate must be 64 or 128");
+        }
+        if !self.defaults.map.is_empty() && !crate::launch::valid_map_name(&self.defaults.map) {
+            bail!("invalid default map '{}'", self.defaults.map);
         }
         if self.defaults.difficulty > 3 {
             bail!("difficulty must be 0 to 3");
@@ -541,8 +546,8 @@ mod tests {
 
     #[test]
     fn random_password_is_long() {
-        let a = random_password();
+        let a = random_password().unwrap();
         assert_eq!(a.len(), 20);
-        assert_ne!(a, random_password());
+        assert_ne!(a, random_password().unwrap());
     }
 }
