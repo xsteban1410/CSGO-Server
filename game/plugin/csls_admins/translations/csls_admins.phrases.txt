@@ -1,0 +1,34 @@
+"Phrases"
+{
+	"admin_duplicate"
+	{
+		"en"		"An admin with your SteamID is already playing"
+		"es"		"Ya está jugando un admin con tu SteamID"
+	}
+	"admin_login_console"
+	{
+		"en"		"Type sm_login <password> in the console (~), not in chat"
+		"es"		"Escribe sm_login <clave> en la consola (~), no en el chat"
+	}
+	"admin_login_none"
+	{
+		"en"		"Your role has nothing to unlock with a password"
+		"es"		"Tu rol no tiene nada que desbloquear con clave"
+	}
+	"admin_login_wrong"
+	{
+		"#format"	"{1:d}"
+		"en"		"Wrong password. Tries left: {1}"
+		"es"		"Clave incorrecta. Intentos restantes: {1}"
+	}
+	"admin_login_kicked"
+	{
+		"en"		"Too many wrong passwords"
+		"es"		"Demasiadas claves incorrectas"
+	}
+	"admin_login_ok"
+	{
+		"en"		"Logged in: the server console is yours (sm_rcon)"
+		"es"		"Sesión iniciada: tienes la consola del servidor (sm_rcon)"
+	}
+}

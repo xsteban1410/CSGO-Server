@@ -1,4 +1,5 @@
 //! Core of csgo-legacy-server: everything that is not UI (used by the CLI and the desktop app).
+pub mod admins;
 pub mod agent;
 pub mod aliases;
 pub mod backup;

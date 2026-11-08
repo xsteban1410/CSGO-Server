@@ -269,6 +269,8 @@ pub struct Config {
     pub language: Language,
     pub server: Server,
     pub defaults: Defaults,
+    /// who may use admin commands in game; see `admins.rs`
+    pub admins: crate::admins::Admins,
 }
 
 pub fn config_path() -> PathBuf {
@@ -395,7 +397,7 @@ impl Config {
         for n in &s.bridge_allow {
             crate::bridge::Cidr::parse(n)?;
         }
-        Ok(())
+        self.admins.validate()
     }
 
     pub fn install_dir(&self) -> &Path {

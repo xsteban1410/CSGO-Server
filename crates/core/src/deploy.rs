@@ -38,16 +38,8 @@ pub const ENGINE_PLUGINS: &[&str] = &["modos", "csls_events", "csls_directconnec
 /// (plugin, gamedata) no longer used: nolobbyreservation (no license) -> csls_directconnect.
 const OBSOLETE: &[(&str, &str)] = &[("nolobbyreservation", "nolobbyreservation.games.txt")];
 /// Plugins the engine used to ship that are hub items now: removed unless the hub installed them again.
-const MOVED_TO_HUB: &[&str] = &[
-    "skins",
-    "modos_cheats",
-    "modos_aleatorio",
-    "modos_unabala",
-    "modos_vampiro",
-    "modos_jefe",
-    "modos_clutch",
-    "modos_zombies",
-];
+const MOVED_TO_HUB: &[&str] =
+    &["skins", "modos_cheats", "modos_aleatorio", "modos_unabala", "modos_vampiro", "modos_jefe", "modos_clutch", "modos_zombies"];
 
 /// Plugins in a folder: top-level X.sp with `myinfo` (the rest are includes)
 /// and subfolders N/ with N/N.sp. Files with other names are skipped.
@@ -272,6 +264,8 @@ pub fn deploy(cfg: &Config, force: bool, reload: bool) -> crate::Result<Report> 
         std::fs::create_dir_all(sm.join("configs"))?;
         copy_writable(&s, &sm.join("configs/skins.cfg"))?;
     }
+    // admins and roles for csls_admins.sp; it reloads them on sm_reloadadmins
+    let admins_changed = cfg.admins.write(&sm.join("configs/csls_admins.cfg"))?;
     // giving special knives with GivePlayerItem requires bypassing Valve's rules
     let core = sm.join("configs/core.cfg");
     if let Ok(t) = std::fs::read_to_string(&core) {
@@ -317,13 +311,14 @@ pub fn deploy(cfg: &Config, force: bool, reload: bool) -> crate::Result<Report> 
         }
     }
 
-    let changed = r.translations || !(r.compiled.is_empty() && r.removed.is_empty());
+    let changed = admins_changed || r.translations || !(r.compiled.is_empty() && r.removed.is_empty());
     if reload && changed && crate::rcon::Rcon::from_config(cfg).is_ok() {
         let mut rc = crate::rcon::RconSession::new(cfg);
         let phrases = r.translations.then(|| "sm_reload_translations".to_string());
+        let admins = admins_changed.then(|| "sm_reloadadmins".to_string());
         let unload = r.compiled.iter().chain(&r.removed).map(|n| format!("sm plugins unload {n}"));
         let load = r.compiled.iter().map(|n| format!("sm plugins load {n}"));
-        for c in phrases.into_iter().chain(unload).chain(load).collect::<Vec<_>>() {
+        for c in phrases.into_iter().chain(unload).chain(load).chain(admins).collect::<Vec<_>>() {
             // loading a plugin can take longer than the rcon timeout; loading it again does no harm
             rc.exec_idempotent(&c)?;
         }
@@ -369,7 +364,7 @@ mod tests {
         // only the engine's: modes, skins and the rest come from the hub
         let mut want: Vec<String> = n.clone();
         want.sort();
-        assert_eq!(want, ["csls_directconnect", "csls_events", "modos"]);
+        assert_eq!(want, ["csls_admins", "csls_directconnect", "csls_events", "modos"]);
         assert!(n.iter().all(|p| ENGINE_PLUGINS.contains(&p.as_str())));
         assert!(!n.contains(&"modos_anarquia".into()), "includes are not compiled on their own");
     }

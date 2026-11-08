@@ -132,6 +132,9 @@ enum Cmd {
     /// Game modes, plugins and packs from CSGO-Hub
     #[command(subcommand)]
     Hub(HubCmd),
+    /// Admins and roles for admin commands in game
+    #[command(subcommand)]
+    Admins(AdminsCmd),
     /// UDP bridge for friends over VPN. Without arguments: server side (PORT+1 -> server)
     Bridge {
         /// Friend side: local port to listen on
@@ -214,6 +217,26 @@ enum Ws {
     Remove { dir: String },
     /// Import a local .bsp file
     Import { file: std::path::PathBuf },
+}
+
+#[derive(Subcommand)]
+enum AdminsCmd {
+    /// Admins and roles
+    List,
+    /// Add an admin (STEAM_X:Y:Z, [U:1:N] or SteamID64); a role with the console gets a new password
+    Add {
+        steamid: String,
+        #[arg(long)]
+        name: String,
+        #[arg(long, default_value = "admin")]
+        role: String,
+    },
+    /// Remove an admin by SteamID or name
+    Remove { who: String },
+    /// Change an admin's role
+    Role { who: String, role: String },
+    /// Make a new sm_login password for an admin and print it
+    Password { who: String },
 }
 
 #[derive(Subcommand)]
@@ -312,6 +335,64 @@ enum ModeFile {
     Export { mode: String },
     Import { file: std::path::PathBuf },
     Delete { mode: String },
+}
+
+fn admins_cmd(mut cfg: Config, c: AdminsCmd) -> Result<()> {
+    use csls_core::admins::User;
+    let needs_password = |cfg: &Config, role: &str| cfg.admins.role(role).is_some_and(|r| r.permissions.iter().any(|p| p.needs_login()));
+    let find = |cfg: &Config, who: &str| cfg.admins.find(who).ok_or_else(|| anyhow::anyhow!("no admin '{who}'"));
+    let mut new_password = None;
+    match c {
+        AdminsCmd::List => {
+            for r in &cfg.admins.roles {
+                let p: Vec<_> = r.permissions.iter().map(|p| p.as_str()).collect();
+                println!("role {:<12} {}", r.name, p.join(", "));
+            }
+            for u in &cfg.admins.users {
+                let login = if u.password.is_empty() { "" } else { "  (sm_login)" };
+                println!("{:<24} {:<20} {}{login}", u.steamid, u.name, u.role);
+            }
+            if cfg.admins.users.is_empty() {
+                println!("No admins yet: csgo-legacy-server admins add <steamid> --name <name> --role <role>");
+            }
+            return Ok(());
+        }
+        AdminsCmd::Add { steamid, name, role } => {
+            if cfg.admins.find(&steamid).is_some() {
+                bail!("{steamid} is already an admin");
+            }
+            let password = if needs_password(&cfg, &role) { csls_core::config::random_password()? } else { String::new() };
+            new_password = (!password.is_empty()).then(|| password.clone());
+            cfg.admins.users.push(User { steamid, name, role, password });
+        }
+        AdminsCmd::Remove { who } => {
+            let i = find(&cfg, &who)?;
+            cfg.admins.users.remove(i);
+        }
+        AdminsCmd::Role { who, role } => {
+            let i = find(&cfg, &who)?;
+            if needs_password(&cfg, &role) && cfg.admins.users[i].password.is_empty() {
+                let p = csls_core::config::random_password()?;
+                new_password = Some(p.clone());
+                cfg.admins.users[i].password = p;
+            }
+            cfg.admins.users[i].role = role;
+        }
+        AdminsCmd::Password { who } => {
+            let i = find(&cfg, &who)?;
+            let p = csls_core::config::random_password()?;
+            new_password = Some(p.clone());
+            cfg.admins.users[i].password = p;
+        }
+    }
+    cfg.save()?;
+    if let Some(p) = new_password {
+        println!("New password: {p}\nIn game, type sm_login <password> in the console (~) to unlock the server console.");
+    }
+    if cfg.install_dir().join("csgo/addons/sourcemod").is_dir() {
+        deploy::deploy(&cfg, false, true)?;
+    }
+    Ok(())
 }
 
 fn hub_cmd(cfg: &Config, c: HubCmd) -> Result<()> {
@@ -757,6 +838,7 @@ fn main() -> Result<()> {
             }
         }
         Cmd::Hub(c) => hub_cmd(&cfg, c)?,
+        Cmd::Admins(c) => admins_cmd(cfg.clone(), c)?,
         Cmd::Nav { force } => {
             println!("Generating .nav (seconds to minutes)...");
             let m = srv.generate_nav(Duration::from_secs(600), force)?;
