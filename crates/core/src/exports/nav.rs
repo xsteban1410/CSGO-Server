@@ -150,7 +150,17 @@ pub fn render(n: &Nav) -> String {
         let _ = writeln!(
             o,
             "A {} {} {} {} {} {} {} {} {} {} {}",
-            a.id, f(a.nw[0]), f(a.nw[1]), f(a.nw[2]), f(a.se[0]), f(a.se[1]), f(a.se[2]), f(a.ne_z), f(a.sw_z), a.place, a.attrs
+            a.id,
+            f(a.nw[0]),
+            f(a.nw[1]),
+            f(a.nw[2]),
+            f(a.se[0]),
+            f(a.se[1]),
+            f(a.se[2]),
+            f(a.ne_z),
+            f(a.sw_z),
+            a.place,
+            a.attrs
         );
     }
     for a in n.areas.iter().filter(|a| !a.exits.is_empty()) {

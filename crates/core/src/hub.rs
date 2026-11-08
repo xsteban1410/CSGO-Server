@@ -552,7 +552,13 @@ mod tests {
         let l = Localized::same("x");
         Item {
             id: "t".into(),
-            option: vec![OptionDecl { id: id.into(), slot: slot.into(), cvar: cvar.into(), title: l.clone(), choices: vec![Choice { value: value.into(), label: l }] }],
+            option: vec![OptionDecl {
+                id: id.into(),
+                slot: slot.into(),
+                cvar: cvar.into(),
+                title: l.clone(),
+                choices: vec![Choice { value: value.into(), label: l }],
+            }],
             ..Item::default()
         }
     }
