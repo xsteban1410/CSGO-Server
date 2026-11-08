@@ -5,9 +5,7 @@
 [![CI](https://github.com/xsteban1410/CSGO-Server/actions/workflows/ci.yml/badge.svg)](https://github.com/xsteban1410/CSGO-Server/actions/workflows/ci.yml)
 
 Host a **CS:GO Legacy** dedicated server (app 740) and play with friends against bots, from a desktop app or the command line.
-Game modes, plugins and admin tools come from [CSGO-Hub](https://github.com/xsteban1410/CSGO-Hub) (snipers, zombie waves,
-retakes, Guardian, random cheats, skins…), installed from the app's Hub tab. It compiles SourceMod plugins by itself, has
-admins with roles and its own anticheat, and browses the Steam Workshop for maps.
+Game modes, plugins and admin tools come from [CSGO-Hub](https://github.com/xsteban1410/CSGO-Hub) (snipers, zombie waves, retakes, Guardian, random cheats, skins…), installed from the app's Hub tab. It compiles SourceMod plugins by itself, has admins with roles and its own anticheat, and browses the Steam Workshop for maps.
 
 Works on any 64-bit glibc distro with 32-bit libraries. Tested on Arch/CachyOS.
 
@@ -44,13 +42,9 @@ To install elsewhere, copy `cfg/ modes/ plugin/ data/` from `game/` to `<prefix>
 
 ### First run
 
-Nothing is downloaded until you ask. **Create a server** looks for an existing install first (any folder with `srcds_run`)
-and reuses it. Otherwise pick a folder (~40 GB free), and it downloads SteamCMD, the dedicated server (~33 GB),
-Metamod:Source and SourceMod, then compiles the plugins. The download keeps going in the background if you close the app,
-and resumes if it is interrupted.
+Nothing is downloaded until you ask. **Create a server** looks for an existing install first (any folder with `srcds_run`) and reuses it. Otherwise pick a folder (~40 GB free), and it downloads SteamCMD, the dedicated server (~33 GB), Metamod:Source and SourceMod, then compiles the plugins. The download keeps going in the background if you close the app, and resumes if it is interrupted.
 
-The app comes without game modes: the Server tab offers **Install every mode**, or pick them in the **Hub** tab
-(`csgo-legacy-server hub install pack-all` from the command line).
+The app comes without game modes: the Server tab offers **Install every mode**, or pick them in the **Hub** tab (`csgo-legacy-server hub install pack-all` from the command line).
 
 Headless: `csgo-legacy-server install` does the same, and `csgo-legacy-server doctor` tells you what is missing and the
 exact command for your distro (apt, pacman, dnf, zypper, xbps, emerge).
@@ -125,9 +119,7 @@ csgo-legacy-server start premier 2 --teams versus
 
 ## Modes
 
-Modes live in [CSGO-Hub](https://github.com/xsteban1410/CSGO-Hub), so a mode can be fixed or added without a new
-version of the app: `pack-all` has all of them, `pack-valve` the official ones, and each item says what it is and what it
-needs. `csgo-legacy-server modes` lists the installed ones.
+Modes live in [CSGO-Hub](https://github.com/xsteban1410/CSGO-Hub), so a mode can be fixed or added without a new version of the app: `pack-all` has all of them, `pack-valve` the official ones, and each item says what it is and what it needs. `csgo-legacy-server modes` lists the installed ones.
 
 Everyone picks their own team, as on a Valve or community server. Bots (expert) fill the empty seats and leave when a human joins; `--no-bots` plays humans only. Warmup runs out by itself unless you ask it to wait for players (`start awp 2`). Only modes whose rules need sides fix them.
 
@@ -136,21 +128,13 @@ Everyone picks their own team, as on a Valve or community server. Bots (expert) 
 Per-team settings for your own modes or `--set` (`t` or `ct`): `modo_<team>_quitar`, `_arma`, `_pistola`,
 `_objeto`, `_vida`, `_velocidad`, `_color` (`R,G,B`).
 
-**Anarchy** (`--anarchy` with any mode): no automatic kicks or bans (idle, team kills, vote kick, flood,
-reserved slots). Kicks and bans you make from the app still work.
+**Anarchy** (`--anarchy` with any mode): no automatic kicks or bans (idle, team kills, vote kick, flood, reserved slots). Kicks and bans you make from the app still work.
 
 ### Admins and anticheat
 
-Admins are SteamIDs with a role (Players tab, or `csgo-legacy-server admins add STEAM_1:0:123 --name Ana --role admin`).
-Roles grant `console`, `kick`, `ban`, `map`, `slay`, `chat`, `cheats`, `bots` or `root`; the defaults are `owner`, `admin`,
-`moderator` and `cheats`. The server runs with `-insecure`, where a SteamID can be faked, so the roles with the server
-console (`sm_rcon`) also need `sm_login <password>` typed in the game console: three wrong passwords kick, and a second
-player with an admin's SteamID is kicked. Admin tools such as `!am` (aimbot) and `!wh` (wallhack) are hub items
-(`pack-admin`) and need the `cheats` permission.
+Admins are SteamIDs with a role (Players tab, or `csgo-legacy-server admins add STEAM_1:0:123 --name Ana --role admin`). Roles grant `console`, `kick`, `ban`, `map`, `slay`, `chat`, `cheats`, `bots` or `root`; the defaults are `owner`, `admin`, `moderator` and `cheats`. The server runs with `-insecure`, where a SteamID can be faked, so the roles with the server console (`sm_rcon`) also need `sm_login <password>` typed in the game console: three wrong passwords kick, and a second player with an admin's SteamID is kicked. Admin tools such as `!am` (aimbot) and `!wh` (wallhack) are hub items (`pack-admin`) and need the `cheats` permission.
 
-The anticheat (Settings, or `[anticheat]` in the config) looks for impossible view angles, aim snaps right before
-kills, scripted bunny hops, speedhack and wallhack client cvars, and logs, kicks or bans. It cannot see a wallhack that
-only draws on the player's PC. Detections show in the Players tab with the sanctions.
+The anticheat (Settings, or `[anticheat]` in the config) looks for impossible view angles, aim snaps right before kills, scripted bunny hops, speedhack and wallhack client cvars, and logs, kicks or bans. It cannot see a wallhack that only draws on the player's PC. Detections show in the Players tab with the sanctions.
 
 ### Your own modes and plugins
 
