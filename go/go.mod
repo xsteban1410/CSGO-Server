@@ -1,6 +1,6 @@
 module github.com/xsteban1410/CSGO-Server/go
 
-go 1.26.0
+go 1.26.3
 
 require modernc.org/sqlite v1.61.1
 
