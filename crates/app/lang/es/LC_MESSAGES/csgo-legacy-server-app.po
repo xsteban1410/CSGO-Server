@@ -994,6 +994,12 @@ msgstr "Copias automáticas que se conservan"
 msgid "Average players"
 msgstr "Media de jugadores"
 
+msgid "Most played map"
+msgstr "Mapa más jugado"
+
+msgid "Most played mode"
+msgstr "Modo más jugado"
+
 msgid "Blocks"
 msgstr "Bloques"
 

@@ -15,7 +15,10 @@ fn fill(a: &AppRc) {
             match r {
                 Ok(x) => {
                     s.set_ss_note("".into());
-                    s.set_ss_avg(format!("{}: {:.1}", t("Average players"), x.avg_players).into());
+                    let top = |l: &[agent::Count]| l.iter().max_by_key(|c| c.count).map(|c| c.name.clone()).unwrap_or_default();
+                    s.set_ss_avg(format!("{:.1}", x.avg_players).into());
+                    s.set_ss_top_map(top(&x.maps).into());
+                    s.set_ss_top_mode(top(&x.modes).into());
                     s.set_ss_days(model(bars(&x.per_day)));
                     s.set_ss_hours(model(bars(&x.per_hour)));
                     s.set_ss_maps(model(bars(&x.maps)));

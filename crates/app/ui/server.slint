@@ -1,5 +1,5 @@
 import { Button, ScrollView } from "std-widgets.slint";
-import { Group, Row, ValueRow, EntryRow, ActionList, Theme } from "kit.slint";
+import { Group, Row, ValueRow, EntryRow, ActionList, StatCard, Theme } from "kit.slint";
 import { S, Tabs } from "state.slint";
 
 export component ServerPage {
@@ -20,12 +20,19 @@ export component ServerPage {
                     Button { text: @tr("Install every mode"); primary: true; clicked => { S.hb-get("pack-all"); } }
                 }
             }
+            HorizontalLayout {
+                spacing: Theme.gap;
+                StatCard {
+                    label: @tr("Status");
+                    value: S.st-state;
+                    value-color: S.rcon-ok ? Theme.ok : S.running ? Theme.warn : Theme.text;
+                }
+                StatCard { label: @tr("Players"); value: S.st-players; }
+                StatCard { label: @tr("Map"); value: S.st-map; }
+                StatCard { label: @tr("Mode"); value: S.st-mode; }
+            }
             Group {
                 title: @tr("Server");
-                ValueRow { title: @tr("Status"); value: S.st-state; }
-                ValueRow { title: @tr("Mode"); value: S.st-mode; }
-                ValueRow { title: @tr("Map"); value: S.st-map; }
-                ValueRow { title: @tr("Players"); value: S.st-players; }
                 ValueRow { title: @tr("Resources"); value: S.st-resources; }
                 ValueRow { title: "RCON"; value: S.st-rcon; }
                 ValueRow { title: @tr("Agent"); value: S.st-agent; }
@@ -33,11 +40,13 @@ export component ServerPage {
                 ValueRow {
                     title: @tr("Connect address");
                     value: S.st-addr;
+                    mono: true;
                     Button { text: @tr("Copy"); clicked => { S.copy-addr(); } }
                 }
                 if S.st-is-vpn: ValueRow {
                     title: @tr("Address for friends over VPN");
                     value: S.st-vpn-addr;
+                    mono: true;
                     Button { text: @tr("Copy"); clicked => { S.copy-vpn(); } }
                 }
                 if S.st-is-vpn && S.running: ValueRow {

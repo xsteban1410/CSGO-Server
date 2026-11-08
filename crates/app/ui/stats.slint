@@ -1,5 +1,5 @@
 import { Button, ComboBox, ScrollView, Palette } from "std-widgets.slint";
-import { Group, SwitchRow, SpinRow, Theme } from "kit.slint";
+import { Group, SwitchRow, SpinRow, StatCard, Theme } from "kit.slint";
 import { S, Bar } from "state.slint";
 
 // Upright thin bars over time. The value of a bar shows on hover, and the extremes are named under the axis.
@@ -79,12 +79,17 @@ export component StatsPage {
             if S.ss-note != "": Text { text: S.ss-note; color: Theme.warn; wrap: word-wrap; }
             HorizontalLayout {
                 spacing: 12px;
-                Text { text: S.ss-avg; font-size: 20px; font-weight: 700; color: Theme.text; vertical-alignment: center; horizontal-stretch: 1; }
-                ComboBox {
-                    width: 180px;
-                    model: [@tr("Last 7 days"), @tr("Last 30 days"), @tr("Last 365 days")];
-                    current-index <=> S.ss-range;
-                    selected => { S.ss-refresh(); }
+                StatCard { label: @tr("Average players"); value: S.ss-avg; }
+                StatCard { label: @tr("Most played map"); value: S.ss-top-map; }
+                StatCard { label: @tr("Most played mode"); value: S.ss-top-mode; }
+                VerticalLayout {
+                    alignment: start;
+                    ComboBox {
+                        width: 180px;
+                        model: [@tr("Last 7 days"), @tr("Last 30 days"), @tr("Last 365 days")];
+                        current-index <=> S.ss-range;
+                        selected => { S.ss-refresh(); }
+                    }
                 }
             }
             Group { title: @tr("Players per day"); Columns { bars: S.ss-days; } }
