@@ -24,6 +24,15 @@ pub struct State {
     maps: Vec<String>,
     kinds: Vec<Kind>,
     mode_game_type: Option<u8>,
+    /// What each entry of the bot difficulty list means: the game's 0-3 and the options plugins add.
+    levels: Vec<Level>,
+}
+
+#[derive(Clone, PartialEq)]
+enum Level {
+    Native(u8),
+    /// (cvar, value, label) from an installed item's `[[option]]` with slot "bot_difficulty".
+    Option(String, String, String),
 }
 
 #[cfg(test)]
@@ -132,7 +141,23 @@ fn fill_options(a: &AppRc) {
     s.set_wiz_humans(o.humans as i32);
     s.set_wiz_no_bots(o.bots == Some(0));
     s.set_wiz_bots_on(false);
-    s.set_wiz_difficulty(i32::from(o.difficulty));
+    let mut levels: Vec<Level> = (0..=3).map(Level::Native).collect();
+    for (_, opt) in csls_core::hub::options().into_iter().filter(|(_, o)| o.slot == "bot_difficulty") {
+        for c in &opt.choices {
+            levels.push(Level::Option(opt.cvar.clone(), c.value.clone(), c.label.get(csls_core::lang()).to_string()));
+        }
+    }
+    let names: Vec<String> = levels
+        .iter()
+        .map(|l| match l {
+            Level::Native(d) => t(["Easy", "Normal", "Hard", "Expert"][usize::from(*d)]),
+            Level::Option(_, _, label) => label.clone(),
+        })
+        .collect();
+    s.set_wiz_difficulties(strings(&names));
+    let chosen = levels.iter().position(|l| matches!(l, Level::Option(c, v, _) if o.cvars.iter().any(|(k, x)| k == c && x == v)));
+    s.set_wiz_difficulty(chosen.unwrap_or(usize::from(o.difficulty.min(3))) as i32);
+    w.levels = levels;
     s.set_wiz_rounds(0);
     // only the types that fit the chosen mode
     let kinds: Vec<Kind> = Kind::ALL.into_iter().filter(|k| mode.allows_kind(*k)).collect();
@@ -186,7 +211,16 @@ fn read_options(a: &AppRc) -> anyhow::Result<LaunchOptions> {
         None
     };
     o.no_draw = s.get_wiz_nodraw_show() && s.get_wiz_nodraw();
-    o.difficulty = s.get_wiz_difficulty().clamp(0, 3) as u8;
+    // a plugin's level replaces the game's own; any earlier choice of the same cvar goes away
+    o.cvars.retain(|(k, _)| !w.levels.iter().any(|l| matches!(l, Level::Option(c, _, _) if c == k)));
+    match w.levels.get(s.get_wiz_difficulty().max(0) as usize) {
+        Some(Level::Native(d)) => o.difficulty = *d,
+        Some(Level::Option(c, v, _)) => {
+            o.difficulty = 3;
+            o.cvars.push((c.clone(), v.clone()));
+        }
+        None => {}
+    }
     o.rounds = (s.get_wiz_rounds() > 0).then(|| s.get_wiz_rounds() as u32);
     o.kind = w.kinds.get(s.get_wiz_kind().max(0) as usize).copied().unwrap_or_default();
     // the type is chosen after the map: if the map does not suit it, its own is used

@@ -30,6 +30,14 @@ stock void CSLS_Exempt(int client, float seconds)
 		CSLS_AC_Exempt(client, seconds);
 }
 
+// Data the app extracts for plugins that ask for it with `needs = ["nav"]` in their item.toml. Fills `out` with the
+// path of the file for `map` (for "nav": a text graph of the map's navigation mesh) and returns whether it exists.
+stock bool CSLS_ExportPath(const char[] name, const char[] map, char[] out, int len)
+{
+	BuildPath(Path_SM, out, len, "data/csls_export/%s/%s.txt", name, map);
+	return FileExists(out);
+}
+
 // Always optional: a plugin keeps working without the anticheat. csls_anticheat defines CSLS_ANTICHEAT.
 #if !defined CSLS_ANTICHEAT
 public SharedPlugin __pl_csls_anticheat =

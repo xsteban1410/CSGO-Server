@@ -24,6 +24,8 @@ pub struct Report {
     pub removed: Vec<String>,
     /// Plugin messages changed: a running server has to read them again.
     pub translations: bool,
+    /// Data extracted for plugins that ask for it (`needs` in item.toml), as "name/map".
+    pub exported: Vec<String>,
 }
 
 impl Report {
@@ -254,6 +256,9 @@ pub fn deploy(cfg: &Config, force: bool, reload: bool) -> crate::Result<Report> 
         copy_glob(&i.data_dir(), ".cfg", &sm.join("configs"), str::to_string)?;
         copy_glob(&i.data_dir(), ".txt", &sm.join("configs"), str::to_string)?;
     }
+    // data only the app can extract, for the plugins that ask for it (`needs` in item.toml)
+    let needed: Vec<String> = hub.iter().flat_map(|i| i.item.needs.clone()).collect();
+    r.exported = crate::exports::export_for(&needed, &csgo.join("maps"), &sm.join(crate::exports::OUT_DIR))?;
     // skins: the list generated when updating the game or the one an item brings, in the chosen language
     let catalog = crate::skins_gen::catalog_name(cfg.language.as_str());
     let skins = [paths::data_dir().join(&catalog), res.join("data").join(&catalog)]

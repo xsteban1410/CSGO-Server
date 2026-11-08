@@ -88,7 +88,7 @@ export component Wizard {
                         index <=> S.wiz-teams;
                     }
                     if S.wiz-nodraw-show: SwitchRow { title: @tr("No draws"); subtitle: @tr("Overtime until someone wins"); checked <=> S.wiz-nodraw; }
-                    ComboRow { title: @tr("Bot difficulty"); model: [@tr("Easy"), @tr("Normal"), @tr("Hard"), @tr("Expert")]; index <=> S.wiz-difficulty; }
+                    ComboRow { title: @tr("Bot difficulty"); model: S.wiz-difficulties; index <=> S.wiz-difficulty; }
                     if S.wiz-site-show: ComboRow { title: @tr("Bomb site"); model: [@tr("Random"), "A", "B"]; index <=> S.wiz-site; }
                     SwitchRow { title: @tr("No bots"); subtitle: @tr("Humans only, bots do not fill the empty seats"); checked <=> S.wiz-no-bots; }
                     SwitchRow { title: @tr("Bots"); subtitle: @tr("Default"); checked <=> S.wiz-bots-on; }
