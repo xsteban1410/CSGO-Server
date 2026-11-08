@@ -76,7 +76,8 @@ func startAgent(t *testing.T, e *env) *agentEnv {
 
 func eventually(t *testing.T, what string, ok func() bool) {
 	t.Helper()
-	deadline := time.Now().Add(5 * time.Second)
+	// generous: CI runs these with -race on shared runners, where 5 s was not always enough
+	deadline := time.Now().Add(15 * time.Second)
 	for !ok() {
 		if time.Now().After(deadline) {
 			t.Fatalf("timed out waiting for %s", what)
