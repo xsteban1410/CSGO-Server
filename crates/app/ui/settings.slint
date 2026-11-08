@@ -32,7 +32,7 @@ export component SettingsPage {
                 EntryRow { title: @tr("Workshop Web API key"); text <=> S.set-wkey; password: true; }
                 SwitchRow { title: @tr("Skins plugin"); subtitle: @tr("Turns the skins item from the Hub on or off. Can cost the GSLT on public servers"); checked <=> S.set-skins; }
                 ValueRow { title: @tr("Server folder"); value: S.set-folder; }
-                Text { text: @tr("Anticheat"); font-size: Theme.title; font-weight: 700; color: Theme.text; }
+                Text { text: @tr("Anticheat"); font-size: Theme.title; font-weight: 600; color: Theme.text; }
                 SwitchRow {
                     title: @tr("Anticheat");
                     subtitle: @tr("Checks for aimbot, spinbot, bunny hop scripts, speedhack and wallhack cvars. A wallhack that only draws on the player's PC cannot be seen from the server");

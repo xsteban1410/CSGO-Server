@@ -10,8 +10,8 @@ export component Wizard {
             Text {
                 horizontal-stretch: 1;
                 vertical-alignment: center;
-                font-size: 16px;
-                font-weight: 700;
+                font-size: Theme.heading;
+                font-weight: 600;
                 color: Theme.text;
                 text: S.wiz-step == 0 ? @tr("Choose a mode") : S.wiz-step == 1 ? @tr("Choose a map") : S.wiz-step == 2 ? @tr("Options") : @tr("Server");
             }
@@ -21,11 +21,11 @@ export component Wizard {
             vertical-stretch: 1;
             for m in S.wiz-modes: VerticalLayout {
                 padding: 6px;
-                if m.heading: Text { text: m.title; font-size: 15px; font-weight: 700; color: Theme.text; }
+                if m.heading: Text { text: m.title; font-size: Theme.title; font-weight: 600; color: Theme.text; }
                 if !m.heading: Rectangle {
                     height: self.preferred-height;
                     background: t1.has-hover ? Palette.alternate-background : transparent;
-                    border-radius: 6px;
+                    border-radius: Theme.radius;
                     t1 := TouchArea { clicked => { S.wiz-pick-mode(m.id); } }
                     VerticalLayout {
                         padding: 6px;
@@ -62,11 +62,11 @@ export component Wizard {
                 for m in S.wiz-maps: VerticalLayout {
                     padding-top: 3px;
                     padding-bottom: 3px;
-                    if m.heading: Text { text: m.title; font-size: 15px; font-weight: 700; color: Theme.text; }
+                    if m.heading: Text { text: m.title; font-size: Theme.title; font-weight: 600; color: Theme.text; }
                     if !m.heading: Rectangle {
                         height: 28px;
                         background: t2.has-hover ? Palette.alternate-background : transparent;
-                        border-radius: 6px;
+                        border-radius: Theme.radius;
                         t2 := TouchArea { clicked => { S.wiz-pick-map(m.id); } }
                         Text { x: 6px; text: m.title; color: Theme.text; vertical-alignment: center; height: 100%; }
                     }

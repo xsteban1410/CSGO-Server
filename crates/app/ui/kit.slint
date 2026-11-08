@@ -1,20 +1,47 @@
 // Parts every page is built from.
 import { Button, LineEdit, Switch, ComboBox, SpinBox, Palette } from "std-widgets.slint";
 
+// In dark mode, flat tones and one blue accent: canvas < card < control, hairline borders, no shadows.
+// The std widgets (buttons, fields) keep their own Fluent colors: their palette cannot be set.
 export global Theme {
+    out property <bool> dark: Palette.color-scheme == ColorScheme.dark;
     out property <length> gap: 8px;
     out property <length> page-gap: 18px;
     out property <length> radius: 8px;
-    out property <color> card: Palette.alternate-background;
-    out property <color> line: Palette.border;
-    out property <color> text: Palette.foreground;
-    out property <color> dim: Palette.foreground.transparentize(35%);
-    out property <color> ok: Palette.color-scheme == ColorScheme.dark ? #6fcf8e : #1b7f3b;
-    out property <color> warn: Palette.color-scheme == ColorScheme.dark ? #e8c15a : #8a6400;
-    out property <color> bad: Palette.color-scheme == ColorScheme.dark ? #f07a78 : #b3261e;
-    out property <color> accent: Palette.accent-background;
-    out property <length> title: 14px;
+    // tags and badges
+    out property <length> radius-sm: 4px;
+    out property <color> bg: dark ? #0a0a0a : Palette.background;
+    out property <color> card: dark ? #141414 : Palette.alternate-background;
+    out property <color> raised: dark ? #1e1e1e : Palette.background;
+    out property <color> line: dark ? #313131 : Palette.border;
+    out property <color> text: dark ? #ffffff : Palette.foreground;
+    out property <color> dim: dark ? #a7a7a7 : Palette.foreground.transparentize(35%);
+    out property <color> ok: dark ? #6fcf8e : #1b7f3b;
+    out property <color> warn: dark ? #e8c15a : #8a6400;
+    out property <color> bad: dark ? #f07a78 : #b3261e;
+    out property <color> accent: dark ? #6798ff : Palette.accent-background;
+    // the selected tab: a raised tone with a blue icon in dark mode, the accent in light mode
+    out property <color> picked: dark ? #1e1e1e : Palette.accent-background;
+    out property <color> on-picked: dark ? #ffffff : Palette.accent-foreground;
+    out property <color> on-picked-icon: dark ? #6798ff : Palette.accent-foreground;
+    // type scale
     out property <length> small: 12px;
+    out property <length> title: 14px;
+    out property <length> heading: 16px;
+    out property <length> big: 20px;
+    out property <length> display: 28px;
+    // data (addresses, SteamIDs, maps, versions) and section labels. Slint 1.18 does not resolve the generic
+    // "monospace", so a family most Linux systems ship; without it the text falls back to the UI font
+    out property <string> mono: "DejaVu Sans Mono";
+}
+
+// A small upper-case monospace label over a section, like an instrument panel.
+export component Eyebrow inherits Text {
+    font-family: Theme.mono;
+    font-size: Theme.small;
+    letter-spacing: 0.85px;
+    color: Theme.dim;
+    vertical-alignment: center;
 }
 
 export struct Btn { id: string, label: string, danger: bool }
@@ -28,7 +55,7 @@ export component Group {
         spacing: 6px;
         if title != "": HorizontalLayout {
             spacing: Theme.gap;
-            Text { text: title; font-size: 15px; font-weight: 700; color: Theme.text; vertical-alignment: center; horizontal-stretch: 1; }
+            Eyebrow { text: title.to-uppercase(); horizontal-stretch: 1; }
         }
         if description != "": Text { text: description; font-size: Theme.small; color: Theme.dim; wrap: word-wrap; }
         Rectangle {
@@ -50,6 +77,8 @@ export component Row {
     in property <string> title;
     in property <string> subtitle;
     in property <color> subtitle-color: Theme.dim;
+    // monospace subtitle, for data
+    in property <bool> mono;
     HorizontalLayout {
         spacing: 12px;
         VerticalLayout {
@@ -57,7 +86,13 @@ export component Row {
             alignment: center;
             spacing: 2px;
             Text { text: title; font-size: Theme.title; color: Theme.text; wrap: word-wrap; }
-            if subtitle != "": Text { text: subtitle; font-size: Theme.small; color: subtitle-color; wrap: word-wrap; }
+            if subtitle != "": Text {
+                text: subtitle;
+                font-size: Theme.small;
+                font-family: root.mono ? Theme.mono : "";
+                color: subtitle-color;
+                wrap: word-wrap;
+            }
         }
         @children
     }
@@ -70,7 +105,7 @@ export component DangerButton {
     min-height: 30px;
     min-width: label.preferred-width + 24px;
     Rectangle {
-        border-radius: 6px;
+        border-radius: Theme.radius;
         border-width: 1px;
         border-color: Theme.bad;
         background: area.pressed ? Theme.bad.transparentize(70%) : area.has-hover ? Theme.bad.transparentize(85%) : transparent;
@@ -153,6 +188,33 @@ export component ValueRow inherits Row {
     subtitle-color: root.value-color;
 }
 
+// One figure, large, with what it is under it. Flat: tone and a hairline, no shadow.
+export component StatCard {
+    in property <string> label;
+    in property <string> value;
+    in property <color> value-color: Theme.text;
+    min-width: 120px;
+    horizontal-stretch: 1;
+    Rectangle {
+        background: Theme.card;
+        border-radius: Theme.radius;
+        border-width: 1px;
+        border-color: Theme.line;
+        VerticalLayout {
+            padding: 12px;
+            spacing: 4px;
+            Text {
+                text: root.value == "" ? "—" : root.value;
+                font-size: Theme.big;
+                font-weight: 600;
+                color: root.value-color;
+                overflow: elide;
+            }
+            Eyebrow { text: root.label.to-uppercase(); overflow: elide; }
+        }
+    }
+}
+
 // Darkens what is behind and holds a card in the middle.
 export component Overlay {
     in property <length> card-width: 640px;
@@ -168,8 +230,8 @@ export component Overlay {
         y: (parent.height - self.height) / 2;
         width: min(root.card-width, root.width - 24px);
         height: min(root.card-height, root.height - 24px);
-        background: Palette.background;
-        border-radius: 12px;
+        background: Theme.bg;
+        border-radius: Theme.radius;
         border-width: 1px;
         border-color: Theme.line;
         VerticalLayout {

@@ -1,5 +1,5 @@
 import { Button, Palette } from "std-widgets.slint";
-import { Theme, Overlay } from "kit.slint";
+import { Theme, Overlay, Eyebrow } from "kit.slint";
 import { S, Tabs, ActionRow, Btn, ConsoleLine, Card, HubCard, KeyValue, ModeItem, TeamEdit, RuleEdit, Bar } from "state.slint";
 import { ServerPage } from "server.slint";
 import { SetupPage } from "setup.slint";
@@ -39,19 +39,16 @@ component Rail {
             alignment: start;
             for t[i] in root.tabs: VerticalLayout {
                 spacing: 2px;
-                if t.section != "": Text {
+                if t.section != "": Eyebrow {
                     text: t.section;
-                    font-size: 11px;
-                    font-weight: 700;
-                    color: Theme.dim;
                     height: i == 0 ? 20px : 30px;
                     vertical-alignment: bottom;
                     x: 10px;
                 }
                 Rectangle {
                     height: 34px;
-                    border-radius: 6px;
-                    background: root.index == i ? Theme.accent : area.has-hover ? Palette.border : transparent;
+                    border-radius: Theme.radius;
+                    background: root.index == i ? Theme.picked : area.has-hover ? Palette.border : transparent;
                     border-width: keys.has-focus && root.index == i ? 2px : 0px;
                     border-color: Palette.foreground;
                     area := TouchArea { clicked => { root.index = i; keys.focus(); } }
@@ -63,13 +60,13 @@ component Rail {
                             width: 18px;
                             height: 18px;
                             y: (parent.height - self.height) / 2;
-                            colorize: root.index == i ? Palette.accent-foreground : Theme.text;
+                            colorize: root.index == i ? Theme.on-picked-icon : Theme.text;
                         }
                         Text {
                             text: t.label;
                             vertical-alignment: center;
                             overflow: elide;
-                            color: root.index == i ? Palette.accent-foreground : Theme.text;
+                            color: root.index == i ? Theme.on-picked : Theme.text;
                         }
                     }
                 }
@@ -85,7 +82,7 @@ export component AppWindow inherits Window {
     min-width: 640px;
     min-height: 460px;
     icon: @image-url("../../../packaging/io.github.xsteban1410.CsgoLegacyServer.svg");
-    Rectangle { background: Palette.background; }
+    Rectangle { background: Theme.bg; }
     HorizontalLayout {
         Rail {
             width: 170px;
@@ -133,7 +130,7 @@ export component AppWindow inherits Window {
     if S.alert-open: Overlay {
         card-width: 460px;
         card-height: 240px;
-        Text { text: S.alert-title; font-size: 16px; font-weight: 700; color: Theme.text; }
+        Text { text: S.alert-title; font-size: Theme.heading; font-weight: 600; color: Theme.text; }
         Text { text: S.alert-text; wrap: word-wrap; color: Theme.text; vertical-stretch: 1; }
         HorizontalLayout {
             alignment: end;
@@ -148,7 +145,7 @@ export component AppWindow inherits Window {
         width: min(parent.width - 32px, toast-text.preferred-width + 32px);
         height: toast-text.preferred-height + 16px;
         background: Palette.foreground;
-        border-radius: 8px;
+        border-radius: Theme.radius;
         toast-text := Text {
             x: 16px;
             y: 8px;

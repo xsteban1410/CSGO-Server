@@ -13,13 +13,14 @@ export component UpdatesPage {
             Group {
                 title: @tr("App");
                 description: @tr("Checking asks GitHub for the latest release. Nothing is installed without your permission.");
-                ValueRow { title: @tr("This version"); value: S.up-current; }
+                ValueRow { title: @tr("This version"); value: S.up-current; mono: true; }
                 ValueRow {
                     title: @tr("Latest release");
                     value: S.up-latest;
+                    mono: true;
                     Button { text: @tr("Check"); clicked => { S.up-check(); } }
                 }
-                if S.up-command != "": ValueRow { title: @tr("To update, run"); value: S.up-command; }
+                if S.up-command != "": ValueRow { title: @tr("To update, run"); value: S.up-command; mono: true; }
                 if S.up-can-apply: HorizontalLayout {
                     alignment: end;
                     Button { text: @tr("Update"); primary: true; clicked => { S.up-apply(); } }

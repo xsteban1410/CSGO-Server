@@ -93,7 +93,7 @@ export component ModeEditor {
         card-height: 780px;
         HorizontalLayout {
             spacing: 8px;
-            Text { text: S.ed-title; font-size: 16px; font-weight: 700; color: Theme.text; vertical-alignment: center; horizontal-stretch: 1; }
+            Text { text: S.ed-title; font-size: Theme.heading; font-weight: 600; color: Theme.text; vertical-alignment: center; horizontal-stretch: 1; }
             Button { text: @tr("Cancel"); clicked => { S.ed-open = false; } }
             Button { text: @tr("Preview"); clicked => { S.ed-show-preview(); } }
             if S.rcon-ok: Button { text: @tr("Save and try"); clicked => { S.ed-save(true); } }

@@ -6,7 +6,7 @@ component Badge {
     in property <string> text;
     in property <color> color: Theme.dim;
     Rectangle {
-        border-radius: 4px;
+        border-radius: Theme.radius-sm;
         border-width: 1px;
         border-color: root.color;
         HorizontalLayout {
@@ -14,7 +14,7 @@ component Badge {
             padding-right: 6px;
             padding-top: 1px;
             padding-bottom: 1px;
-            Text { text: root.text; font-size: 11px; color: root.color; }
+            Text { text: root.text; font-size: Theme.small; color: root.color; }
         }
     }
 }
@@ -36,8 +36,8 @@ component ItemCard {
                 // a plain placeholder until the preview arrives
                 if root.card.thumb.width == 0: Text {
                     text: root.card.title;
-                    font-size: 18px;
-                    font-weight: 700;
+                    font-size: Theme.big;
+                    font-weight: 600;
                     color: Theme.dim;
                     horizontal-alignment: center;
                     vertical-alignment: center;
@@ -47,7 +47,7 @@ component ItemCard {
             VerticalLayout {
                 padding: 8px;
                 spacing: 4px;
-                Text { text: root.card.title; overflow: elide; font-weight: 700; color: Theme.text; }
+                Text { text: root.card.title; overflow: elide; font-weight: 600; color: Theme.text; }
                 HorizontalLayout {
                     spacing: 4px;
                     alignment: start;
@@ -149,14 +149,14 @@ export component HubDetail {
             clip: true;
             Image { source: S.hb-detail.thumb; width: 100%; height: 100%; image-fit: cover; }
         }
-        Text { text: S.hb-detail.title; font-size: 18px; font-weight: 700; color: Theme.text; }
+        Text { text: S.hb-detail.title; font-size: Theme.big; font-weight: 600; color: Theme.text; }
         ScrollView {
             vertical-stretch: 1;
             VerticalLayout {
                 spacing: 8px;
                 alignment: start;
                 Text { text: S.hb-detail.description; wrap: word-wrap; color: Theme.text; }
-                ValueRow { title: @tr("Type and version"); value: S.hb-detail.kind + " " + S.hb-detail.version; }
+                ValueRow { title: @tr("Type and version"); value: S.hb-detail.kind + " " + S.hb-detail.version; mono: true; }
                 ValueRow { title: @tr("Author"); value: S.hb-detail.author; }
                 if S.hb-detail.requires != "": ValueRow { title: @tr("Installs too"); value: S.hb-detail.requires; }
                 if S.hb-detail.tags != "": ValueRow { title: @tr("Tags"); value: S.hb-detail.tags; }

@@ -54,7 +54,7 @@ export component BanDialog {
     Overlay {
         card-height: 280px;
         card-width: 480px;
-        Text { text: S.ban-title; font-size: 16px; font-weight: 700; color: Theme.text; }
+        Text { text: S.ban-title; font-size: Theme.heading; font-weight: 600; color: Theme.text; }
         SpinRow { title: @tr("Minutes (0 = permanent)"); maximum: 525600; step: 30; value <=> S.ban-minutes; }
         EntryRow { title: @tr("Reason"); field: 220px; text <=> S.ban-reason; }
         Rectangle { vertical-stretch: 1; }
@@ -71,7 +71,7 @@ export component SkinsDialog {
     Overlay {
         card-width: 480px;
         card-height: 520px;
-        Text { text: S.skins-title; font-size: 16px; font-weight: 700; color: Theme.text; }
+        Text { text: S.skins-title; font-size: Theme.heading; font-weight: 600; color: Theme.text; }
         ScrollView {
             vertical-stretch: 1;
             VerticalLayout {
@@ -88,7 +88,7 @@ export component SanctionDialog {
     Overlay {
         card-width: 520px;
         card-height: 400px;
-        Text { text: S.san-title; font-size: 16px; font-weight: 700; color: Theme.text; }
+        Text { text: S.san-title; font-size: Theme.heading; font-weight: 600; color: Theme.text; }
         ComboRow { title: @tr("Kind"); model: [@tr("Warning"), @tr("Kick"), @tr("Ban"), @tr("Note")]; index <=> S.san-kind; }
         SpinRow { title: @tr("Minutes (0 = no time)"); minimum: 0; maximum: 525600; value <=> S.san-minutes; }
         EntryRow { title: @tr("Reason"); text <=> S.san-reason; }
@@ -107,7 +107,7 @@ export component AdminDialog {
     Overlay {
         card-height: 300px;
         card-width: 520px;
-        Text { text: S.ad-title; font-size: 16px; font-weight: 700; color: Theme.text; }
+        Text { text: S.ad-title; font-size: Theme.heading; font-weight: 600; color: Theme.text; }
         EntryRow { title: "SteamID"; placeholder: "STEAM_1:0:123, [U:1:246] or 7656…"; field: 260px; text <=> S.ad-steamid; }
         EntryRow { title: @tr("Name"); field: 260px; text <=> S.ad-name; }
         ComboRow { title: @tr("Role"); model: S.ad-roles; index <=> S.ad-role; }
