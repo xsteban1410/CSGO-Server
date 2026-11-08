@@ -127,7 +127,11 @@ fn load(a: &AppRc, tab: &Rc<Tab>) {
     });
 }
 
-fn set_busy(tab: &Tab, id: &str, busy: bool) {
+fn set_busy(a: &AppRc, tab: &Tab, id: &str, busy: bool) {
+    // "Update all" changes no single card
+    if id.is_empty() {
+        a.s().set_hb_busy(busy);
+    }
     if let Some((i, mut c)) = tab.cards.iter().enumerate().find(|(_, c)| c.id == id) {
         c.busy = busy;
         tab.cards.set_row_data(i, c);
@@ -137,7 +141,7 @@ fn set_busy(tab: &Tab, id: &str, busy: bool) {
 /// Runs a change of the hub folder on a thread, then shows what happened.
 fn change(a: &AppRc, tab: &Rc<Tab>, id: String, work: impl FnOnce(&Index) -> anyhow::Result<String> + Send + 'static) {
     let Some(ix) = tab.index.borrow().clone() else { return };
-    set_busy(tab, &id, true);
+    set_busy(a, tab, &id, true);
     a.s().set_hb_detail_open(false);
     let (a, tab) = (a.clone(), tab.clone());
     bg(
@@ -147,7 +151,7 @@ fn change(a: &AppRc, tab: &Rc<Tab>, id: String, work: impl FnOnce(&Index) -> any
                 Ok(msg) => a.toast(&msg),
                 Err(e) => a.error(&e),
             }
-            set_busy(&tab, &id, false);
+            set_busy(&a, &tab, &id, false);
             fill(&a, &tab);
         },
     );

@@ -415,6 +415,7 @@ pub fn update_all(ix: &Index) -> crate::Result<Vec<String>> {
 
 fn install_into(root: &Path, ix: &Index, id: &str, update: bool) -> crate::Result<Vec<String>> {
     std::fs::create_dir_all(root)?;
+    let _lock = lock(root)?;
     let have: BTreeMap<String, String> = installed_in(root).into_iter().map(|i| (i.item.id, i.item.version)).collect();
     let mut done = Vec::new();
     for e in ix.with_requirements(id)? {
@@ -455,8 +456,14 @@ fn remove_in(root: &Path, id: &str) -> crate::Result<()> {
     if !dir.join("item.toml").is_file() {
         bail!("{id} is not installed");
     }
+    let _lock = lock(root)?;
     std::fs::remove_dir_all(dir)?;
     Ok(())
+}
+
+/// The app and the CLI share `.staging` and the downloaded zips: one change of the hub folder at a time.
+fn lock(root: &Path) -> crate::Result<std::fs::File> {
+    crate::install::try_lock(&root.join(".lock")).context("the hub folder is being changed by another window or command")
 }
 
 /// Cached preview image of an entry.
@@ -575,6 +582,11 @@ mod tests {
         let ix3 = Index { format: API, items: vec![entry(&src, "lib", "2.0.0", &[]), ix.items[1].clone()] };
         assert_eq!(install_into(&root, &ix3, "lib", true).unwrap(), ["lib"]);
         assert_eq!(installed_in(&root)[0].item.version, "2.0.0");
+        {
+            let _held = lock(&root).unwrap();
+            assert!(install_into(&root, &ix3, "lib", true).is_err(), "another change is running");
+            assert!(remove_in(&root, "top").is_err(), "another change is running");
+        }
         remove_in(&root, "top").unwrap();
         remove_in(&root, "lib").unwrap();
         assert!(installed_in(&root).is_empty());

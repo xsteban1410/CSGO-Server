@@ -351,7 +351,7 @@ fn lock_install() -> crate::Result<std::fs::File> {
     try_lock(&paths::data_dir().join("install.lock"))
 }
 
-fn try_lock(path: &Path) -> crate::Result<std::fs::File> {
+pub(crate) fn try_lock(path: &Path) -> crate::Result<std::fs::File> {
     let f = std::fs::OpenOptions::new().write(true).create(true).truncate(false).open(path)?;
     if f.try_lock().is_err() {
         bail!("another install is already running");
