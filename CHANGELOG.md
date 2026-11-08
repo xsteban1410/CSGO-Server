@@ -19,6 +19,7 @@ The section of each version becomes the notes of its GitHub release, so keep the
 
 ### Changed
 
+- The README translation works a paragraph at a time, so sentences over a line break stay whole, keeps project terms (hub items, plugins, skins, admins, anticheat) and speaks to the reader as tú in Spanish.
 - `pre-releases` reaches `master` after one quiet day instead of three, or at once when the owner opens an issue titled `approve release` (see [CONTRIBUTING.md](CONTRIBUTING.md#branches)).
 - The app ships without game modes: the 46 modes, their plugins and skins moved to CSGO-Hub (`hub install pack-all` brings them all back). Modes load in layers: hub, then your own; a broken one is skipped with a warning instead of hiding every mode.
 - The side bar groups the tabs (Server, Content, Manage) with icons, and arrow keys move between them. Buttons that delete are drawn in red.
