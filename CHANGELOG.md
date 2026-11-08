@@ -8,6 +8,8 @@ The section of each version becomes the notes of its GitHub release, so keep the
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-11-08
+
 ### Added
 
 - CSGO-Hub: game modes, plugins and packs come from [CSGO-Hub](https://github.com/xsteban1410/CSGO-Hub). `csgo-legacy-server hub list|search|info|install|update|remove` installs them with what they require, checks each download's SHA-256 and every file again, and compiles plugins locally. `hub check <dir>` is the validator the hub's CI runs.
@@ -39,7 +41,6 @@ The section of each version becomes the notes of its GitHub release, so keep the
 - The Server tab said "Starting…" while the server was stopping; it now says "Stopping…".
 - The app and the CLI can no longer change the hub folder at the same time, and "Update all" shows that it is working.
 - The console font was not monospace.
-
 - Map names can no longer point outside `maps/` (absolute paths, empty parts), and the default map and a mode's maps are checked too.
 - Humans, bots, rounds and tickrate have limits in the core, so the CLI checks them like the app.
 - The rcon password is never made from the clock: without `/dev/urandom` the app stops and says so.
@@ -198,7 +199,8 @@ First release as a GTK app and command line in Rust, replacing the old shell scr
 
 - License changed to GPL-3.0-or-later.
 
-[Unreleased]: https://github.com/xsteban1410/CSGO-Server/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/xsteban1410/CSGO-Server/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/xsteban1410/CSGO-Server/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/xsteban1410/CSGO-Server/compare/v1.1.0...v1.3.0
 [1.1.0]: https://github.com/xsteban1410/CSGO-Server/compare/v1.0.2...v1.1.0
 [1.0.2]: https://github.com/xsteban1410/CSGO-Server/compare/v1.0.1...v1.0.2
