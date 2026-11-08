@@ -16,6 +16,9 @@ The section of each version becomes the notes of its GitHub release, so keep the
 - A Hub tab in the app: browse CSGO-Hub with previews, search and filters, install with what an item needs, update and remove. With no modes installed, the Server and Modes tabs offer to install them all.
 - Admins in the Players tab (add one from a connected player, change the role, copy a new `sm_login` password) and the anticheat in Settings.
 - `game/plugin/include/csls.inc`, the engine API for hub plugins: `CSLS_OnModeReset`, `CSLS_OnEquip`, `CSLS_OnPlaceHuman` and `CSLS_Exempt`.
+- A hub item can say what its version changed (`changes` in `item.toml`); the Hub tab shows it as "What's new".
+- Installing the server shows the time left next to the download speed.
+- Stat cards: the Server tab shows status, players, map and mode as large figures, and Statistics the average players and the most played map and mode.
 
 ### Changed
 
@@ -23,6 +26,7 @@ The section of each version becomes the notes of its GitHub release, so keep the
 - `pre-releases` reaches `master` after one quiet day instead of three, or at once when the owner opens an issue titled `approve release` (see [CONTRIBUTING.md](CONTRIBUTING.md#branches)).
 - The app ships without game modes: the 46 modes, their plugins and skins moved to CSGO-Hub (`hub install pack-all` brings them all back). Modes load in layers: hub, then your own; a broken one is skipped with a warning instead of hiding every mode.
 - The side bar groups the tabs (Server, Content, Manage) with icons, and arrow keys move between them. Buttons that delete are drawn in red.
+- In dark mode the app uses flat tones (near-black canvas, hairline borders, no shadows) and one blue accent; section titles are small monospace labels, and addresses, versions and the console use a monospace font. Every page uses the same type scale and corner radius.
 - Deploy removes mode cfgs and plugins of items you uninstalled, and the plugins that moved to the hub unless you installed them.
 
 ### Removed
@@ -32,6 +36,9 @@ The section of each version becomes the notes of its GitHub release, so keep the
 ### Fixed
 
 - Updating the server while it runs said "Stop the server?" as an error; it now says to stop it first.
+- The Server tab said "Starting…" while the server was stopping; it now says "Stopping…".
+- The app and the CLI can no longer change the hub folder at the same time, and "Update all" shows that it is working.
+- The console font was not monospace.
 
 - Map names can no longer point outside `maps/` (absolute paths, empty parts), and the default map and a mode's maps are checked too.
 - Humans, bots, rounds and tickrate have limits in the core, so the CLI checks them like the app.
