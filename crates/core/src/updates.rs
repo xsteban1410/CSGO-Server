@@ -95,11 +95,7 @@ fn expected_hash<'a>(sums: &'a str, file: &str) -> Option<&'a str> {
 }
 
 fn download(url: &str, to: &Path) -> crate::Result<()> {
-    let s = Command::new("curl").args(["-fsSL", "--max-time", "600", "-o"]).arg(to).arg(url).status().context("running curl")?;
-    if !s.success() {
-        bail!("the download failed: {url}");
-    }
-    Ok(())
+    crate::http::download(url, to, 512 * crate::http::MB, 600, None)
 }
 
 /// Replaces the AppImage, only if the file matches the release's SHA256SUMS. Applies on the next start.

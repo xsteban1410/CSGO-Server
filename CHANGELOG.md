@@ -8,6 +8,16 @@ The section of each version becomes the notes of its GitHub release, so keep the
 
 ## [Unreleased]
 
+### Fixed
+
+- Map names can no longer point outside `maps/` (absolute paths, empty parts), and the default map and a mode's maps are checked too.
+- Humans, bots, rounds and tickrate have limits in the core, so the CLI checks them like the app.
+- The rcon password is never made from the clock: without `/dev/urandom` the app stops and says so.
+- Only plugins with plain names (letters, numbers, `-`, `_`) are deployed, since the name goes into an rcon command.
+- An unreadable mode metadata file is an error instead of a mode with empty metadata.
+- Launching the game from a Snap Steam works with quotes in a path.
+- Downloads only use https, also after redirects, and have a size limit; a Workshop map must match the size Steam announces.
+
 ## [1.3.0] - 2026-11-07
 
 ### Added

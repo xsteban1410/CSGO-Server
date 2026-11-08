@@ -7,6 +7,7 @@ pub mod config;
 pub mod console_store;
 pub mod deploy;
 pub mod doctor;
+pub mod http;
 pub mod install;
 pub mod kv;
 pub mod launch;

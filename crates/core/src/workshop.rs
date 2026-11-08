@@ -59,13 +59,13 @@ impl Item {
     }
 }
 
+/// Steam's answers: a page of results is a few hundred KB.
 fn curl(args: &[String]) -> crate::Result<String> {
-    let o = Command::new("curl").args(["-fsSL", "--max-time", "30"]).args(args).output().context("running curl")?;
-    if !o.status.success() {
-        bail!("network error: {}", String::from_utf8_lossy(&o.stderr).trim());
-    }
-    Ok(String::from_utf8_lossy(&o.stdout).into_owned())
+    crate::http::text(args, 8 * crate::http::MB)
 }
+
+/// The largest map accepted, the same as the limit for one unzipped from an old .zip.
+const MAX_MAP: u64 = 1024 * crate::http::MB;
 
 fn urlencode(s: &str) -> String {
     s.bytes()
@@ -187,9 +187,7 @@ pub fn thumbnail(it: &Item) -> crate::Result<PathBuf> {
             bail!("no thumbnail");
         }
         std::fs::create_dir_all(cache_dir())?;
-        let tmp = p.with_extension("part");
-        curl(&["-o".into(), tmp.to_string_lossy().into(), it.preview_url.clone()])?;
-        std::fs::rename(tmp, &p)?;
+        crate::http::download(&it.preview_url, &p, 4 * crate::http::MB, 30, None)?;
     }
     Ok(p)
 }
@@ -241,7 +239,11 @@ pub fn install(maps_dir: &Path, it: &Item) -> crate::Result<String> {
     let dest = dir.join(format!("{name}.bsp"));
     let tmp = dest.with_extension("bsp.part");
     if !it.file_url.is_empty() {
-        curl(&["-o".into(), tmp.to_string_lossy().into(), it.file_url.clone()])?;
+        let size = Some(it.file_size).filter(|s| *s > 0);
+        if size.is_some_and(|s| s > MAX_MAP) {
+            bail!("\"{}\" is larger than {} MB", it.title, MAX_MAP / crate::http::MB);
+        }
+        crate::http::download(&it.file_url, &tmp, MAX_MAP, 1800, size)?;
     } else {
         // SteamPipe content: SteamCMD downloads it
         let sc = crate::install::which("steamcmd").unwrap_or_else(|| paths::data_dir().join("steamcmd/steamcmd.sh"));
