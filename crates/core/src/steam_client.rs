@@ -232,20 +232,9 @@ fn steam_command(flavor: &Flavor) -> Command {
     }
 }
 
-/// Opens CS2 (what Steam's Play button does).
 /// Arguments as one POSIX shell line: each in single quotes, with its own quotes written as '\''.
 fn shell_words(args: &[String]) -> String {
     args.iter().map(|a| format!("'{}'", a.replace('\'', r"'\''"))).collect::<Vec<_>>().join(" ")
-}
-
-pub fn launch_cs2() -> crate::Result<()> {
-    if in_sandbox() {
-        Command::new("xdg-open").arg("steam://rungameid/730").stdout(Stdio::null()).stderr(Stdio::null()).spawn()?;
-        return Ok(());
-    }
-    let s = find_steam().context("Steam not found")?;
-    steam_command(&s.flavor).arg("steam://rungameid/730").stdout(Stdio::null()).stderr(Stdio::null()).spawn()?;
-    Ok(())
 }
 
 #[cfg(test)]

@@ -84,7 +84,7 @@ enum Cmd {
         #[arg(long)]
         report: bool,
     },
-    /// Open CS:GO Legacy (or CS2) on this PC, optionally connecting: play [cs2] [IP:PORT|local]
+    /// Open CS:GO Legacy on this PC, optionally connecting: play [IP:PORT|local]
     Play { target: Vec<String> },
     /// Start the server
     Start(Game),
@@ -613,15 +613,10 @@ fn main() -> Result<()> {
         Cmd::Play { target } => {
             let t: Vec<&str> = target.iter().map(String::as_str).collect();
             let addr = match t.as_slice() {
-                ["cs2"] => {
-                    steam_client::launch_cs2()?;
-                    println!("Opening...");
-                    return Ok(());
-                }
                 [] | ["csgo"] => None,
                 ["local"] | ["csgo", "local"] => Some(srv.connect_address()),
                 [a] | ["csgo", a] => Some(a.to_string()),
-                _ => bail!("usage: play [cs2 | csgo] [IP:PORT | local]"),
+                _ => bail!("usage: play [csgo] [IP:PORT | local]"),
             };
             let connecting = steam_client::launch_csgo(addr.as_deref())?;
             println!("Opening...");

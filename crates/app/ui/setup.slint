@@ -10,7 +10,7 @@ export component SetupPage {
         padding: 24px;
         Text { text: @tr("Welcome"); font-size: 28px; font-weight: 700; horizontal-alignment: center; color: Theme.text; }
         Text {
-            text: @tr("Set up a CS:GO Legacy server to play with friends and bots, or join one");
+            text: @tr("Set up a CS:GO Legacy server to play with friends and bots");
             horizontal-alignment: center;
             wrap: word-wrap;
             color: Theme.dim;
@@ -19,7 +19,6 @@ export component SetupPage {
             alignment: center;
             spacing: 12px;
             Button { text: @tr("Create a server"); primary: true; clicked => { S.setup = "install"; } }
-            Button { text: @tr("Only join servers"); clicked => { S.setup-only-join(); } }
         }
     }
     if S.setup == "install": ScrollView {

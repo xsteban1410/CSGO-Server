@@ -180,9 +180,6 @@ pub struct Server {
     /// Asks GitHub for the latest release when the app opens. Off unless the user turns it on.
     #[serde(default)]
     pub check_updates: bool,
-    /// This PC only joins other servers: the app does not offer to download one when it opens.
-    #[serde(default)]
-    pub join_only: bool,
 }
 
 fn default_true() -> bool {
@@ -219,7 +216,6 @@ impl Default for Server {
             stats_days: 365,
             backup_keep: 5,
             check_updates: false,
-            join_only: false,
         }
     }
 }

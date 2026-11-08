@@ -58,7 +58,7 @@ pub fn init(a: &AppRc) {
     let s = a.s();
     let need = {
         let cfg = a.cfg.borrow();
-        (!Server::new(&cfg).is_installed() && !cfg.server.join_only) || std::env::var_os("CSLS_FORCE_SETUP").is_some()
+        !Server::new(&cfg).is_installed() || std::env::var_os("CSLS_FORCE_SETUP").is_some()
     };
     if need {
         s.set_setup("welcome".into());
@@ -70,17 +70,6 @@ pub fn init(a: &AppRc) {
         if missing.is_empty() { t("installed") } else { format!("{}: {}\n{}", t("missing"), missing.join(", "), install::deps_command()) }
             .into(),
     );
-    let app = a.clone();
-    s.on_setup_only_join(move || {
-        app.s().set_tab(10);
-        app.s().set_setup("".into());
-        let mut cfg = app.cfg.borrow().clone();
-        cfg.server.join_only = true;
-        match cfg.save() {
-            Ok(()) => *app.cfg.borrow_mut() = cfg,
-            Err(e) => app.error(&e),
-        }
-    });
     let app = a.clone();
     s.on_setup_choose_folder(move || {
         let a = app.clone();
