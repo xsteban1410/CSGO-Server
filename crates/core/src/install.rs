@@ -178,9 +178,15 @@ fn steamcmd_bytes(l: &str) -> Option<(u64, u64)> {
     Some((done.trim().parse().ok()?, total.trim().parse().ok()?))
 }
 
-/// Download speed between two progress lines.
-fn speed_text(bytes: u64, secs: f64) -> String {
-    format!("{:.1} MB/s", bytes as f64 / secs.max(0.001) / 1_000_000.0)
+/// Download speed between two progress lines, and the time left at that speed for `left` bytes.
+/// "~N min" reads the same in every language, as the message after the step name is not translated.
+fn speed_text(bytes: u64, secs: f64, left: u64) -> String {
+    let per_s = bytes as f64 / secs.max(0.001);
+    let mut s = format!("{:.1} MB/s", per_s / 1_000_000.0);
+    if per_s >= 1.0 {
+        s += &format!(" · ~{} min", (left as f64 / per_s / 60.0).ceil().max(1.0));
+    }
+    s
 }
 
 fn steamcmd_path() -> crate::Result<PathBuf> {
@@ -253,10 +259,10 @@ fn app_update(steamcmd: &Path, dir: &Path, validate: bool, cancel: &AtomicBool, 
                 }
             }
             if let Some((f, mut state)) = steamcmd_progress(l) {
-                if let Some((done, _)) = steamcmd_bytes(l) {
+                if let Some((done, total)) = steamcmd_bytes(l) {
                     match sample {
                         Some((before, at)) if at.elapsed().as_secs_f64() >= 2.0 => {
-                            speed = speed_text(done.saturating_sub(before), at.elapsed().as_secs_f64());
+                            speed = speed_text(done.saturating_sub(before), at.elapsed().as_secs_f64(), total.saturating_sub(done));
                             sample = Some((done, std::time::Instant::now()));
                         }
                         None => sample = Some((done, std::time::Instant::now())),
@@ -745,7 +751,9 @@ mod tests {
     fn reads_download_speed() {
         assert_eq!(steamcmd_bytes(" Update state (0x61) downloading, progress: 12.34 (123 / 456)"), Some((123, 456)));
         assert_eq!(steamcmd_bytes("Loading Steam API...OK"), None);
-        assert_eq!(speed_text(5_000_000, 2.0), "2.5 MB/s");
+        assert_eq!(speed_text(5_000_000, 2.0, 300_000_000), "2.5 MB/s · ~2 min");
+        assert_eq!(speed_text(5_000_000, 2.0, 0), "2.5 MB/s · ~1 min");
+        assert_eq!(speed_text(0, 2.0, 300_000_000), "0.0 MB/s");
     }
 
     #[test]
