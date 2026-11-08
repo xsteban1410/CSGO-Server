@@ -62,7 +62,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go/go.mod
           cache-dependency-path: go/go.sum
@@ -166,7 +166,7 @@ jobs:
       - name: Dependencies
         run: apt-get update && apt-get install -y --no-install-recommends ca-certificates curl gcc libc6-dev pkg-config squashfs-tools libsqlite3-dev libfontconfig-dev libfreetype-dev libxkbcommon-dev libwayland-dev
       - uses: actions/checkout@v7
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go/go.mod
           cache-dependency-path: go/go.sum
