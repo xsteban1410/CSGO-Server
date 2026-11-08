@@ -45,6 +45,31 @@ impl Kind {
     }
 }
 
+/// One value of a launch option, as the player sees it.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[serde(default)]
+pub struct Choice {
+    pub value: String,
+    pub label: Localized,
+}
+
+/// A launch option an item adds to the app (`[[option]]` in item.toml): one server variable with a list of values.
+/// The one chosen is set as `cvar value` after the mode's cfg, like `--set`. Nothing is shown for items not installed.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[serde(default)]
+pub struct OptionDecl {
+    /// Unique inside the item.
+    pub id: String,
+    /// Where it appears: "bot_difficulty" joins the bot difficulty list of the launch options.
+    pub slot: String,
+    pub cvar: String,
+    pub title: Localized,
+    pub choices: Vec<Choice>,
+}
+
+/// Where an option may appear.
+pub const OPTION_SLOTS: [&str; 1] = ["bot_difficulty"];
+
 /// `item.toml` of an item. The index has the same fields plus where to download it.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 #[serde(default)]
@@ -70,6 +95,10 @@ pub struct Item {
     pub workshop: Vec<u64>,
     /// What this version changed, shown in the item's page.
     pub changes: Localized,
+    /// Launch options the item adds to the app.
+    pub option: Vec<OptionDecl>,
+    /// Data the app extracts for the plugin on deploy, by name (see `exports`): "nav".
+    pub needs: Vec<String>,
 }
 
 /// One entry of `index.json`.
@@ -203,6 +232,11 @@ pub fn installed_in(root: &Path) -> Vec<Installed> {
     v
 }
 
+/// The launch options of the installed items, in item order: (item id, option).
+pub fn options() -> Vec<(String, OptionDecl)> {
+    installed().into_iter().flat_map(|i| i.item.option.into_iter().map(move |o| (i.item.id.clone(), o))).collect()
+}
+
 /// Installed items with a newer version in the index.
 pub fn updates(ix: &Index) -> Vec<String> {
     installed()
@@ -228,6 +262,10 @@ pub fn check_dir(dir: &Path) -> crate::Result<Item> {
     }
     if let Some(r) = it.requires.iter().find(|r| !valid_item_id(r) || **r == it.id) {
         bail!("{}: invalid requirement '{r}'", it.id);
+    }
+    check_options(&it)?;
+    if let Some(n) = it.needs.iter().find(|n| !crate::exports::known(n)) {
+        bail!("{}: needs '{n}', which this app cannot extract (known: {})", it.id, crate::exports::names().join(", "));
     }
     let mut total = 0u64;
     let mut count = 0usize;
@@ -286,6 +324,29 @@ fn check_cfg(txt: &str) -> crate::Result<()> {
 }
 
 /// A path inside an item or its zip: plain names, an allowed type, and nothing hidden.
+fn check_options(it: &Item) -> crate::Result<()> {
+    let mut ids = std::collections::HashSet::new();
+    for o in &it.option {
+        let id = &o.id;
+        if !valid_item_id(id) || !ids.insert(id.clone()) {
+            bail!("{}: option id '{id}' is invalid or repeated", it.id);
+        }
+        if !OPTION_SLOTS.contains(&o.slot.as_str()) {
+            bail!("{}: option {id}: unknown slot '{}'", it.id, o.slot);
+        }
+        if o.choices.is_empty() || o.choices.len() > 8 {
+            bail!("{}: option {id} needs 1 to 8 choices", it.id);
+        }
+        for c in &o.choices {
+            crate::launch::check_cvar(&o.cvar, &c.value).with_context(|| format!("{}: option {id}", it.id))?;
+            if c.label.en.is_empty() || c.label.es.is_empty() {
+                bail!("{}: option {id}: every choice needs label.en and label.es", it.id);
+            }
+        }
+    }
+    Ok(())
+}
+
 fn check_member(name: &str) -> crate::Result<()> {
     let ok = !name.is_empty()
         && name
@@ -487,6 +548,46 @@ pub fn preview(e: &Entry) -> crate::Result<PathBuf> {
 mod tests {
     use super::*;
 
+    fn opt(id: &str, slot: &str, cvar: &str, value: &str) -> Item {
+        let l = Localized::same("x");
+        Item {
+            id: "t".into(),
+            option: vec![OptionDecl {
+                id: id.into(),
+                slot: slot.into(),
+                cvar: cvar.into(),
+                title: l.clone(),
+                choices: vec![Choice { value: value.into(), label: l }],
+            }],
+            ..Item::default()
+        }
+    }
+
+    #[test]
+    fn item_options_are_checked() {
+        assert!(check_options(&opt("level", "bot_difficulty", "csls_bot_level", "4")).is_ok());
+        assert!(check_options(&opt("level", "somewhere", "csls_bot_level", "4")).is_err(), "unknown slot");
+        assert!(check_options(&opt("level", "bot_difficulty", "Bad Cvar", "4")).is_err(), "cvar name");
+        assert!(check_options(&opt("level", "bot_difficulty", "csls_bot_level", "4;quit")).is_err(), "value injects a command");
+        let mut twice = opt("level", "bot_difficulty", "a", "1");
+        twice.option.push(twice.option[0].clone());
+        assert!(check_options(&twice).is_err(), "repeated id");
+        let mut no_es = opt("level", "bot_difficulty", "a", "1");
+        no_es.option[0].choices[0].label.es.clear();
+        assert!(check_options(&no_es).is_err(), "both languages");
+    }
+
+    #[test]
+    fn options_and_needs_parse_from_item_toml() {
+        let it: Item = toml::from_str(
+            "id = \"b\"\nneeds = [\"nav\"]\n[[option]]\nid = \"l\"\nslot = \"bot_difficulty\"\ncvar = \"csls_bot_level\"\nchoices = [ { value = \"4\", label = { en = \"A\", es = \"B\" } } ]\n",
+        )
+        .unwrap();
+        assert_eq!(it.needs, vec!["nav".to_string()]);
+        assert_eq!(it.option[0].choices[0].label.get("es"), "B");
+        assert!(check_options(&it).is_ok());
+    }
+
     fn tmp(name: &str) -> PathBuf {
         let d = std::env::temp_dir().join(format!("csls-hub-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&d);
@@ -589,8 +690,18 @@ mod tests {
             assert!(install_into(&root, &ix3, "lib", true).is_err(), "another change is running");
             assert!(remove_in(&root, "top").is_err(), "another change is running");
         }
-        remove_in(&root, "top").unwrap();
-        remove_in(&root, "lib").unwrap();
+        // shortcut: a parallel test forking `tar` can hold our lock for an instant; retry, don't hide a real failure
+        let retry = |id: &str| {
+            for _ in 0..50 {
+                if remove_in(&root, id).is_ok() {
+                    return;
+                }
+                std::thread::sleep(std::time::Duration::from_millis(20));
+            }
+            remove_in(&root, id).unwrap();
+        };
+        retry("top");
+        retry("lib");
         assert!(installed_in(&root).is_empty());
         let _ = std::fs::remove_dir_all(src);
         let _ = std::fs::remove_dir_all(root);
