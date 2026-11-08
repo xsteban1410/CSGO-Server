@@ -167,7 +167,9 @@ fn file_id(p: &Path, prefix: &str, suffix: &str) -> Option<String> {
 fn read_meta(p: &Path) -> crate::Result<ModeMeta> {
     match std::fs::read_to_string(p) {
         Ok(t) => toml::from_str(&t).with_context(|| format!("invalid mode in {}", p.display())),
-        Err(_) => Ok(ModeMeta::default()),
+        // no toml is a mode with default metadata; an unreadable one is an error, not an empty mode
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(ModeMeta::default()),
+        Err(e) => Err(e).with_context(|| format!("reading {}", p.display())),
     }
 }
 
