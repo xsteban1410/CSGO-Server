@@ -258,6 +258,49 @@ impl Language {
     }
 }
 
+/// What the anticheat does when it catches someone.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum AcAction {
+    /// write it to the server log and the app's history only
+    #[default]
+    Log,
+    Kick,
+    Ban,
+}
+
+/// The engine's anticheat (game/plugin/csls_anticheat).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct Anticheat {
+    pub enabled: bool,
+    pub action: AcAction,
+    /// for `action = "ban"`; 0 is permanent
+    pub ban_minutes: u32,
+}
+
+impl Default for Anticheat {
+    fn default() -> Self {
+        Anticheat { enabled: true, action: AcAction::Log, ban_minutes: 0 }
+    }
+}
+
+impl Anticheat {
+    /// cfg/sourcemod/csls_anticheat.cfg, which the plugin executes on load and each map.
+    pub fn render(&self) -> String {
+        let action = match self.action {
+            AcAction::Log => 0,
+            AcAction::Kick => 1,
+            AcAction::Ban => 2,
+        };
+        format!(
+            "// Written by csgo-legacy-server from [anticheat] in config.toml.\ncsls_ac_enabled {}\ncsls_ac_action {action}\ncsls_ac_ban_minutes {}\n",
+            u8::from(self.enabled),
+            self.ban_minutes
+        )
+    }
+}
+
 const CONFIG_VERSION: u32 = 1;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -271,6 +314,7 @@ pub struct Config {
     pub defaults: Defaults,
     /// who may use admin commands in game; see `admins.rs`
     pub admins: crate::admins::Admins,
+    pub anticheat: Anticheat,
 }
 
 pub fn config_path() -> PathBuf {

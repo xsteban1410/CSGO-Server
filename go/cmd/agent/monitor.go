@@ -399,6 +399,11 @@ func (a *agent) handleEvent(line string) {
 		}
 	case "map":
 		err = a.db.MapPlayed(when, e.Name)
+	case "ac":
+		// check|action|detail, from csls_anticheat
+		check, rest, _ := strings.Cut(e.Extra, "|")
+		action, detail, _ := strings.Cut(rest, "|")
+		err = a.db.AddSanction(stats.Sanction{SteamID: e.ID, Name: e.Name, Kind: "anticheat", Reason: check + " (" + detail + "), " + action, Time: e.Time})
 	case "ban":
 		minutes, reason, _ := strings.Cut(e.Extra, "|")
 		m, _ := strconv.Atoi(minutes)

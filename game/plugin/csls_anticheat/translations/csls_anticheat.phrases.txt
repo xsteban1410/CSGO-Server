@@ -1,0 +1,9 @@
+"Phrases"
+{
+	"ac_kicked"
+	{
+		"#format"	"{1:s}"
+		"en"		"Kicked by the anticheat ({1})"
+		"es"		"Expulsado por el anticheat ({1})"
+	}
+}

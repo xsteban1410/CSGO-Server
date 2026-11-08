@@ -12,6 +12,7 @@ The section of each version becomes the notes of its GitHub release, so keep the
 
 - CSGO-Hub: game modes, plugins and packs come from [CSGO-Hub](https://github.com/xsteban1410/CSGO-Hub). `csgo-legacy-server hub list|search|info|install|update|remove` installs them with what they require, checks each download's SHA-256 and every file again, and compiles plugins locally. `hub check <dir>` is the validator the hub's CI runs.
 - Admins and roles: `[admins]` in the config and `csgo-legacy-server admins list|add|remove|role|password`. Roles grant a closed set of permissions (`console`, `kick`, `ban`, `map`, `slay`, `chat`, `cheats`, `bots`, `root`); the ones that give the server console (`sm_rcon`) also need `sm_login <password>` in the game console, since SteamIDs can be faked with `-insecure`. Three wrong passwords kick, and a second player with an admin's SteamID is kicked.
+- An anticheat in the engine, set in `[anticheat]` of the config (`enabled`, `action = "log" | "kick" | "ban"`, `ban_minutes`): impossible view angles, aim snaps before kills, scripted bunny hops, speedhack and wallhack client cvars. Detections show in the app's sanctions. Plugins that move aim or speed on purpose call `CSLS_Exempt`, and the `cheats` permission is immune.
 - `game/plugin/include/csls.inc`, the engine API for hub plugins: `CSLS_OnModeReset`, `CSLS_OnEquip`, `CSLS_OnPlaceHuman` and `CSLS_Exempt`.
 
 ### Changed

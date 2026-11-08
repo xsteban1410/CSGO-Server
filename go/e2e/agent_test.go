@@ -174,6 +174,7 @@ func TestAgentKeepsHistoryFromThePluginFile(t *testing.T) {
 		`not json at all`,
 		`{"t":1800000060,"e":"disconnect","id":"STEAM_1:0:1","name":"Luis \"x\"","extra":""}`,
 		`{"t":1800000060,"e":"ban","id":"STEAM_1:0:1","name":"Luis \"x\"","extra":"30|too good|really"}`,
+		`{"t":1800000061,"e":"ac","id":"STEAM_1:0:1","name":"Luis \"x\"","extra":"bhop|log|15 perfect jumps in a row"}`,
 	}
 	write(t, events, strings.Join(lines, "\n")+"\n", 0o644)
 	var players []struct {
@@ -189,14 +190,22 @@ func TestAgentKeepsHistoryFromThePluginFile(t *testing.T) {
 		t.Fatalf("%+v", players)
 	}
 	var sanctions []struct {
+		Kind    string `json:"kind"`
 		Reason  string `json:"reason"`
 		Minutes int    `json:"minutes"`
 	}
-	eventually(t, "the sanction", func() bool {
+	eventually(t, "the sanctions", func() bool {
 		a.call(&sanctions, map[string]any{"method": "sanctions"})
-		return len(sanctions) == 1
+		return len(sanctions) == 2
 	})
-	if sanctions[0].Reason != "too good|really" || sanctions[0].Minutes != 30 {
+	got := map[string]string{}
+	for _, s := range sanctions {
+		got[s.Kind] = s.Reason
+		if s.Kind == "ban" && s.Minutes != 30 {
+			t.Fatalf("%+v", sanctions)
+		}
+	}
+	if got["ban"] != "too good|really" || got["anticheat"] != "bhop (15 perfect jumps in a row), log" {
 		t.Fatalf("%+v", sanctions)
 	}
 	// no address column anywhere: the database holds no IPs by construction

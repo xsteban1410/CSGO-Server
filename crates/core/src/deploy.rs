@@ -266,6 +266,13 @@ pub fn deploy(cfg: &Config, force: bool, reload: bool) -> crate::Result<Report> 
     }
     // admins and roles for csls_admins.sp; it reloads them on sm_reloadadmins
     let admins_changed = cfg.admins.write(&sm.join("configs/csls_admins.cfg"))?;
+    let ac_path = csgo.join("cfg/sourcemod/csls_anticheat.cfg");
+    let ac = cfg.anticheat.render();
+    let ac_changed = std::fs::read_to_string(&ac_path).ok().as_deref() != Some(ac.as_str());
+    if ac_changed {
+        std::fs::create_dir_all(csgo.join("cfg/sourcemod"))?;
+        std::fs::write(&ac_path, &ac)?;
+    }
     // giving special knives with GivePlayerItem requires bypassing Valve's rules
     let core = sm.join("configs/core.cfg");
     if let Ok(t) = std::fs::read_to_string(&core) {
@@ -311,14 +318,15 @@ pub fn deploy(cfg: &Config, force: bool, reload: bool) -> crate::Result<Report> 
         }
     }
 
-    let changed = admins_changed || r.translations || !(r.compiled.is_empty() && r.removed.is_empty());
+    let changed = admins_changed || ac_changed || r.translations || !(r.compiled.is_empty() && r.removed.is_empty());
     if reload && changed && crate::rcon::Rcon::from_config(cfg).is_ok() {
         let mut rc = crate::rcon::RconSession::new(cfg);
         let phrases = r.translations.then(|| "sm_reload_translations".to_string());
         let admins = admins_changed.then(|| "sm_reloadadmins".to_string());
+        let ac = ac_changed.then(|| "exec sourcemod/csls_anticheat.cfg".to_string());
         let unload = r.compiled.iter().chain(&r.removed).map(|n| format!("sm plugins unload {n}"));
         let load = r.compiled.iter().map(|n| format!("sm plugins load {n}"));
-        for c in phrases.into_iter().chain(unload).chain(load).chain(admins).collect::<Vec<_>>() {
+        for c in phrases.into_iter().chain(unload).chain(load).chain(admins).chain(ac).collect::<Vec<_>>() {
             // loading a plugin can take longer than the rcon timeout; loading it again does no harm
             rc.exec_idempotent(&c)?;
         }
@@ -364,7 +372,7 @@ mod tests {
         // only the engine's: modes, skins and the rest come from the hub
         let mut want: Vec<String> = n.clone();
         want.sort();
-        assert_eq!(want, ["csls_admins", "csls_directconnect", "csls_events", "modos"]);
+        assert_eq!(want, ["csls_admins", "csls_anticheat", "csls_directconnect", "csls_events", "modos"]);
         assert!(n.iter().all(|p| ENGINE_PLUGINS.contains(&p.as_str())));
         assert!(!n.contains(&"modos_anarquia".into()), "includes are not compiled on their own");
     }
