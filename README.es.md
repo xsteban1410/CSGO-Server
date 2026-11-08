@@ -5,8 +5,9 @@
 [![CI](https://github.com/xsteban1410/CSGO-Server/actions/workflows/ci.yml/badge.svg)](https://github.com/xsteban1410/CSGO-Server/actions/workflows/ci.yml)
 
 Aloja un servidor dedicado **CS:GO Legacy** (aplicación 740) y juega con amigos contra bots, desde una aplicación de escritorio o la línea de comandos.
-Trae más de 30 modos (francotiradores, zombis por oleadas, retakes, Guardián, cheats aleatorios, anarquía…), guarda las skins
-de cada jugador, compila solo los plugins de SourceMod y busca mapas en el Workshop de Steam.
+Los modos de juego, complementos y herramientas de administración provienen de [CSGO-Hub](https://github.com/xsteban1410/CSGO-Hub) (francotiradores, ondas de zombies,
+retomas, Guardian, trucos aleatorios, máscaras…), instalado desde la pestaña Hub de la aplicación. Compila complementos de SourceMod por sí mismo, tiene
+administradores con roles y su propio antitrampas, y busca mapas en Steam Workshop.
 
 Funciona en cualquier distro de 64 bits con glibc y librerías de 32 bits. Probado en Arch/CachyOS.
 
@@ -43,12 +44,13 @@ Para instalar en otro lugar, copie `cfg/ modes/ plugin/ data/` de `game/` a `<pr
 
 ### Primer arranque
 
-No se descarga nada hasta que usted lo solicite. La aplicación ofrece **Crear un servidor** o **Únase únicamente a servidores**:
+No se descarga nada hasta que usted lo solicite. **Crear un servidor** busca primero una instalación existente (cualquier carpeta con `srcds_run`)
+y lo reutiliza. De lo contrario, elija una carpeta (~40 GB libres) y se descargará SteamCMD, el servidor dedicado (~33 GB).
+Metamod:Source y SourceMod, luego compila los complementos. La descarga continúa en segundo plano si cierras la aplicación.
+y se reanuda si se interrumpe.
 
-- *Crear un servidor* busca antes una instalación existente (cualquier carpeta con `srcds_run`) y la reutiliza. Si no hay,
-  eliges carpeta (~40 GB libres) y descarga SteamCMD, el servidor dedicado (~33 GB), Metamod:Source y SourceMod, y compila
-  los plugins. La descarga sigue en segundo plano si cierras la app y se reanuda si se corta.
-- *Solo unirse* se salta todo eso y permanece elegido: es para amigos que solo juegan. **Inicio** ofrece la descarga si cambias de opinión.
+La aplicación viene sin modos de juego: la pestaña Servidor ofrece **Instalar todos los modos**, o selecciónelos en la pestaña **Hub**
+(`csgo-legacy-server hub install pack-all` desde la línea de comando).
 
 Sin pantalla: `csgo-legacy-server install` hace lo mismo, y `csgo-legacy-server doctor` dice qué falta y el comando
 exacto para tu distro (apt, pacman, dnf, zypper, xbps, emerge).
@@ -60,9 +62,10 @@ El botón **Jugar** de la app (o `csgo-legacy-server play local`) abre CS:GO Leg
 
 | Pestaña | |
 |---|---|
-| Servidor | estado, jugadores, CPU, RAM, rcon y agente, advertencias y eventos recientes, dirección de conexión, inicio (modo → mapa → opciones → red), cambiar modo o mapa en vivo, reiniciar ronda, finalizar calentamiento, agregar/eliminar bots, ajustes preestablecidos |
-| Jugadores | patear, prohibir (minutos o permanente, con motivo), lista de prohibiciones y desbanear, máscaras guardadas, historial de conexiones, sanciones con notas, exportar a CSV y JSON |
-| Modos | crea tus propios modos o duplica uno integrado, con armas, salud, velocidad, tiempo de ronda, bots y una vista previa del cfg; bloques de reglas como "cuando ocurre una muerte, agrega 25 de salud"; importar/exportar como `.toml` para compartirlos |
+| Servidor | estado, jugadores, CPU, RAM, rcon y agente, advertencias y eventos recientes, dirección de conexión, inicio (modo → mapa → opciones → red), cambiar modo o mapa en vivo, reiniciar ronda, finalizar calentamiento, agregar/eliminar bots, ajustes preestablecidos, el puente al servidor de un amigo a través de VPN |
+| Jugadores | expulsar, prohibir (minutos o permanente, con motivo), lista de prohibiciones y desbancar, administradores y sus roles, máscaras guardadas, historial de conexiones, sanciones (también detecciones anti-trampas) con notas, exportar a CSV y JSON |
+| Modos | crea tus propios modos o duplica uno instalado, con armas, salud, velocidad, tiempo de ronda, bots y una vista previa del cfg; bloques de reglas como "cuando ocurre una muerte, agrega 25 de salud"; importar/exportar como `.toml` para compartirlos |
+| Centro | modos de juego, complementos, herramientas de administración y paquetes de CSGO-Hub, con vistas previas: instalar con lo que necesitan, actualizar, eliminar |
 | Workshop | busca mapas sin clave de API, instala por ID o enlace (también colecciones), genera la navegación de bots, importa un `.bsp` local |
 | Consola | registro del servidor en vivo con filtros y búsqueda, comandos rcon con autocompletar, historial, favoritos y alias, guarde el registro |
 | Complementos | encender y apagar, instalar `.sp` o `.smx`, recargar, volver a una versión anterior; Los errores de compilación se muestran aquí. |
@@ -70,8 +73,7 @@ El botón **Jugar** de la app (o `csgo-legacy-server play local`) abre CS:GO Leg
 | Copias de seguridad | crear, restaurar con una vista previa de los cambios, mantener la última N |
 | Estadística | jugadores por día, actividad por hora, mapas y modos; almacenado solo en esta PC, nunca en direcciones IP, y puede borrarlo (necesita el agente) |
 | Actualizaciones | solicite a GitHub una nueva versión, solo cuando lo presione o active la marca; nada se instala solo |
-| Unirse | entrar al servidor de un amigo; con una IP 100.x activa solo el puente VPN, prueba la conexión y da el `connect` exacto |
-| Ajustes | nombre, contraseña, perfil de red, puerto, tickrate, GSLT, plugin de skins, actualizar el servidor |
+| Ajustes | nombre, contraseña, perfil de red, puerto, tickrate, GSLT, complemento de máscaras, anticheat, actualizar el servidor |
 
 El servidor se ejecuta como una unidad `systemd --user`, por lo que sigue ejecutándose cuando cierras la aplicación (no en Flatpak).
 
@@ -82,7 +84,7 @@ Al cerrar la ventana, la aplicación queda en la bandeja del sistema, con el est
 | Perfil | Para qué |
 |---|---|
 | LAN | jugadores de tu red local (`sv_lan 1`) |
-| Amigos por VPN | Tailscale, ZeroTier…: Steam echa a quien se conecta a una IP de VPN, así que el servidor sigue en modo LAN y un puente UDP en PUERTO+1 pasa a tus amigos. Cada amigo abre la pestaña **Unirse** (o lanza `csgo-legacy-server bridge 27030 <tu IP de VPN>:27031`) y se conecta a **su propia** IP local |
+| Amigos a través de VPN | Tailscale, ZeroTier…: Steam descarta clientes que se conectan a una IP VPN, por lo que el servidor permanece en modo LAN y un puente UDP en PORT+1 reenvía a tus amigos. Cada amigo inicia el puente en la pestaña Servidor (**El servidor de un amigo a través de VPN** o `csgo-legacy-server bridge 27030 <your VPN IP>:27031`) y se conecta a **su propia** IP local |
 | Internet | puerto UDP abierto; muestra tu IP pública, te da el comando del cortafuegos (ufw/firewalld) y puede abrir el puerto del router por UPnP (`miniupnpc`) |
 | Comunitario | Internet + un [token GSLT](https://steamcommunity.com/dev/managegameservers) (app 730) para salir en el navegador de servidores de Steam |
 
@@ -94,6 +96,8 @@ csgo-legacy-server mode  <modo> [alone|N] [opciones]   cambiar de modo/mapa ence
 csgo-legacy-server stop | status | players | maps | modes
 csgo-legacy-server kick <userid> | ban <userid> <minutos> [motivo] | unban <STEAM_1:x:y>
 csgo-legacy-server bots +2 | bots -1 | round [--warmup]
+csgo-legacy-server hub list|search|info|install|update|remove   modes and plugins from CSGO-Hub
+csgo-legacy-server admins list|add|remove|role|password          admins and roles for the game
 csgo-legacy-server workshop search|install|list|remove|import
 csgo-legacy-server mode-file export|import|delete      compartir modos propios
 csgo-legacy-server presets [--delete nombre]           opciones de arranque guardadas
@@ -105,7 +109,7 @@ csgo-legacy-server plugins list|enable|disable|install|reload   plugins on the s
 csgo-legacy-server updates [--json]                   ask GitHub for the latest release
 csgo-legacy-server nav [--force]                       navegación de bots del mapa actual
 csgo-legacy-server skins                               rehacer la lista de skins tras actualizar el juego
-csgo-legacy-server rcon "comando" | play [cs2|local|IP:PUERTO] | bridge | doctor | install [--update]
+csgo-legacy-server rcon "command" | play [local|IP:PORT] | bridge | doctor | install [--update]
 ```
 
 Opciones de start/mode: `-m/--map`, `-t/--type competitive|short|casual|wingman|dm|ffa|tdm|armsrace|demolition|guardian|dz`, `-d/--difficulty 0-3`, `-b/--bots`,
@@ -121,78 +125,37 @@ csgo-legacy-server start premier 2 --teams versus
 
 ## Modos
 
-Cada uno elige su propio equipo, como en un servidor comunitario o de Valve. Los bots (expertos) llenan los asientos vacíos y se van cuando se une un humano; `--no-bots` solo juega con humanos. El calentamiento termina solo a menos que le pidas que espere a los jugadores (`start awp 2`). Solo los modos cuyas reglas necesitan que los lados las arreglen: `retake`, `defensa`, `clutch`, `zombies`, `ninjas`, `aim` y Guardian.
+Los modos se encuentran en [CSGO-Hub](https://github.com/xsteban1410/CSGO-Hub), por lo que un modo se puede arreglar o agregar sin un nuevo
+versión de la app: `pack-all` las tiene todas, `pack-valve` las oficiales, y cada elemento dice qué es y para qué
+necesidades. `csgo-legacy-server modes` enumera los instalados.
 
-| Modo | |
-|---|---|
-| `aim` | **Práctica de puntería**: los robots se quedan quietos y no disparan, tienes munición y armas infinitas. Calienta tu puntería |
-| `aleatorio` | **Arma aleatoria**: en cada ronda, todos obtienen la misma arma aleatoria, desde AWP hasta Zeus. |
-| `anarquia` | **Anarquía** — Caos: todos contra todos con fuego amigo, reaparece, compra en cualquier lugar y nadie es expulsado |
-| `armsrace` | **Carrera armamentista** — Oficial: cada muerte te otorga la siguiente arma, el primero en conseguir el cuchillo dorado gana. Sus propios mapas ar_ |
-| `autosniper` | **Auto-francotirador**: todos obtienen un SCAR-20 y un Deagle. Rondas cortas, sin compras |
-| `awp` | **AWP**: todos obtienen un AWP y un Deagle. Rondas cortas, sin compras |
-| `awpdm` | **AWP deathmatch** — Deathmatch solo con AWP y Deagle |
-| `cheats` | **Trucos aleatorios**: toma potenciadores brillantes para realizar un truco aleatorio durante 30 s: wallhack, aimbot, modo dios... |
-| `clutch` | **Clutch**: cada ronda que ganas agrega un bot, cada ronda que pierdes elimina uno. ¿A cuántos puedes vencer? |
-| `competitivo` | **Competitivo** — Lo real: 5 contra 5 con economía, primero a 16, los lados se intercambian en el medio tiempo y en la prórroga. Los bots llenan los asientos vacíos |
-| `cuchillo` | **Cuchillos**: solo cuchillo. Rondas cortas |
-| `dangerzone` | **Zona de peligro** — Batalla real oficial en mapas dz_: encuentra equipo, evita la tormenta, sé el último en pie |
-| `decoy` | **Decoy** — Combate a muerte con 1 HP y señuelos infinitos: un golpe directo mata |
-| `defensa` | **Post-plantación** — Lo opuesto a Retomar: la bomba se coloca y tú (T) la defiendes de 5 robots que vienen a desactivarla. |
-| `demolicion` | **Demolición** — Oficial: rondas de bombas donde obtienes una nueva arma en cada ronda por tus muertes. Pequeños mapas |
-| `dm` | **Deathmatch** — Deathmatch oficial: compra desde el menú, reaparece de inmediato, 10 minutos |
-| `dmcabeza` | **Combate a muerte con disparos en la cabeza**: combate a muerte donde solo los disparos en la cabeza causan daño |
-| `dmcuchillo` | **Deathmatch cuchillo** — Deathmatch solo cuchillo |
-| `duelo` | **Duelo**: tú contra tu amigo, sin robots. La misma arma aleatoria en cada ronda, el primero en llegar a 10 victorias. |
-| `escopetas` | **Escopetas**: todos obtienen una XM1014 y una P250. Rondas cortas, sin compras |
-| `ffa` | **Todos contra todos**: combate a muerte donde todos son tus enemigos y tus amigos también |
-| `flyingscout` | **Flying Scoutsman** — Juego de guerra oficial: SSG 08, gravedad muy baja, saltos de conejo y precisión perfecta en el aire |
-| `guardian` | **Guardian** — Cooperativo oficial: defiende la zona contra oleadas de robots, en mapas gd_ |
-| `hardcore` | **Hardcore** — Reglas competitivas sin radar: las balas impactan un 60 % más fuerte y el fuego amigo causa todo el daño |
-| `headshot` | **Solo disparos a la cabeza** — AK-47 y Deagle, y solo los disparos a la cabeza causan daño |
-| `jefe` | **Jefe**: Rondas normales, pero un robot en cada ronda es un gigante rojo lento con 5000 HP. |
-| `libre` | **Juego libre** - Sin reglas: reaparece, compra en cualquier lugar y cualquier arma con !guns. Bueno para probar cosas. |
-| `luna` | **Moon** — AWP y Deagle con gravedad muy baja, como en la Luna |
-| `negev` | **Negev** — Todo el mundo recibe un Néguev y nada más. Rondas cortas, sin compras |
-| `ninjas` | **Ninjas**: Bots rápidos, casi invisibles y con cuchillos te cazan. Compra lo que quieras y escúchalos. |
-| `normal` | **Normal** — Rondas con $16000 en cada ronda, por lo que siempre puedes comprar cualquier cosa |
-| `pesados` | **Armadura pesada** — Todos con un traje de asalto pesado y un M249: resistente y lento |
-| `pistolas` | **Deagle**: todos reciben solo un Deagle. Rondas cortas, sin compras |
-| `premier` | **Premier** — Reglas de Premier: 5 contra 5, primero en llegar al 13, tiempo extra y prohibiciones de mapas en el calentamiento. Sin clasificación CS, necesita los servidores de Valve |
-| `rehenes` | **Rehenes** — Rescata o protege a los rehenes, en cs_maps |
-| `retake` | **Retomar** — La bomba ya está colocada y tú (CT) debes desactivarla contra 5 robots que la custodian. |
-| `rifles` | **Rifles**: todos reciben un AK-47 y un Deagle. Rondas cortas, sin compras |
-| `scout` | **Scout**: todos obtienen un SSG 08 y un P250. Rondas cortas, sin compras |
-| `stabzap` | **Stab Stab Zap** — Juego de guerra oficial: solo un cuchillo y un Zeus que se recarga en 30 s |
-| `tdm` | **Combate a muerte en equipo**: combate a muerte donde las muertes puntúan para tu equipo y el mejor equipo gana |
-| `trigger` | **Disciplina de disparo** — Juego de guerra oficial: cada disparo fallido te lastima, pero nunca te mata |
-| `unabala` | **Uno en la Cámara** — Combate a muerte con un Deagle y una bala. Cualquier golpe mata, y cada muerte te da una bala. |
-| `vampiro` | **Vampiro** — AK-47 y Deagle, y la mitad del daño que infliges te cura (hasta 200 HP) |
-| `wingman` | **Wingman**: 2 contra 2 oficial en un sitio de bomba, dieciséis rondas. Los mapas pequeños funcionan mejor |
-| `zeus` | **Zeus** — Combate a muerte con un Zeus que nunca se agota |
-| `zombies` | **Zombies**: sobrevive a cinco oleadas de robots zombies con todas las armas y munición infinita. Si mueres, te vuelves |
+Cada uno elige su propio equipo, como en un servidor comunitario o de Valve. Los bots (expertos) llenan los asientos vacíos y se van cuando se une un humano; `--no-bots` solo juega con humanos. El calentamiento termina solo a menos que le pidas que espere a los jugadores (`start awp 2`). Sólo los modos cuyas reglas necesitan bandos las arreglan.
 
 **Partidos competitivos** (`competitivo`, `premier`, `wingman`, `duelo`) son partidos normales, no reglas personalizadas: economía e intercambio de lados en el medio tiempo. `competitivo` y `premier` inician a los humanos equilibrados, por lo que dos humanos obtienen un lado cada uno; `--teams` (o **Equipos** en el asistente) cambia el lugar donde comienzan y cualquiera puede cambiar de equipo después. Los robots llenan los asientos vacíos. Un empate es un empate, a menos que actives `--no-draw` (**No hay empates** en el asistente), que juega tiempo extra hasta que alguien gana. En `competitivo`, `premier` y `wingman` el partido comienza cuando todos escriben `!ready` o cuando finaliza el calentamiento; `duelo` termina su calentamiento. En `premier`, los humanos se turnan para prohibir mapas durante el calentamiento, a menos que elijas un mapa al comenzar. No tiene clasificación CS ni emparejamiento, que necesitan los servidores de Valve.
 
 Ajustes por equipo para tus modos o `--set` (`t` o `ct`): `modo_<eq>_quitar`, `_arma`, `_pistola`, `_objeto`,
 `_vida`, `_velocidad`, `_color` (`R,G,B`).
 
-**Zombis:** cada oleada es una ronda. Los bots zombi (T) solo llevan cuchillo y reaparecen sin parar; vosotros (CT) tenéis dinero y
-munición infinitos. Si aguantáis el tiempo, pasáis a la siguiente; si os comen, se repite. Zombis normales, corredores (rápidos y
-débiles) y tanques (grandes, lentos, triple de vida); las balas los empujan y el fuego los quema; quien muere vuelve como zombi; niebla.
-Ajustes: `modo_z_oleadas` (5), `modo_z_base`/`modo_z_incremento` (6/2), `modo_z_vida`/`modo_z_vida_oleada` (250/75),
-`modo_z_velocidad` (1.2), `modo_z_retroceso` (1.0), `modo_z_infeccion` (1), `modo_z_niebla` (1), `mp_roundtime` (1.5).
+**Anarquía** (`--anarchy` con cualquier modo): sin expulsiones ni prohibiciones automáticas (inactivo, muertes en equipo, expulsión de votos, inundación,
+espacios reservados). Las patadas y prohibiciones que realices desde la aplicación seguirán funcionando.
 
-**Cheats aleatorios:** aparecen power-ups brillantes por el mapa; al cogerlos recibes un cheat al azar durante 30 s (wallhack,
-aimbot, munición infinita, velocidad, gravedad baja, invencible, invisible, un tiro mata, autobhop, superpulso, regeneración).
-Ajustes: `modo_cheats_duracion`, `_cantidad`, `_reaparicion`, `_bots`, `_lista`.
+### Administradores y antitrampas
 
-**Anarquía** (modo o `--anarchy` con cualquier modo): nadie es expulsado ni baneado automáticamente (inactividad, matar
-aliados, votekick, flood, plazas reservadas). Los kicks y baneos que hagas desde la app siguen funcionando.
+Los administradores son SteamID con una función (pestaña Jugadores o `csgo-legacy-server admins add STEAM_1:0:123 --name Ana --role admin`).
+Los roles otorgan `console`, `kick`, `ban`, `map`, `slay`, `chat`, `cheats`, `bots` o `root`; los valores predeterminados son `owner`, `admin`,
+`moderator` y `cheats`. El servidor se ejecuta con `-insecure`, donde se puede falsificar un SteamID, por lo que los roles con el servidor
+consola (`sm_rcon`) también es necesario escribir `sm_login <password>` en la consola de juegos: se eliminan tres contraseñas incorrectas y una segunda
+El jugador con SteamID de administrador es expulsado. Las herramientas de administración como `!am` (aimbot) y `!wh` (wallhack) son elementos centrales
+(`pack-admin`) y necesita el permiso `cheats`.
+
+El antitrampas (Configuración, o `[anticheat]` en la configuración) busca ángulos de visión imposibles, apunta justo antes
+muertes, saltos de conejo con guiones, cvars de clientes de speedhack y wallhack, y registros, patadas o prohibiciones. No puede ver un wallhack que
+sólo dibuja en la PC del jugador. Las detecciones se muestran en la pestaña Jugadores con las sanciones.
 
 ### Tus modos y plugins
 
-- Modos: `~/.config/csgo-legacy-server/modes/<id>.toml` + `<id>.cfg` (la pestaña Modos los escribe por ti).
+- Elementos del Hub: `~/.local/share/csgo-legacy-server/hub/<id>/`, administrados por la pestaña Hub o `hub install|remove`.
+- Modos: `~/.config/csgo-legacy-server/modes/<id>.toml` + `<id>.cfg` (la pestaña Modos los escribe por usted). Ganan en un modo hub con la misma identificación.
 - Complementos: coloque un `.sp` (o `name/name.sp`) en `~/.config/csgo-legacy-server/plugins/`, o use `plugins install`.
 
 Con la app abierta (o `deploy --watch`) lo nuevo o cambiado se compila y se recarga en el servidor encendido; los errores
@@ -212,10 +175,11 @@ surf, bhop y KZ no sirven para bots.
 ## Comandos en el chat del juego
 
 | | |
-|---|---|
-| `!ws` | skin del arma que llevas en la mano (o de cualquier otra); las más buscadas salen primero |
-| `!guns` / `!armas` | cualquier arma (solo en los modos de juego libre y práctica de puntería) |
 | `!ready` / `!listo` | comenzar el partido sin esperar a que termine el calentamiento (modos competitivos) |
+| `sm_login <password>` | en la consola (~): desbloquea la consola del servidor para tu rol de administrador |
+| `!ws`, `!knife` | pieles y cuchillos, con el elemento central `skins` |
+| `!guns` / `!armas` | cualquier arma (modos de juego libre y práctica de puntería, desde el centro) |
+| `!am`, `!wh`, `!nc`, `!god`, `!tp`, `!bring`, `!respawn`, `!hp`, `!bots` | herramientas de administración de `pack-admin`, para roles con permiso |
 | `!armas` / `!guns` | cualquier arma (solo en el modo libre) |
 Las opciones se guardan por SteamID y se aplican cada vez que te unes. El idioma elegido en Configuración (inglés por defecto o español) se aplica a la aplicación, la línea de comando, los nombres de los skins y los mensajes del juego para cada jugador.
 Se guarda por SteamID y se aplica cada vez que entras. Los mensajes salen en el idioma del juego de cada jugador (inglés/español).
@@ -227,9 +191,9 @@ Se guarda por SteamID y se aplica cada vez que entras. Los mensajes salen en el 
 | `~/.config/csgo-legacy-server/config.toml` | ajustes (lleva la contraseña rcon, permisos 600) |
 | `~/.config/csgo-legacy-server/{modes,plugins,presets.toml}` | tus modos, plugins y presets |
 | `crates/core`, `crates/cli`, `crates/app` | Rust: biblioteca principal, línea de comandos, aplicación de escritorio Slint |
-| `game/plugin/`, `game/cfg/`, `game/modes/` | Complementos de SourceMod, configuraciones de modo, metadatos de modo |
+| `game/plugin/`, `game/cfg/` | Los complementos y la API de SourceMod del motor (`include/csls.inc`) y las configuraciones en las que se ejecuta cada modo |
 | `go/` | El agente y las herramientas de prueba. |
-| `docs/ARCHITECTURE.md`, `docs/TROUBLESHOOTING.md`, `docs/PRIVACY.md` | Cómo encajan las piezas, cómo solucionar problemas y qué datos se conservan |
+| `docs/ARCHITECTURE.md`, `docs/HUB.md`, `docs/TROUBLESHOOTING.md`, `docs/PRIVACY.md` | Cómo encajan las piezas, el formato del centro, cómo solucionar problemas y qué datos se conservan |
 
 ## Notas y límites
 
@@ -241,7 +205,8 @@ Se guarda por SteamID y se aplica cada vez que entras. Los mensajes salen en el 
   para Linux corresponden al `engine.so` actual; si Valve actualiza los binarios del servidor, el log dirá "signature not
   found" y habrá que volver a sacarlas. La idea viene de [NoLobbyReservation](https://github.com/vanz666/NoLobbyReservation).
 - El servidor arranca con `-insecure` (sin VAC). Las skins son cosméticas y solo se ven en este servidor; los skin changers van
-  contra las normas de Valve en servidores públicos con GSLT, por eso en Ajustes se puede desactivar el plugin de skins.
+  reglas para servidores GSLT públicos, por lo que las máscaras son un elemento central que puede omitir o desactivar en Configuración. Herramientas de administración como
+  El aimbot solo funciona en su propio servidor `-insecure`, para los roles a los que le dio ese permiso.
 - Jugado en Arch Linux y CachyOS. CI compila y prueba todo en Debian y Fedora, y prueba `.deb`, AppImage y Flatpak, pero nadie ha jugado con ellos todavía. No probado en distribuciones musl o SteamOS (sistema de solo lectura: use distrobox). Sin guantes.
 
 ## Ramas
