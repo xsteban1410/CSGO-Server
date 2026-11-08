@@ -8,6 +8,13 @@ The section of each version becomes the notes of its GitHub release, so keep the
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-11-08
+
+### Added
+
+- Hub items can add choices to a launch selector with `[[option]]` in `item.toml`; today the bot difficulty list shows them next to Easy to Expert, so plugins such as the Faceit Level 10 and God bot levels appear there once installed. With none installed nothing changes.
+- Hub items can ask for data only the app can extract with `needs = ["nav"]`. `deploy` turns each installed map's navigation mesh (`.nav`, version 16) into a text graph under `data/csls_export` and `CSLS_ExportPath` in `csls.inc` finds it. New exporters are one function and one line in the registry.
+
 ## [1.4.0] - 2026-11-08
 
 ### Added
@@ -199,7 +206,8 @@ First release as a GTK app and command line in Rust, replacing the old shell scr
 
 - License changed to GPL-3.0-or-later.
 
-[Unreleased]: https://github.com/xsteban1410/CSGO-Server/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/xsteban1410/CSGO-Server/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/xsteban1410/CSGO-Server/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/xsteban1410/CSGO-Server/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/xsteban1410/CSGO-Server/compare/v1.1.0...v1.3.0
 [1.1.0]: https://github.com/xsteban1410/CSGO-Server/compare/v1.0.2...v1.1.0
