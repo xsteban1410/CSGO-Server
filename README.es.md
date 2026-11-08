@@ -5,9 +5,7 @@
 [![CI](https://github.com/xsteban1410/CSGO-Server/actions/workflows/ci.yml/badge.svg)](https://github.com/xsteban1410/CSGO-Server/actions/workflows/ci.yml)
 
 Aloja un servidor dedicado **CS:GO Legacy** (aplicación 740) y juega con amigos contra bots, desde una aplicación de escritorio o la línea de comandos.
-Los modos de juego, complementos y herramientas de administración provienen de [CSGO-Hub](https://github.com/xsteban1410/CSGO-Hub) (francotiradores, ondas de zombies,
-retomas, Guardian, trucos aleatorios, máscaras…), instalado desde la pestaña Hub de la aplicación. Compila complementos de SourceMod por sí mismo, tiene
-administradores con roles y su propio antitrampas, y busca mapas en Steam Workshop.
+Los modos de juego, complementos y herramientas de administración provienen de [CSGO-Hub](https://github.com/xsteban1410/CSGO-Hub) (francotiradores, oleadas de zombies, retomas, Guardian, trucos aleatorios, máscaras…), que se instalan desde la pestaña Hub de la aplicación. Compila complementos de SourceMod por sí mismo, tiene administradores con roles y su propio antitrampas, y busca mapas en Steam Workshop.
 
 Funciona en cualquier distro de 64 bits con glibc y librerías de 32 bits. Probado en Arch/CachyOS.
 
@@ -44,13 +42,9 @@ Para instalar en otro lugar, copie `cfg/ modes/ plugin/ data/` de `game/` a `<pr
 
 ### Primer arranque
 
-No se descarga nada hasta que usted lo solicite. **Crear un servidor** busca primero una instalación existente (cualquier carpeta con `srcds_run`)
-y lo reutiliza. De lo contrario, elija una carpeta (~40 GB libres) y se descargará SteamCMD, el servidor dedicado (~33 GB).
-Metamod:Source y SourceMod, luego compila los complementos. La descarga continúa en segundo plano si cierras la aplicación.
-y se reanuda si se interrumpe.
+No se descarga nada hasta que usted lo solicite. **Crear un servidor** busca primero una instalación existente (cualquier carpeta con `srcds_run`) y la reutiliza. De lo contrario, elija una carpeta (~40 GB libres) y descargará SteamCMD, el servidor dedicado (~33 GB), Metamod:Source y SourceMod, luego compilará los complementos. La descarga continúa en segundo plano si cierra la aplicación y se reanuda si se interrumpe.
 
-La aplicación viene sin modos de juego: la pestaña Servidor ofrece **Instalar todos los modos**, o selecciónelos en la pestaña **Hub**
-(`csgo-legacy-server hub install pack-all` desde la línea de comando).
+La aplicación viene sin modos de juego: la pestaña Servidor ofrece **Instalar todos los modos**, o selecciónelos en la pestaña **Hub** (`csgo-legacy-server hub install pack-all` desde la línea de comando).
 
 Sin pantalla: `csgo-legacy-server install` hace lo mismo, y `csgo-legacy-server doctor` dice qué falta y el comando
 exacto para tu distro (apt, pacman, dnf, zypper, xbps, emerge).
@@ -125,9 +119,7 @@ csgo-legacy-server start premier 2 --teams versus
 
 ## Modos
 
-Los modos se encuentran en [CSGO-Hub](https://github.com/xsteban1410/CSGO-Hub), por lo que un modo se puede arreglar o agregar sin un nuevo
-versión de la app: `pack-all` las tiene todas, `pack-valve` las oficiales, y cada elemento dice qué es y para qué
-necesidades. `csgo-legacy-server modes` enumera los instalados.
+Los modos se encuentran en [CSGO-Hub](https://github.com/xsteban1410/CSGO-Hub), por lo que se puede arreglar o agregar un modo sin una nueva versión de la aplicación: `pack-all` los tiene todos, `pack-valve` los oficiales, y cada elemento dice qué es y qué necesita. `csgo-legacy-server modes` enumera los instalados.
 
 Cada uno elige su propio equipo, como en un servidor comunitario o de Valve. Los bots (expertos) llenan los asientos vacíos y se van cuando se une un humano; `--no-bots` solo juega con humanos. El calentamiento termina solo a menos que le pidas que espere a los jugadores (`start awp 2`). Sólo los modos cuyas reglas necesitan bandos las arreglan.
 
@@ -136,21 +128,13 @@ Cada uno elige su propio equipo, como en un servidor comunitario o de Valve. Los
 Ajustes por equipo para tus modos o `--set` (`t` o `ct`): `modo_<eq>_quitar`, `_arma`, `_pistola`, `_objeto`,
 `_vida`, `_velocidad`, `_color` (`R,G,B`).
 
-**Anarquía** (`--anarchy` con cualquier modo): sin expulsiones ni prohibiciones automáticas (inactivo, muertes en equipo, expulsión de votos, inundación,
-espacios reservados). Las patadas y prohibiciones que realices desde la aplicación seguirán funcionando.
+**Anarquía** (`--anarchy` con cualquier modo): sin expulsiones ni prohibiciones automáticas (inactivo, muertes en equipo, expulsión de votos, inundación, espacios reservados). Las patadas y prohibiciones que realices desde la aplicación seguirán funcionando.
 
 ### Administradores y antitrampas
 
-Los administradores son SteamID con una función (pestaña Jugadores o `csgo-legacy-server admins add STEAM_1:0:123 --name Ana --role admin`).
-Los roles otorgan `console`, `kick`, `ban`, `map`, `slay`, `chat`, `cheats`, `bots` o `root`; los valores predeterminados son `owner`, `admin`,
-`moderator` y `cheats`. El servidor se ejecuta con `-insecure`, donde se puede falsificar un SteamID, por lo que los roles con el servidor
-consola (`sm_rcon`) también es necesario escribir `sm_login <password>` en la consola de juegos: se eliminan tres contraseñas incorrectas y una segunda
-El jugador con SteamID de administrador es expulsado. Las herramientas de administración como `!am` (aimbot) y `!wh` (wallhack) son elementos centrales
-(`pack-admin`) y necesita el permiso `cheats`.
+Los administradores son SteamID con una función (pestaña Jugadores o `csgo-legacy-server admins add STEAM_1:0:123 --name Ana --role admin`). Los roles otorgan `console`, `kick`, `ban`, `map`, `slay`, `chat`, `cheats`, `bots` o `root`; los valores predeterminados son `owner`, `admin`, `moderator` y `cheats`. El servidor se ejecuta con `-insecure`, donde se puede falsificar un SteamID, por lo que los roles con la consola del servidor (`sm_rcon`) también deben escribirse `sm_login <password>` en la consola de juegos: se expulsan tres contraseñas incorrectas y se expulsa a un segundo jugador con un SteamID de administrador. Las herramientas de administración como `!am` (aimbot) y `!wh` (wallhack) son elementos centrales (`pack-admin`) y necesitan el permiso `cheats`.
 
-El antitrampas (Configuración, o `[anticheat]` en la configuración) busca ángulos de visión imposibles, apunta justo antes
-muertes, saltos de conejo con guiones, cvars de clientes de speedhack y wallhack, y registros, patadas o prohibiciones. No puede ver un wallhack que
-sólo dibuja en la PC del jugador. Las detecciones se muestran en la pestaña Jugadores con las sanciones.
+El antitrampas (Configuración, o `[anticheat]` en la configuración) busca ángulos de visión imposibles, apunta justo antes de matar, saltos de conejo programados, cvars de cliente speedhack y wallhack, y registros, patadas o prohibiciones. No puede ver un wallhack que solo se dibuja en la PC del jugador. Las detecciones se muestran en la pestaña Jugadores con las sanciones.
 
 ### Tus modos y plugins
 
