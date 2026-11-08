@@ -1,13 +1,17 @@
 #!/usr/bin/env bash
-# Merges pre-releases into master once it has been quiet for PROMOTE_DAYS (run daily by .github/workflows/promote.yml).
+# Merges pre-releases into master once it has been quiet for PROMOTE_DAYS (run by .github/workflows/promote.yml).
 # It waits if the newest commit is too recent, CI on it did not succeed, an issue labelled blocks-release is open,
 # or a bug or connection issue was opened since the first commit not yet in master.
+# An open issue titled "approve release" by an approver (the repository owner) skips the wait and the bug check;
+# it is closed once the promotion is done.
 # shortcut: an issue cannot be matched to a change automatically, so any new bug report holds the promotion;
 # the maintainer closes it or removes its label if it is unrelated.
 set -euo pipefail
 from=origin/pre-releases
 to=origin/master
-days=${PROMOTE_DAYS:-3}
+days=${PROMOTE_DAYS:-1}
+# space separated logins; anyone can open an issue in a public repository, so only these count
+approvers=${PROMOTE_APPROVERS:-${GITHUB_REPOSITORY_OWNER:-}}
 now=${PROMOTE_NOW:-$(date +%s)}
 
 wait_more() { echo "Not promoting: $1"; exit 0; }
@@ -28,17 +32,24 @@ if [[ $(git rev-list --count "$to..$from") -eq 0 ]]; then
 fi
 
 sha=$(git rev-parse "$from")
+issues=$(gh issue list --state open --limit 200 --json number,title,author,createdAt,labels)
+approval=$(jq -r --arg who " $approvers " '
+    [.[] | (.author.login // "-") as $login
+     | select((.title // "" | ascii_downcase | gsub("^\\s+|\\s+$"; "")) == "approve release"
+              and ($who | contains(" " + $login + " ")))][0].number // ""' <<< "$issues")
+
 age=$(( now - $(git log -1 --format=%ct "$from") ))
-[[ $age -ge $(( days * 86400 )) ]] || wait_more "the newest commit is only $(( age / 3600 )) hours old"
+[[ -n $approval || $age -ge $(( days * 86400 )) ]] || wait_more "the newest commit is only $(( age / 3600 )) hours old"
 
 ci=$(gh run list --workflow ci.yml --branch pre-releases --commit "$sha" --limit 1 --json conclusion --jq '.[0].conclusion // ""')
 [[ $ci == success ]] || wait_more "CI on $sha is '${ci:-missing}'"
 
 since=$(date -u -d "@$(git log --format=%ct "$to..$from" | tail -1)" +%FT%TZ)
-blockers=$(gh issue list --state open --limit 200 --json number,createdAt,labels | jq -r --arg since "$since" '
+blockers=$(jq -r --arg since "$since" --arg approved "${approval:+yes}" '
     .[] | ([.labels[].name]) as $l
-    | select(($l | index("blocks-release")) or (.createdAt >= $since and (($l | index("bug")) or ($l | index("connection")))))
-    | "#\(.number)"' | tr '\n' ' ')
+    | select(($l | index("blocks-release"))
+             or ($approved == "" and .createdAt >= $since and (($l | index("bug")) or ($l | index("connection")))))
+    | "#\(.number)"' <<< "$issues" | tr '\n' ' ')
 [[ -z $blockers ]] || wait_more "open issues: $blockers"
 
 git switch -q --detach "$to"
@@ -53,4 +64,5 @@ git push -q origin HEAD:master || give_up "The push to master was rejected. It u
 # pushes made with GITHUB_TOKEN trigger no workflows: start them by hand. Release does nothing without a new version.
 gh workflow run ci.yml --ref master
 gh workflow run release.yml --ref master
+[[ -z $approval ]] || gh issue close "$approval" --comment "Promoted $sha to master."
 echo "Promoted $sha to master."

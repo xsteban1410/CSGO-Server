@@ -19,6 +19,7 @@ The section of each version becomes the notes of its GitHub release, so keep the
 
 ### Changed
 
+- `pre-releases` reaches `master` after one quiet day instead of three, or at once when the owner opens an issue titled `approve release` (see [CONTRIBUTING.md](CONTRIBUTING.md#branches)).
 - The app ships without game modes: the 46 modes, their plugins and skins moved to CSGO-Hub (`hub install pack-all` brings them all back). Modes load in layers: hub, then your own; a broken one is skipped with a warning instead of hiding every mode.
 - The side bar groups the tabs (Server, Content, Manage) with icons, and arrow keys move between them. Buttons that delete are drawn in red.
 - Deploy removes mode cfgs and plugins of items you uninstalled, and the plugins that moved to the hub unless you installed them.

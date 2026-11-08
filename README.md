@@ -196,7 +196,7 @@ Choices are saved per SteamID and applied every time you join. The language chos
 ## Branches
 
 `master` is the stable version, and releases are built from it. New work and contributions go to `pre-releases` first, which
-reaches `master` by itself after three days without problems. Details are in [CONTRIBUTING.md](CONTRIBUTING.md#branches).
+reaches `master` by itself after a day without problems. Details are in [CONTRIBUTING.md](CONTRIBUTING.md#branches).
 
 ## License
 

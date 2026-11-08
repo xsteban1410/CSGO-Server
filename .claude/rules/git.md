@@ -6,6 +6,6 @@
 - Push when a task is finished, not after every commit; CI tells you if something failed, and the fix is another commit.
 - `Co-Authored-By` goes only on the last commit of the task, the one pushed; commits in between do not carry it.
 - Never force-push or rewrite history.
-- Work from `pre-releases` and open pull requests against it. It reaches `master` by itself after three quiet days (see `CONTRIBUTING.md#branches`).
+- Work from `pre-releases` and open pull requests against it. It reaches `master` by itself after one quiet day, or at once with an `approve release` issue from the owner (see `CONTRIBUTING.md#branches`).
 - Keep each pull request to one topic, and fill in the template, including what could not be tested.
 - Do not change the version number or publish a release: the maintainer does that.

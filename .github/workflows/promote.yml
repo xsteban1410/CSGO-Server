@@ -1,9 +1,17 @@
 name: Promote
 
-# Moves pre-releases to master once it has been quiet for three days. See tools/promote.sh for the rules.
+# Moves pre-releases to master once it has been quiet for a day, or as soon as the owner opens an issue titled
+# "approve release". See tools/promote.sh for the rules.
 on:
   schedule:
     - cron: '17 6 * * *'
+  issues:
+    types: [opened, reopened, edited]
+  # an approval opened while CI was still running is picked up when it ends
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [pre-releases]
   workflow_dispatch:
 
 permissions:
@@ -11,8 +19,13 @@ permissions:
   actions: write
   issues: write
 
+concurrency:
+  group: promote
+
 jobs:
   promote:
+    # issue events only matter for the approval (contains ignores case); the script checks who opened it
+    if: github.event_name != 'issues' || contains(github.event.issue.title, 'approve release')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

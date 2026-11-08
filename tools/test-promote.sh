@@ -15,8 +15,8 @@ case "$1 $2" in
 esac
 GH
 chmod +x "$tmp/bin/gh"
-export PATH="$tmp/bin:$PATH" GH_LOG="$tmp/gh.log"
-later=$(( $(date +%s) + 4 * 86400 ))
+export PATH="$tmp/bin:$PATH" GH_LOG="$tmp/gh.log" PROMOTE_APPROVERS=owner
+later=$(( $(date +%s) + 2 * 86400 ))
 
 setup() {
     rm -rf "$tmp/origin.git" "$tmp/w"; : > "$GH_LOG"
@@ -52,6 +52,18 @@ run; [[ $(ref master) == "$before" ]] || fail "new bug"
 FAKE_ISSUES='[{"number":3,"createdAt":"2000-01-01T00:00:00Z","labels":[{"name":"bug"}]},{"number":4,"createdAt":"2999-01-01T00:00:00Z","labels":[{"name":"enhancement"}]}]'
 run; [[ $(ref master) == $(ref pre-releases) ]] || fail "old bug and new request do not block"
 grep -q 'workflow run release.yml --ref master' "$GH_LOG" || fail "starts the release"
+
+approve() { # author, then extra issues
+    FAKE_ISSUES="[{\"number\":9,\"title\":\" Approve Release \",\"author\":{\"login\":\"$1\"},\"createdAt\":\"2999-01-01T00:00:00Z\",\"labels\":[]}${2:+,$2}]"
+}
+setup; commit_on pre-releases x; before=$(ref master); now=$(date +%s)
+approve stranger; run "$now"; [[ $(ref master) == "$before" ]] || fail "approval by someone else does not count"
+approve owner '{"number":1,"createdAt":"2000-01-01T00:00:00Z","labels":[{"name":"blocks-release"}]}'
+run "$now"; [[ $(ref master) == "$before" ]] || fail "blocks-release wins over approval"
+FAKE_CI=failure; approve owner; run "$now"; [[ $(ref master) == "$before" ]] || fail "approval still needs CI"
+FAKE_CI=success; approve owner '{"number":2,"createdAt":"2999-01-01T00:00:00Z","labels":[{"name":"bug"}]}'
+run "$now"; [[ $(ref master) == $(ref pre-releases) ]] || fail "approval skips the wait and new bugs"
+grep -q 'issue close 9' "$GH_LOG" || fail "closes the approval issue"
 
 setup; commit_on pre-releases x; commit_on master y; run
 [[ $(ref master) == $(ref pre-releases) ]] || fail "diverged branches end up equal"

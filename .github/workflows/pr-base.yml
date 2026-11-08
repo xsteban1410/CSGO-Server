@@ -22,4 +22,4 @@ jobs:
           PR: ${{ github.event.pull_request.number }}
         run: |
           gh api -X PATCH "repos/$GH_REPO/pulls/$PR" -f base=pre-releases --silent
-          gh pr comment "$PR" --body "Contributions go to \`pre-releases\` first, so I changed the base branch. Once merged, the change reaches \`master\` after three days without problems. See [Branches](https://github.com/$GH_REPO/blob/master/CONTRIBUTING.md#branches)."
+          gh pr comment "$PR" --body "Contributions go to \`pre-releases\` first, so I changed the base branch. Once merged, the change reaches \`master\` after a day without problems. See [Branches](https://github.com/$GH_REPO/blob/master/CONTRIBUTING.md#branches)."

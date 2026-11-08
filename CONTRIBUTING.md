@@ -24,13 +24,17 @@ existing issue first, remove passwords and tokens from your logs, and report sec
 - `pre-releases` is where work is tried first. Pull requests from contributors go here, and if you open one against `master`,
   CI moves it. CI also builds a package for every push, under **Actions › the run › Artifacts**.
 - Once a day, `.github/workflows/promote.yml` merges `pre-releases` into `master` if all of this is true:
-  - its newest commit is at least three days old, so any new commit restarts the wait;
+  - its newest commit is at least one day old, so any new commit restarts the wait;
   - CI passed on that commit;
   - no issue labelled `blocks-release` is open;
   - no issue labelled `bug` or `connection` has been opened since the first commit that is not in `master` yet.
 
 The last rule cannot tell whether a report is about that change, so any new report holds the promotion until the maintainer
 closes it or removes its label. To keep unfinished work out of `master`, open an issue labelled `blocks-release`.
+
+To release sooner, the repository owner opens an issue titled `approve release`. The promotion then runs at once (or when CI
+on `pre-releases` finishes), skips the one-day wait and the bug rule, and closes the issue when it is done. CI must still
+pass and a `blocks-release` issue still holds it. Issues with that title from anyone else are ignored.
 
 If the merge conflicts, or the changes touch `.github/workflows` (the workflow token cannot push those), the job opens a
 `blocks-release` issue with the commands to merge by hand. Close it afterwards, or promotion stays on hold. Changes pushed
