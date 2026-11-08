@@ -158,8 +158,9 @@ impl<'a> RconSession<'a> {
         RconSession { cfg, conn: None }
     }
 
-    /// Runs a command, reconnecting and repeating it if the connection was lost: only for commands that can repeat.
-    pub fn exec(&mut self, cmd: &str) -> crate::Result<String> {
+    /// Runs a command, reconnecting and repeating it if the connection was lost. The name is the contract: the
+    /// server may have run the command before the answer was lost, so only pass commands that can safely run twice.
+    pub fn exec_idempotent(&mut self, cmd: &str) -> crate::Result<String> {
         let mut last = None;
         for wait_ms in [0, 200, 600, 1500] {
             std::thread::sleep(Duration::from_millis(wait_ms));

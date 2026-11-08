@@ -36,13 +36,17 @@ impl Report {
 const OBSOLETE: &[(&str, &str)] = &[("nolobbyreservation", "nolobbyreservation.games.txt")];
 
 /// Plugins in a folder: top-level X.sp with `myinfo` (the rest are includes)
-/// and subfolders N/ with N/N.sp.
+/// and subfolders N/ with N/N.sp. Files with other names are skipped.
 pub fn find_plugins(dir: &Path) -> Vec<Plugin> {
     let mut v = Vec::new();
     let mut entries: Vec<PathBuf> = std::fs::read_dir(dir).into_iter().flatten().flatten().map(|e| e.path()).collect();
     entries.sort();
     for p in entries {
         let Some(stem) = p.file_stem().and_then(|s| s.to_str()).map(str::to_string) else { continue };
+        // the name goes into `sm plugins load <name>` over rcon
+        if !crate::plugins::valid_name(&stem) {
+            continue;
+        }
         if p.is_dir() {
             let main = p.join(format!("{stem}.sp"));
             if main.is_file() {
@@ -212,7 +216,7 @@ pub fn deploy(cfg: &Config, force: bool, reload: bool) -> crate::Result<Report> 
     let manifest = paths::data_dir().join("user_plugins.txt");
     let user: Vec<String> = find_plugins(&paths::user_plugins_dir()).into_iter().map(|p| p.name).collect();
     let before = std::fs::read_to_string(&manifest).unwrap_or_default();
-    r.removed = gone(&before, &user, &plugins);
+    r.removed = gone(&before, &user, &plugins).into_iter().filter(|n| crate::plugins::valid_name(n)).collect();
     for n in &r.removed {
         remove_smx(n);
     }
@@ -254,7 +258,7 @@ pub fn deploy(cfg: &Config, force: bool, reload: bool) -> crate::Result<Report> 
         let load = r.compiled.iter().map(|n| format!("sm plugins load {n}"));
         for c in phrases.into_iter().chain(unload).chain(load).collect::<Vec<_>>() {
             // loading a plugin can take longer than the rcon timeout; loading it again does no harm
-            rc.exec(&c)?;
+            rc.exec_idempotent(&c)?;
         }
         r.reloaded = true;
     }
@@ -354,6 +358,17 @@ mod tests {
         assert_eq!(std::fs::metadata(&b).unwrap().permissions().mode() & 0o777, 0o644);
         std::fs::set_permissions(&a, std::fs::Permissions::from_mode(0o644)).unwrap();
         std::fs::remove_dir_all(d).ok();
+    }
+
+    #[test]
+    fn plugin_names() {
+        let dir = std::env::temp_dir().join(format!("csls-names-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("x;quit.sp"), "myinfo").unwrap();
+        std::fs::write(dir.join("ok.sp"), "myinfo").unwrap();
+        let names: Vec<String> = find_plugins(&dir).into_iter().map(|p| p.name).collect();
+        assert_eq!(names, ["ok"]);
+        let _ = std::fs::remove_dir_all(dir);
     }
 
     #[test]
