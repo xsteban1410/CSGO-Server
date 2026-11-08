@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Game modes against bots for CS:GO Legacy.
+// The engine of the modes; the modes themselves and their plugins come from CSGO-Hub (see include/csls.inc).
 // On map load it runs: modo_base.cfg -> modo_clasico.cfg (classic rounds) -> modo_tipo_<modo_tipo>.cfg -> modo_<modo_nombre>.cfg -> modo_extra
 #pragma semicolon 1
 #include <sourcemod>
 #include <sdktools>
 #include <cstrike>
 #include <sdkhooks>
+#include <csls>
 #pragma newdecls required
 
 public Plugin myinfo = { name = "Modes", author = "xsteban1410", version = "4.0" };
@@ -19,8 +21,9 @@ ConVar g_Quitar[2], g_Arma[2], g_Pistola[2], g_Objeto[2], g_Vida[2], g_Velocidad
 int g_Site;                 // 0 = A, 1 = B in the current round
 float g_SiteCenter[3];
 
-#include "modos_extras.sp"
-#include "modos_zombies.sp"
+GlobalForward g_FwdReset, g_FwdEquip, g_FwdPlace;
+
+#include "modos_anarquia.sp"
 #include "modos_competitivo.sp"
 #include "modos_reglas.sp"
 
@@ -56,8 +59,10 @@ public void OnPluginStart()
 		g_Color[i] = CreateConVar(name, "", "Player color as R,G,B or R,G,B,alpha, e.g. 80,255,80 (empty = normal)");
 	}
 
-	Extras_Start();
-	Zombies_Start();
+	g_FwdReset = new GlobalForward("CSLS_OnModeReset", ET_Ignore);
+	g_FwdEquip = new GlobalForward("CSLS_OnEquip", ET_Ignore, Param_Cell);
+	g_FwdPlace = new GlobalForward("CSLS_OnPlaceHuman", ET_Event, Param_Cell);
+	Anarquia_Start();
 	Comp_Start();
 	Reglas_Start();
 	for (int i = 1; i <= MaxClients; i++)
@@ -71,6 +76,7 @@ public void OnPluginStart()
 	HookEvent("round_freeze_end", OnFreezeEnd);
 	CreateTimer(1.0, CheckWarmup, _, TIMER_REPEAT);
 	RegServerCmd("modo_sitios", CmdSitios, "Shows the center of sites A/B and a test spawn point");
+	RegServerCmd("modo_estado", CmdEstado, "Shows the round and the team, health, speed and position of each player");
 	// initial mode written by csgo-legacy-server start (only when the plugin loads)
 	ServerCommand("exec modo_inicio");
 	ServerExecute();
@@ -78,8 +84,6 @@ public void OnPluginStart()
 
 public void OnMapStart()
 {
-	Zombies_MapStart();
-	Extras_MapStart();
 	Comp_MapStart();
 }
 
@@ -115,19 +119,13 @@ public void OnClientSettingsChanged(int c)
 public void OnClientPutInServer(int c)
 {
 	ApplyLanguage(c);
-	SDKHook(c, SDKHook_OnTakeDamage, OnTakeDamage);
-	SDKHook(c, SDKHook_OnTakeDamagePost, Zombies_TakeDamagePost);
-}
-
-public Action OnTakeDamage(int victim, int &attacker, int &inflictor, float &damage, int &damagetype)
-{
-	if (Extras_TakeDamage(victim, attacker, inflictor, damage, damagetype) == Plugin_Changed)
-		return Plugin_Changed;
-	return Zombies_TakeDamage(victim, attacker, inflictor, damage, damagetype);
 }
 
 public void OnConfigsExecuted()
 {
+	// plugins put their own switches back first; modo_base.cfg does the engine's
+	Call_StartForward(g_FwdReset);
+	Call_Finish();
 	char n[32], tipo[32], extra[512], cmd[128] = "exec modo_base";
 	g_Nombre.GetString(n, sizeof(n));
 	g_Tipo.GetString(tipo, sizeof(tipo));
@@ -210,7 +208,13 @@ void Give(int c, ConVar cv)
 // once, when they join: after that they stay on whichever team they pick.
 bool FixHumanTeam(int c)
 {
-	if (IsFakeClient(c) || Zombies_Infectado(c))
+	if (IsFakeClient(c))
+		return false;
+	Action keep = Plugin_Continue;
+	Call_StartForward(g_FwdPlace);
+	Call_PushCell(c);
+	Call_Finish(keep);
+	if (keep >= Plugin_Handled)
 		return false;
 	char ht[8];
 	g_HumanTeam.GetString(ht, sizeof(ht));
@@ -273,8 +277,9 @@ public Action Equip(Handle t, any userid)
 		if (FindSitePoint(p))
 			TeleportEntity(c, p, NULL_VECTOR, NULL_VECTOR);
 	}
-	Extras_Equip(c);
-	Zombies_Equip(c);
+	Call_StartForward(g_FwdEquip);
+	Call_PushCell(c);
+	Call_Finish();
 	return Plugin_Stop;
 }
 
@@ -282,8 +287,6 @@ public Action Equip(Handle t, any userid)
 
 public void OnRoundPreStart(Event e, const char[] name, bool dontBroadcast)
 {
-	Extras_PreStart();
-	Zombies_PreStart();
 	Comp_BalanceBots(true);
 	if (!g_Retake.BoolValue)
 		return;
@@ -357,7 +360,6 @@ bool FindSitePoint(float out[3])
 
 public void OnFreezeEnd(Event e, const char[] name, bool dontBroadcast)
 {
-	Extras_FreezeEnd();
 	if (!g_Retake.BoolValue || GameRules_GetProp("m_bWarmupPeriod"))
 		return;
 	float p[3];
@@ -390,4 +392,19 @@ public void OnFreezeEnd(Event e, const char[] name, bool dontBroadcast)
 		}
 		PrintToChatAll(" \x04[Retake]\x01 %t", "bomb_planted_at", g_Site == 0 ? 'A' : 'B');
 	}
+}
+
+public Action CmdEstado(int args)
+{
+	PrintToServer("round=%d warmup=%d T=%d score=%d CT=%d score=%d", GameRules_GetProp("m_totalRoundsPlayed"), GameRules_GetProp("m_bWarmupPeriod"),
+		GetTeamClientCount(CS_TEAM_T), CS_GetTeamScore(CS_TEAM_T), GetTeamClientCount(CS_TEAM_CT), CS_GetTeamScore(CS_TEAM_CT));
+	for (int i = 1; i <= MaxClients; i++)
+		if (IsClientInGame(i) && IsPlayerAlive(i))
+		{
+			float p[3];
+			GetClientAbsOrigin(i, p);
+			PrintToServer("%N lang=%d team=%d health=%d armor=%d speed=%.2f scale=%.2f pos=%.0f,%.0f,%.0f", i, GetClientLanguage(i), GetClientTeam(i), GetClientHealth(i),
+				GetEntProp(i, Prop_Send, "m_ArmorValue"), GetEntPropFloat(i, Prop_Send, "m_flLaggedMovementValue"), GetEntPropFloat(i, Prop_Send, "m_flModelScale"), p[0], p[1], p[2]);
+		}
+	return Plugin_Handled;
 }

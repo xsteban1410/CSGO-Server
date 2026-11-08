@@ -9,7 +9,7 @@ id=io.github.xsteban1410.CsgoLegacyServer
 install -Dm755 "$bin/csgo-legacy-server" "$bin/csgo-legacy-server-app" "$bin/csgo-legacy-server-agent" -t "$prefix/bin/"
 share=$prefix/share/csgo-legacy-server
 install -d "$share"
-cp -r --no-preserve=ownership "$root"/game/{cfg,modes,plugin,data} "$share/"
+cp -r --no-preserve=ownership "$root"/game/{cfg,plugin,data} "$share/"
 find "$share" -type d -exec chmod 755 {} + && find "$share" -type f -exec chmod 644 {} +
 install -Dm644 "$root/packaging/$id.desktop" -t "$prefix/share/applications/"
 install -Dm644 "$root/packaging/$id.metainfo.xml" -t "$prefix/share/metainfo/"

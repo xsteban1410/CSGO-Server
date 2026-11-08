@@ -46,7 +46,7 @@ package() {
   install -Dm755 target/release/csgo-legacy-server target/release/csgo-legacy-server-app target/release/csgo-legacy-server-agent -t "$pkgdir/usr/bin/"
   local share="$pkgdir/usr/share/csgo-legacy-server"
   install -d "$share"
-  cp -r --no-preserve=ownership game/cfg game/modes game/plugin game/data "$share/"
+  cp -r --no-preserve=ownership game/cfg game/plugin game/data "$share/"
   find "$share" -type d -exec chmod 755 {} + && find "$share" -type f -exec chmod 644 {} +
   local id=io.github.xsteban1410.CsgoLegacyServer
   install -Dm644 "packaging/$id.desktop" -t "$pkgdir/usr/share/applications/"

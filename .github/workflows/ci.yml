@@ -93,17 +93,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - name: SourceMod compiler
+      - name: SourceMod compiler (the build in game/data/pinned.toml)
         run: |
           sudo dpkg --add-architecture i386 && sudo apt-get update -q && sudo apt-get install -yq lib32stdc++6
-          base=https://sm.alliedmods.net/smdrop/1.12
-          curl -fsSL "$base/$(curl -fsSL $base/sourcemod-latest-linux)" | tar xz
-      - name: Compile plugins
+          read -r base file sum < <(python3 -c 'import tomllib; s = tomllib.load(open("game/data/pinned.toml", "rb"))["sourcemod"]; print(s["base"], s["file"], s["sha256"])')
+          curl -fsSL --proto =https -o sm.tar.gz "$base/$file"
+          echo "$sum  sm.tar.gz" | sha256sum -c -
+          tar xzf sm.tar.gz
+      - name: Compile the engine plugins
         run: |
           set -e
           inc=addons/sourcemod/scripting/include
-          for p in game/plugin/modos.sp game/plugin/modos_cheats.sp game/plugin/csls_events.sp game/plugin/skins.sp game/plugin/csls_directconnect/csls_directconnect.sp; do
-            addons/sourcemod/scripting/spcomp64 -i$inc -igame/plugin "$p" -o/tmp/out.smx
+          # what deploy compiles: game/plugin/<name>.sp and game/plugin/<name>/<name>.sp; the rest are includes of modos.sp
+          for p in game/plugin/*.sp game/plugin/*/*.sp; do
+            name=$(basename "$p" .sp)
+            case "$p" in game/plugin/modos_*.sp) continue ;; game/plugin/*/*.sp) [ "$(basename "$(dirname "$p")")" = "$name" ] || continue ;; esac
+            echo "== $name"
+            addons/sourcemod/scripting/spcomp64 -i$inc -igame/plugin -igame/plugin/include "$p" -o/tmp/out.smx
           done
 
   scripts:
@@ -118,8 +124,8 @@ jobs:
         run: tools/test-promote.sh
       - name: English outside translation files
         run: |
-          ! git grep -nIP '[áéíóúñÁÉÍÓÚÑ¿¡]' -- . ':!README.es.md' ':!crates/app/lang/*' ':!game/modes/*.toml' ':!game/plugin/translations/*' \
-            ':!game/data/skins.es.cfg' ':!crates/core/src/skins_gen.rs' ':!packaging/*.metainfo.xml' ':!.github/workflows/ci.yml' | grep -v 'Español'
+          ! git grep -nIP '[áéíóúñÁÉÍÓÚÑ¿¡]' -- . ':!README.es.md' ':!crates/app/lang/*' ':!game/plugin/translations/*' \
+            ':!crates/core/src/skins_gen.rs' ':!packaging/*.metainfo.xml' ':!.github/workflows/ci.yml' | grep -v 'Español'
       - name: README translation
         run: python3 tools/test_sync_readme.py
 

@@ -8,6 +8,16 @@ The section of each version becomes the notes of its GitHub release, so keep the
 
 ## [Unreleased]
 
+### Added
+
+- CSGO-Hub: game modes, plugins and packs come from [CSGO-Hub](https://github.com/xsteban1410/CSGO-Hub). `csgo-legacy-server hub list|search|info|install|update|remove` installs them with what they require, checks each download's SHA-256 and every file again, and compiles plugins locally. `hub check <dir>` is the validator the hub's CI runs.
+- `game/plugin/include/csls.inc`, the engine API for hub plugins: `CSLS_OnModeReset`, `CSLS_OnEquip`, `CSLS_OnPlaceHuman` and `CSLS_Exempt`.
+
+### Changed
+
+- The app ships without game modes: the 46 modes, their plugins and skins moved to CSGO-Hub (`hub install pack-all` brings them all back). Modes load in layers: hub, then your own; a broken one is skipped with a warning instead of hiding every mode.
+- Deploy removes mode cfgs and plugins of items you uninstalled, and the plugins that moved to the hub unless you installed them.
+
 ### Fixed
 
 - Map names can no longer point outside `maps/` (absolute paths, empty parts), and the default map and a mode's maps are checked too.

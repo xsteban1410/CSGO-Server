@@ -22,7 +22,7 @@ jobs:
       - name: Look for sensitive paths
         run: |
           set -euo pipefail
-          paths='^(LICENSE|game/cfg/modo_base\.cfg|game/cfg/modo_clasico\.cfg|game/plugin/modos\.sp|game/plugin/csls_directconnect/|crates/core/src/(bridge|server|steam_client|rcon|config|install|deploy|launch|modes)\.rs|\.github/|\.claude/|tools/(version|promote)\.sh|tools/sync_readme\.py|packaging/)'
+          paths='^(LICENSE|game/cfg/modo_base\.cfg|game/cfg/modo_clasico\.cfg|game/plugin/modos\.sp|game/plugin/include/|game/plugin/csls_(directconnect/|admins|anticheat)|crates/core/src/(bridge|server|steam_client|rcon|config|install|deploy|launch|modes|hub|http|admins)\.rs|\.github/|\.claude/|tools/(version|promote)\.sh|tools/sync_readme\.py|packaging/)'
           touched=$(gh api --paginate "repos/$GH_REPO/pulls/$PR/files" --jq '.[].filename' | grep -E "$paths" || true)
           [ -n "$touched" ] || exit 0
           gh api "repos/$GH_REPO/issues/$PR/labels" -f 'labels[]=sensitive' >/dev/null

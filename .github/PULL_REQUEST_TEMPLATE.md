@@ -34,7 +34,7 @@ Closes #
 - [ ] I read [CONTRIBUTING.md](https://github.com/xsteban1410/CSGO-Server/blob/master/CONTRIBUTING.md), and this does none of what it forbids
 - [ ] `cargo test` and `cargo clippy --all-targets` pass
 - [ ] Plugins compile, if I changed `game/plugin/`
-- [ ] `go run ./cmd/testkit -root .. full <mode>` (from `go/`) passes for the affected modes, if I changed `game/cfg/`, `game/modes/` or `game/plugin/`
+- [ ] `go run ./cmd/testkit -root .. full <mode>` (from `go/`) passes for the affected modes, if I changed `game/cfg/` or `game/plugin/`
 - [ ] New app text has its Spanish translation in `crates/app/lang/es/LC_MESSAGES/csgo-legacy-server-app.po`
 - [ ] Both READMEs are updated if behavior changed, and `CHANGELOG.md` has a line under `Unreleased`
 - [ ] No passwords, tokens, `config.toml`, `server/` or build output are included

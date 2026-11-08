@@ -29,8 +29,9 @@ func lint(repo string) []string {
 	var p []string
 	metas, _ := filepath.Glob(filepath.Join(repo, "modes", "*.toml"))
 	cfgs, _ := filepath.Glob(filepath.Join(repo, "cfg", "modo_*.cfg"))
-	if len(metas) == 0 || len(cfgs) == 0 {
-		return []string{"no modes or cfgs under " + repo}
+	// the engine has no modes of its own (they live in CSGO-Hub, linted by its tools/lint.py), only modo_base and friends
+	if len(cfgs) == 0 {
+		return []string{"no cfgs under " + repo}
 	}
 	sort.Strings(metas)
 	hasMeta := map[string]bool{}
@@ -50,6 +51,9 @@ func lint(repo string) []string {
 	base := map[string]bool{}
 	for _, m := range modoConvar.FindAllStringSubmatch(strings.Join(readLines(filepath.Join(repo, "cfg", "modo_base.cfg")), "\n"), -1) {
 		base[m[1]] = true
+	}
+	for name := range resetByPlugins(filepath.Join(repo, "plugin")) {
+		base[name] = true
 	}
 	for _, c := range cfgs {
 		name := strings.TrimSuffix(filepath.Base(c), ".cfg")
@@ -71,24 +75,57 @@ func lint(repo string) []string {
 			}
 		}
 	}
-	// Every phrase the plugins name has to exist.
-	phrases := strings.Join(readLines(filepath.Join(repo, "plugin", "translations", "csls.phrases.txt")), "\n")
-	defined := map[string]bool{}
-	for _, m := range phraseDef.FindAllStringSubmatch(phrases, -1) {
-		defined[m[1]] = true
-	}
-	sources, _ := filepath.Glob(filepath.Join(repo, "plugin", "*.sp"))
-	for _, s := range sources {
+	// Every phrase a plugin names has to exist, in csls.phrases.txt or in the plugin's own translations.
+	shared := phrasesIn(filepath.Join(repo, "plugin", "translations"))
+	for _, s := range pluginSources(filepath.Join(repo, "plugin")) {
+		own := phrasesIn(filepath.Join(filepath.Dir(s), "translations"))
 		text := strings.Join(readLines(s), "\n")
 		for _, m := range phraseUse.FindAllStringSubmatch(text, -1) {
 			for _, key := range m[1:] {
-				if key != "" && !defined[key] {
-					p = append(p, fmt.Sprintf("plugin/%s: phrase %q is not in csls.phrases.txt", filepath.Base(s), key))
+				if key != "" && !shared[key] && !own[key] {
+					p = append(p, fmt.Sprintf("plugin/%s: phrase %q is not in its translations", filepath.Base(s), key))
 				}
 			}
 		}
 	}
 	return p
+}
+
+// pluginSources lists X.sp and N/N.sp under dir, the same plugins deploy finds.
+func pluginSources(dir string) []string {
+	top, _ := filepath.Glob(filepath.Join(dir, "*.sp"))
+	sub, _ := filepath.Glob(filepath.Join(dir, "*", "*.sp"))
+	return append(top, sub...)
+}
+
+// phrasesIn reads the phrase names of every .phrases.txt in dir.
+func phrasesIn(dir string) map[string]bool {
+	files, _ := filepath.Glob(filepath.Join(dir, "*.phrases.txt"))
+	defined := map[string]bool{}
+	for _, f := range files {
+		for _, m := range phraseDef.FindAllStringSubmatch(strings.Join(readLines(f), "\n"), -1) {
+			defined[m[1]] = true
+		}
+	}
+	return defined
+}
+
+var createConvar = regexp.MustCompile(`CreateConVar\("(modo_[a-z0-9_]+)"`)
+
+// resetByPlugins finds the modo_* convars of plugins that put their switches back in CSLS_OnModeReset,
+// which replaces listing them in modo_base.cfg.
+func resetByPlugins(dir string) map[string]bool {
+	out := map[string]bool{}
+	for _, s := range pluginSources(dir) {
+		text := strings.Join(readLines(s), "\n")
+		if !strings.Contains(text, "CSLS_OnModeReset") {
+			continue
+		}
+		for _, m := range createConvar.FindAllStringSubmatch(text, -1) {
+			out[m[1]] = true
+		}
+	}
+	return out
 }
 
 // settingOfOneMode tells apart the tuning convars read only while their own mode is on: their mode's switch is
