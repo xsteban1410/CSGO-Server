@@ -13,3 +13,11 @@ updates:
     groups:
       rust:
         patterns: ['*']
+  - package-ecosystem: gomod
+    target-branch: pre-releases
+    directory: /go
+    schedule:
+      interval: monthly
+    groups:
+      go:
+        patterns: ['*']

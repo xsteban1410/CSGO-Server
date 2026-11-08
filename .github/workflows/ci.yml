@@ -79,6 +79,9 @@ jobs:
       - name: Test
         working-directory: go
         run: go test -race ./...
+      - name: Known vulnerabilities
+        working-directory: go
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
 
   audit:
     runs-on: ubuntu-latest
