@@ -63,14 +63,21 @@ pub fn install() -> Rc<MinimalSoftwareWindow> {
     window
 }
 
-/// Writes what the window shows to a PNG.
-pub fn save(window: &MinimalSoftwareWindow, path: &std::path::Path) -> std::io::Result<()> {
-    let (w, h) = (SIZE.0 as usize, SIZE.1 as usize);
-    let mut buf = vec![Rgb8Pixel::new(0, 0, 0); w * h];
+/// Draws the window into memory.
+pub fn draw(window: &MinimalSoftwareWindow) -> Vec<Rgb8Pixel> {
+    let w = SIZE.0 as usize;
+    let mut buf = vec![Rgb8Pixel::new(0, 0, 0); w * SIZE.1 as usize];
     window.request_redraw();
     window.draw_if_needed(|r| {
         r.render(&mut buf, w);
     });
+    buf
+}
+
+/// Writes what the window shows to a PNG.
+pub fn save(window: &MinimalSoftwareWindow, path: &std::path::Path) -> std::io::Result<()> {
+    let (w, h) = (SIZE.0 as usize, SIZE.1 as usize);
+    let buf = draw(window);
     let mut rows = Vec::with_capacity((w * 3 + 1) * h);
     for row in buf.chunks(w) {
         rows.push(0);

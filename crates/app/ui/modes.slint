@@ -1,6 +1,6 @@
 import { Button, ComboBox, LineEdit, ScrollView, TextEdit } from "std-widgets.slint";
 import { Group, Row, ActionList, Overlay, SwitchRow, SpinRow, ComboRow, EntryRow, Theme } from "kit.slint";
-import { S, TeamEdit } from "state.slint";
+import { S, Tabs, TeamEdit } from "state.slint";
 
 export component ModesPage {
     ScrollView {
@@ -10,6 +10,16 @@ export component ModesPage {
             padding: 16px;
             spacing: Theme.page-gap;
             alignment: start;
+            if S.no-modes: Group {
+                title: @tr("No game modes yet");
+                description: @tr("Game modes come from CSGO-Hub now, so a mode can be fixed or added without a new version of the app. Install them all, or pick the ones you want.");
+                HorizontalLayout {
+                    alignment: end;
+                    spacing: 8px;
+                    Button { text: @tr("Open the Hub"); clicked => { S.tab = Tabs.hub; } }
+                    Button { text: @tr("Install every mode"); primary: true; clicked => { S.hb-get("pack-all"); } }
+                }
+            }
             HorizontalLayout {
                 alignment: end;
                 spacing: 8px;
@@ -22,9 +32,9 @@ export component ModesPage {
                 ActionList { rows: S.md-mine; empty: @tr("No custom modes yet"); clicked(id, action) => { S.md-mine-action(id, action); } }
             }
             Group {
-                title: @tr("Built-in modes");
-                description: @tr("Duplicate one to make your own version");
-                ActionList { rows: S.md-builtin; clicked(id, action) => { S.md-builtin-action(id, action); } }
+                title: @tr("Installed from the hub");
+                description: @tr("Duplicate one to make your own version. Add or remove them in the Hub tab");
+                ActionList { rows: S.md-builtin; empty: @tr("None installed"); clicked(id, action) => { S.md-builtin-action(id, action); } }
             }
         }
     }

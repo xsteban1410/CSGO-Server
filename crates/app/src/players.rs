@@ -205,6 +205,7 @@ pub fn init(a: &AppRc) {
                 s.set_ban_reason("".into());
                 s.set_ban_open(true);
             }
+            "admin" => app.s().invoke_ad_make(p.steamid.as_str().into(), p.name.as_str().into()),
             "skins" => {
                 if let Some(id64) = p.steamid64() {
                     skins_dialog(&app, &p.name, id64.to_string());
@@ -242,6 +243,7 @@ pub fn init(a: &AppRc) {
                 b.push(btn("kick", &t("Kick")));
                 if !p.bot {
                     b.push(btn("ban", &t("Ban")));
+                    b.push(btn("admin", &t("Admin")));
                 }
                 row(&p.userid.to_string(), &p.name, &sub, b)
             })

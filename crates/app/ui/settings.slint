@@ -30,8 +30,16 @@ export component SettingsPage {
                 ComboRow { title: @tr("Tickrate"); model: ["64", "128"]; index <=> S.set-tick; }
                 EntryRow { title: @tr("GSLT token (community)"); text <=> S.set-gslt; password: true; }
                 EntryRow { title: @tr("Workshop Web API key"); text <=> S.set-wkey; password: true; }
-                SwitchRow { title: @tr("Skins plugin"); subtitle: @tr("Can cost the GSLT on public servers"); checked <=> S.set-skins; }
+                SwitchRow { title: @tr("Skins plugin"); subtitle: @tr("Turns the skins item from the Hub on or off. Can cost the GSLT on public servers"); checked <=> S.set-skins; }
                 ValueRow { title: @tr("Server folder"); value: S.set-folder; }
+                Text { text: @tr("Anticheat"); font-size: Theme.title; font-weight: 700; color: Theme.text; }
+                SwitchRow {
+                    title: @tr("Anticheat");
+                    subtitle: @tr("Checks for aimbot, spinbot, bunny hop scripts, speedhack and wallhack cvars. A wallhack that only draws on the player's PC cannot be seen from the server");
+                    checked <=> S.set-ac;
+                }
+                if S.set-ac: ComboRow { title: @tr("On a detection"); model: [@tr("Only log it"), @tr("Kick"), @tr("Ban")]; index <=> S.set-ac-action; }
+                if S.set-ac && S.set-ac-action == 2: SpinRow { title: @tr("Ban minutes (0 = permanent)"); maximum: 525600; step: 60; value <=> S.set-ac-ban; }
                 HorizontalLayout { alignment: end; Button { text: @tr("Save"); primary: true; clicked => { S.set-save(); } } }
             }
             Group {

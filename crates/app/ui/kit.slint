@@ -63,6 +63,22 @@ export component Row {
     }
 }
 
+// A button for what deletes or cannot be undone: drawn in the "bad" color.
+export component DangerButton {
+    in property <string> text;
+    callback clicked();
+    min-height: 30px;
+    min-width: label.preferred-width + 24px;
+    Rectangle {
+        border-radius: 6px;
+        border-width: 1px;
+        border-color: Theme.bad;
+        background: area.pressed ? Theme.bad.transparentize(70%) : area.has-hover ? Theme.bad.transparentize(85%) : transparent;
+        area := TouchArea { clicked => { root.clicked(); } }
+        label := Text { text: root.text; color: Theme.bad; vertical-alignment: center; horizontal-alignment: center; }
+    }
+}
+
 export component ActionList {
     in property <[ActionRow]> rows;
     in property <string> empty;
@@ -73,9 +89,9 @@ export component ActionList {
         for r in rows: Row {
             title: r.title;
             subtitle: r.subtitle;
-            for b in r.buttons: Button {
-                text: b.label;
-                clicked => { root.clicked(r.id, b.id); }
+            for b in r.buttons: HorizontalLayout {
+                if !b.danger: Button { text: b.label; clicked => { root.clicked(r.id, b.id); } }
+                if b.danger: DangerButton { text: b.label; clicked => { root.clicked(r.id, b.id); } }
             }
         }
     }

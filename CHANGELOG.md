@@ -13,14 +13,23 @@ The section of each version becomes the notes of its GitHub release, so keep the
 - CSGO-Hub: game modes, plugins and packs come from [CSGO-Hub](https://github.com/xsteban1410/CSGO-Hub). `csgo-legacy-server hub list|search|info|install|update|remove` installs them with what they require, checks each download's SHA-256 and every file again, and compiles plugins locally. `hub check <dir>` is the validator the hub's CI runs.
 - Admins and roles: `[admins]` in the config and `csgo-legacy-server admins list|add|remove|role|password`. Roles grant a closed set of permissions (`console`, `kick`, `ban`, `map`, `slay`, `chat`, `cheats`, `bots`, `root`); the ones that give the server console (`sm_rcon`) also need `sm_login <password>` in the game console, since SteamIDs can be faked with `-insecure`. Three wrong passwords kick, and a second player with an admin's SteamID is kicked.
 - An anticheat in the engine, set in `[anticheat]` of the config (`enabled`, `action = "log" | "kick" | "ban"`, `ban_minutes`): impossible view angles, aim snaps before kills, scripted bunny hops, speedhack and wallhack client cvars. Detections show in the app's sanctions. Plugins that move aim or speed on purpose call `CSLS_Exempt`, and the `cheats` permission is immune.
+- A Hub tab in the app: browse CSGO-Hub with previews, search and filters, install with what an item needs, update and remove. With no modes installed, the Server and Modes tabs offer to install them all.
+- Admins in the Players tab (add one from a connected player, change the role, copy a new `sm_login` password) and the anticheat in Settings.
 - `game/plugin/include/csls.inc`, the engine API for hub plugins: `CSLS_OnModeReset`, `CSLS_OnEquip`, `CSLS_OnPlaceHuman` and `CSLS_Exempt`.
 
 ### Changed
 
 - The app ships without game modes: the 46 modes, their plugins and skins moved to CSGO-Hub (`hub install pack-all` brings them all back). Modes load in layers: hub, then your own; a broken one is skipped with a warning instead of hiding every mode.
+- The side bar groups the tabs (Server, Content, Manage) with icons, and arrow keys move between them. Buttons that delete are drawn in red.
 - Deploy removes mode cfgs and plugins of items you uninstalled, and the plugins that moved to the hub unless you installed them.
 
+### Removed
+
+- The Join tab, `play cs2` and the "Only join servers" first-run choice. The bridge to a friend's server over VPN is now in the Server tab, and `play [IP:PORT|local]` still opens CS:GO Legacy.
+
 ### Fixed
+
+- Updating the server while it runs said "Stop the server?" as an error; it now says to stop it first.
 
 - Map names can no longer point outside `maps/` (absolute paths, empty parts), and the default map and a mode's maps are checked too.
 - Humans, bots, rounds and tickrate have limits in the core, so the CLI checks them like the app.

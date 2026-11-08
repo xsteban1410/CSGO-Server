@@ -235,8 +235,6 @@ msgstr "Jugadores"
 msgid "Console"
 msgstr "Consola"
 
-msgid "Join"
-msgstr "Unirse"
 
 msgid "Settings"
 msgstr "Ajustes"
@@ -343,14 +341,10 @@ msgstr "Wingman"
 msgid "Short competitive"
 msgstr "Competitivo corto"
 
-msgid "Turns on by itself with a Tailscale address (100.x). The server must use the VPN profile"
-msgstr "Se activa solo con una dirección de Tailscale (100.x). El servidor debe usar el perfil VPN"
 
 msgid "Type in the game console"
 msgstr "Escribe en la consola del juego"
 
-msgid "Test connection"
-msgstr "Probar conexión"
 
 msgid "The server answers"
 msgstr "El servidor responde"
@@ -526,8 +520,6 @@ msgstr "Clave Web API del workshop"
 msgid "Skins plugin"
 msgstr "Plugin de skins"
 
-msgid "Can cost the GSLT on public servers"
-msgstr "En servidores públicos puede costar el GSLT"
 
 msgid "Server folder"
 msgstr "Carpeta del servidor"
@@ -553,14 +545,10 @@ msgstr "Cortafuegos"
 msgid "Welcome"
 msgstr "Bienvenido"
 
-msgid "Set up a CS:GO Legacy server to play with friends and bots, or join one"
-msgstr "Monta un servidor de CS:GO Legacy para jugar con amigos y bots, o únete a uno"
 
 msgid "Create a server"
 msgstr "Crear un servidor"
 
-msgid "Only join servers"
-msgstr "Solo unirme a servidores"
 
 msgid "Download the server"
 msgstr "Descargar el servidor"
@@ -586,23 +574,15 @@ msgstr "Instalado"
 msgid "Server address"
 msgstr "Dirección del servidor"
 
-msgid "Through VPN bridge"
-msgstr "Por puente VPN"
 
 msgid "For friends over Tailscale/ZeroTier with the server in VPN mode"
 msgstr "Para amigos por Tailscale/ZeroTier con el servidor en modo VPN"
 
-msgid "Open CS:GO Legacy"
-msgstr "Abrir CS:GO Legacy"
 
-msgid "Open CS2"
-msgstr "Abrir CS2"
 
 msgid "Stop bridge"
 msgstr "Parar puente"
 
-msgid "Bridge running"
-msgstr "Puente activo"
 
 msgid "Restart the server to apply network changes"
 msgstr "Reinicia el servidor para aplicar los cambios de red"
@@ -682,11 +662,7 @@ msgstr "Borrar"
 msgid "Duplicate"
 msgstr "Duplicar"
 
-msgid "Built-in modes"
-msgstr "Modos incluidos"
 
-msgid "Duplicate one to make your own version"
-msgstr "Duplica uno para hacer tu versión"
 
 msgid "No custom modes yet"
 msgstr "Aún no hay modos propios"
@@ -1383,3 +1359,189 @@ msgstr "nota"
 
 msgid "warning"
 msgstr "aviso"
+
+msgid "A friend's server over VPN"
+msgstr "El server de un amigo por VPN"
+
+msgid "Add admin"
+msgstr "Añadir admin"
+
+msgid "Admin"
+msgstr "Admin"
+
+msgid "Admins"
+msgstr "Admins"
+
+msgid "Anticheat"
+msgstr "Anticheat"
+
+msgid "Author"
+msgstr "Autor"
+
+msgid "Ban minutes (0 = permanent)"
+msgstr "Minutos de ban (0 = permanente)"
+
+msgid "Bridge running. Paste the copied command in the game console"
+msgstr "Puente en marcha. Pega el comando copiado en la consola del juego"
+
+msgid "Brings SourceMod plugin code, compiled on this PC and run by your server."
+msgstr "Trae código de plugins de SourceMod, que se compila en este PC y ejecuta tu servidor."
+
+msgid "CONTENT"
+msgstr "CONTENIDO"
+
+msgid "CS:GO only joins LAN servers that look local: this runs a bridge to your friend's server through Tailscale or another VPN. Their server must use the VPN profile"
+msgstr "CS:GO solo entra a servidores LAN que parecen locales: esto abre un puente al server de tu amigo por Tailscale u otra VPN. Su servidor debe usar el perfil VPN"
+
+msgid "CSGO-Hub"
+msgstr "CSGO-Hub"
+
+msgid "Cannot reach the hub"
+msgstr "No se puede conectar con el hub"
+
+msgid "Checks for aimbot, spinbot, bunny hop scripts, speedhack and wallhack cvars. A wallhack that only draws on the player's PC cannot be seen from the server"
+msgstr "Detecta aimbot, spinbot, scripts de bunny hop, speedhack y cvars de wallhack. Un wallhack que solo dibuja en el PC del jugador no se puede ver desde el servidor"
+
+msgid "Duplicate one to make your own version. Add or remove them in the Hub tab"
+msgstr "Duplica uno para hacer tu versión. Añádelos o quítalos en la pestaña Hub"
+
+msgid "Edit admin"
+msgstr "Editar admin"
+
+msgid "Everything is up to date"
+msgstr "Todo está al día"
+
+msgid "Game modes"
+msgstr "Modos de juego"
+
+msgid "Game modes come from CSGO-Hub now, so a mode can be fixed or added without a new version of the app. Install them all, or pick the ones you want."
+msgstr "Los modos de juego vienen ahora de CSGO-Hub, así un modo se arregla o se añade sin sacar otra versión de la app. Instálalos todos o elige los que quieras."
+
+msgid "Game modes, plugins and packs made by players and reviewed before they are published. Installing one deploys it to your server; nothing is compiled until then."
+msgstr "Modos, plugins y packs hechos por jugadores y revisados antes de publicarse. Al instalar uno se despliega en tu servidor; hasta entonces no se compila nada."
+
+msgid "Install every mode"
+msgstr "Instalar todos los modos"
+
+msgid "Install plugin code?"
+msgstr "¿Instalar código de plugins?"
+
+msgid "Installed from the hub"
+msgstr "Instalados desde el hub"
+
+msgid "Installs too"
+msgstr "Instala también"
+
+msgid "Its modes and plugins leave the server on the next deploy. Your own modes are not touched."
+msgstr "Sus modos y plugins salen del servidor en el siguiente despliegue. Tus propios modos no se tocan."
+
+msgid "MANAGE"
+msgstr "GESTIÓN"
+
+msgid "Made for another version of the app: update the app to install it."
+msgstr "Hecho para otra versión de la app: actualiza la app para instalarlo."
+
+msgid "New password"
+msgstr "Clave nueva"
+
+msgid "No admins yet. Add one, or use Admin on a connected player"
+msgstr "Aún no hay admins. Añade uno, o usa Admin en un jugador conectado"
+
+msgid "No game modes yet"
+msgstr "Aún no hay modos de juego"
+
+msgid "None installed"
+msgstr "Ninguno instalado"
+
+msgid "Nothing matches. Try another search or filter."
+msgstr "Nada coincide. Prueba otra búsqueda o filtro."
+
+msgid "On a detection"
+msgstr "Al detectar algo"
+
+msgid "Only log it"
+msgstr "Solo registrarlo"
+
+msgid "Open the Hub"
+msgstr "Abrir el Hub"
+
+msgid "Pack"
+msgstr "Pack"
+
+msgid "Packs"
+msgstr "Packs"
+
+msgid "Password copied. Give it to them privately: they type sm_login <password> in the game console"
+msgstr "Clave copiada. Dásela en privado: escribe sm_login <clave> en la consola del juego"
+
+msgid "Plugin"
+msgstr "Plugin"
+
+msgid "Plugins and admin tools"
+msgstr "Plugins y herramientas de admin"
+
+msgid "Remove"
+msgstr "Quitar"
+
+msgid "Restart bridge"
+msgstr "Reiniciar puente"
+
+msgid "Role"
+msgstr "Rol"
+
+msgid "SERVER"
+msgstr "SERVIDOR"
+
+msgid "Search names, descriptions and tags"
+msgstr "Busca en nombres, descripciones y etiquetas"
+
+msgid "Set up a CS:GO Legacy server to play with friends and bots"
+msgstr "Monta un servidor de CS:GO Legacy para jugar con amigos y bots"
+
+msgid "Start bridge"
+msgstr "Iniciar puente"
+
+msgid "Tags"
+msgstr "Etiquetas"
+
+msgid "They lose their admin commands on the server."
+msgstr "Pierde sus comandos de admin en el servidor."
+
+msgid "This brings SourceMod plugins, which run on your server with its permissions. Items are reviewed before they reach the hub, but install only what you trust. They are compiled on this PC."
+msgstr "Esto trae plugins de SourceMod, que se ejecutan en tu servidor con sus permisos. Los items se revisan antes de llegar al hub, pero instala solo lo que te fíes. Se compilan en este PC."
+
+msgid "Try again"
+msgstr "Reintentar"
+
+msgid "Turns the skins item from the Hub on or off. Can cost the GSLT on public servers"
+msgstr "Activa o desactiva el item de skins del Hub. Puede costarte el GSLT en servidores públicos"
+
+msgid "Type and version"
+msgstr "Tipo y versión"
+
+msgid "Updated"
+msgstr "Actualizado"
+
+msgid "Who may use admin commands in game, by role. Roles with the server console (sm_rcon) also need sm_login <password> in the game console, because a SteamID can be faked on this server."
+msgstr "Quién puede usar comandos de admin en el juego, por rol. Los roles con la consola del servidor (sm_rcon) necesitan además sm_login <clave> en la consola del juego, porque en este servidor una SteamID se puede falsificar."
+
+msgid "already an admin"
+msgstr "ya es admin"
+
+msgid "code"
+msgstr "código"
+
+msgid "console with sm_login"
+msgstr "consola con sm_login"
+
+msgid "update"
+msgstr "actualización"
+
+msgid "{} installed"
+msgstr "{} instalados"
+
+msgid "Update all ({})"
+msgstr "Actualizar todo ({})"
+
+msgid "Hub"
+msgstr "Hub"

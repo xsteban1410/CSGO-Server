@@ -1,0 +1,191 @@
+import { Button, ScrollView, LineEdit, ComboBox, Spinner } from "std-widgets.slint";
+import { Group, Row, ValueRow, Overlay, Theme } from "kit.slint";
+import { S, HubCard } from "state.slint";
+
+component Badge {
+    in property <string> text;
+    in property <color> color: Theme.dim;
+    Rectangle {
+        border-radius: 4px;
+        border-width: 1px;
+        border-color: root.color;
+        HorizontalLayout {
+            padding-left: 6px;
+            padding-right: 6px;
+            padding-top: 1px;
+            padding-bottom: 1px;
+            Text { text: root.text; font-size: 11px; color: root.color; }
+        }
+    }
+}
+
+component ItemCard {
+    in property <HubCard> card;
+    Rectangle {
+        background: Theme.card;
+        border-radius: Theme.radius;
+        border-width: 1px;
+        border-color: area.has-hover ? Theme.accent : Theme.line;
+        clip: true;
+        area := TouchArea { clicked => { S.hb-open(root.card.id); } }
+        VerticalLayout {
+            spacing: 4px;
+            Rectangle {
+                height: 124px;
+                background: Theme.line;
+                // a plain placeholder until the preview arrives
+                if root.card.thumb.width == 0: Text {
+                    text: root.card.title;
+                    font-size: 18px;
+                    font-weight: 700;
+                    color: Theme.dim;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+                Image { source: root.card.thumb; width: 100%; height: 100%; image-fit: cover; }
+            }
+            VerticalLayout {
+                padding: 8px;
+                spacing: 4px;
+                Text { text: root.card.title; overflow: elide; font-weight: 700; color: Theme.text; }
+                HorizontalLayout {
+                    spacing: 4px;
+                    alignment: start;
+                    Badge { text: root.card.kind + " " + root.card.version; }
+                    if root.card.code: Badge { text: @tr("code"); color: Theme.warn; }
+                    if root.card.update: Badge { text: @tr("update"); color: Theme.ok; }
+                }
+                Text { text: root.card.description; font-size: Theme.small; color: Theme.dim; overflow: elide; }
+                HorizontalLayout {
+                    alignment: end;
+                    spacing: 6px;
+                    if root.card.busy: Spinner { indeterminate: true; width: 24px; height: 24px; }
+                    if !root.card.busy && root.card.update: Button { text: @tr("Update"); clicked => { S.hb-install(root.card.id); } }
+                    if !root.card.busy && root.card.installed && !root.card.update: Text { text: "✓ " + @tr("Installed"); color: Theme.ok; vertical-alignment: center; font-size: Theme.small; }
+                    if !root.card.busy && !root.card.installed: Button {
+                        text: @tr("Install");
+                        primary: true;
+                        enabled: root.card.compatible;
+                        clicked => { S.hb-install(root.card.id); }
+                    }
+                }
+            }
+        }
+    }
+}
+
+export component HubPage {
+    property <int> columns: max(1, floor(self.width / 250px));
+    ScrollView {
+        width: 100%;
+        height: 100%;
+        VerticalLayout {
+            padding: 16px;
+            spacing: Theme.page-gap;
+            alignment: start;
+            Group {
+                title: @tr("CSGO-Hub");
+                description: @tr("Game modes, plugins and packs made by players and reviewed before they are published. Installing one deploys it to your server; nothing is compiled until then.");
+                HorizontalLayout {
+                    spacing: 8px;
+                    LineEdit {
+                        horizontal-stretch: 1;
+                        placeholder-text: @tr("Search names, descriptions and tags");
+                        text <=> S.hb-search;
+                        edited => { S.hb-filter-changed(); }
+                    }
+                    ComboBox {
+                        width: 200px;
+                        model: [@tr("Everything"), @tr("Game modes"), @tr("Plugins and admin tools"), @tr("Packs"), @tr("Installed"), @tr("Updates")];
+                        current-index <=> S.hb-filter;
+                        selected => { S.hb-filter-changed(); }
+                    }
+                }
+                HorizontalLayout {
+                    spacing: 8px;
+                    Text {
+                        horizontal-stretch: 1;
+                        vertical-alignment: center;
+                        font-size: Theme.small;
+                        color: Theme.dim;
+                        text: @tr("{} installed", S.hb-installed);
+                    }
+                    if S.hb-updates > 0: Button { text: @tr("Update all ({})", S.hb-updates); primary: true; clicked => { S.hb-update-all(); } }
+                    Button { text: @tr("Refresh"); clicked => { S.hb-refresh(); } }
+                }
+            }
+            if S.hb-error != "": Group {
+                Text { text: S.hb-error; color: Theme.bad; wrap: word-wrap; }
+                HorizontalLayout { alignment: end; Button { text: @tr("Try again"); clicked => { S.hb-refresh(); } } }
+            }
+            if S.hb-busy: HorizontalLayout { alignment: center; Spinner { indeterminate: true; width: 32px; height: 32px; } }
+            if !S.hb-busy && S.hb-error == "" && S.hb-cards.length == 0: Text {
+                text: @tr("Nothing matches. Try another search or filter.");
+                color: Theme.dim;
+                horizontal-alignment: center;
+            }
+            Rectangle {
+                height: ceil(S.hb-cards.length / root.columns) * 252px;
+                for c[i] in S.hb-cards: ItemCard {
+                    card: c;
+                    x: mod(i, root.columns) * (parent.width / root.columns) + 4px;
+                    y: floor(i / root.columns) * 252px + 4px;
+                    width: parent.width / root.columns - 8px;
+                    height: 244px;
+                }
+            }
+        }
+    }
+}
+
+export component HubDetail {
+    Overlay {
+        card-width: 560px;
+        card-height: 560px;
+        Rectangle {
+            height: 200px;
+            border-radius: Theme.radius;
+            background: Theme.line;
+            clip: true;
+            Image { source: S.hb-detail.thumb; width: 100%; height: 100%; image-fit: cover; }
+        }
+        Text { text: S.hb-detail.title; font-size: 18px; font-weight: 700; color: Theme.text; }
+        ScrollView {
+            vertical-stretch: 1;
+            VerticalLayout {
+                spacing: 8px;
+                alignment: start;
+                Text { text: S.hb-detail.description; wrap: word-wrap; color: Theme.text; }
+                ValueRow { title: @tr("Type and version"); value: S.hb-detail.kind + " " + S.hb-detail.version; }
+                ValueRow { title: @tr("Author"); value: S.hb-detail.author; }
+                if S.hb-detail.requires != "": ValueRow { title: @tr("Installs too"); value: S.hb-detail.requires; }
+                if S.hb-detail.tags != "": ValueRow { title: @tr("Tags"); value: S.hb-detail.tags; }
+                if S.hb-detail.code: Text {
+                    text: @tr("Brings SourceMod plugin code, compiled on this PC and run by your server.");
+                    color: Theme.warn;
+                    wrap: word-wrap;
+                    font-size: Theme.small;
+                }
+                if !S.hb-detail.compatible: Text {
+                    text: @tr("Made for another version of the app: update the app to install it.");
+                    color: Theme.bad;
+                    wrap: word-wrap;
+                    font-size: Theme.small;
+                }
+            }
+        }
+        HorizontalLayout {
+            alignment: end;
+            spacing: 8px;
+            if S.hb-detail.installed: Button { text: @tr("Remove"); clicked => { S.hb-remove(S.hb-detail.id); } }
+            if S.hb-detail.update: Button { text: @tr("Update"); clicked => { S.hb-install(S.hb-detail.id); } }
+            if !S.hb-detail.installed: Button {
+                text: @tr("Install");
+                primary: true;
+                enabled: S.hb-detail.compatible;
+                clicked => { S.hb-install(S.hb-detail.id); }
+            }
+            Button { text: @tr("Close"); clicked => { S.hb-detail-open = false; } }
+        }
+    }
+}

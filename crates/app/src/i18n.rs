@@ -92,6 +92,10 @@ mod tests {
         let mut seen = Vec::new();
         for (dir, open) in [("src", "t(\""), ("ui", "@tr(\"")] {
             for e in std::fs::read_dir(root.join(dir)).unwrap().flatten() {
+                // icons and other assets live in subfolders
+                if !e.path().extension().is_some_and(|x| x == "rs" || x == "slint") {
+                    continue;
+                }
                 let txt = std::fs::read_to_string(e.path()).unwrap();
                 // the tests above are not user text
                 let txt = txt.split("#[cfg(test)]").next().unwrap();

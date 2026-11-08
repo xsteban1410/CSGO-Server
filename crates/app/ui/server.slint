@@ -1,6 +1,6 @@
 import { Button, ScrollView } from "std-widgets.slint";
-import { Group, Row, ValueRow, ActionList, Theme } from "kit.slint";
-import { S } from "state.slint";
+import { Group, Row, ValueRow, EntryRow, ActionList, Theme } from "kit.slint";
+import { S, Tabs } from "state.slint";
 
 export component ServerPage {
     ScrollView {
@@ -10,6 +10,16 @@ export component ServerPage {
             padding: 16px;
             spacing: Theme.page-gap;
             alignment: start;
+            if S.no-modes: Group {
+                title: @tr("No game modes yet");
+                description: @tr("Game modes come from CSGO-Hub now, so a mode can be fixed or added without a new version of the app. Install them all, or pick the ones you want.");
+                HorizontalLayout {
+                    alignment: end;
+                    spacing: 8px;
+                    Button { text: @tr("Open the Hub"); clicked => { S.tab = Tabs.hub; } }
+                    Button { text: @tr("Install every mode"); primary: true; clicked => { S.hb-get("pack-all"); } }
+                }
+            }
             Group {
                 title: @tr("Server");
                 ValueRow { title: @tr("Status"); value: S.st-state; }
@@ -75,6 +85,22 @@ export component ServerPage {
                     color: e.category == "error" ? Theme.bad : Theme.text;
                     font-size: Theme.small;
                     overflow: elide;
+                }
+            }
+            Group {
+                title: @tr("A friend's server over VPN");
+                description: @tr("CS:GO only joins LAN servers that look local: this runs a bridge to your friend's server through Tailscale or another VPN. Their server must use the VPN profile");
+                EntryRow { title: @tr("Server address"); placeholder: "100.x.y.z:27030"; text <=> S.fb-addr; accepted => { S.fb-start(); } }
+                if S.fb-target != "": ValueRow {
+                    title: @tr("Type in the game console");
+                    value: S.fb-target;
+                    Button { text: @tr("Copy"); clicked => { S.fb-copy(); } }
+                }
+                HorizontalLayout {
+                    alignment: end;
+                    spacing: 8px;
+                    if S.fb-bridge: Button { text: @tr("Stop bridge"); clicked => { S.fb-stop(); } }
+                    Button { text: S.fb-bridge ? @tr("Restart bridge") : @tr("Start bridge"); clicked => { S.fb-start(); } }
                 }
             }
             if S.presets.length > 0: Group {

@@ -1,10 +1,11 @@
 //! Settings tab: config.toml, maintenance and diagnostics.
 use crate::i18n::{t, t_msg};
 use crate::{bg, model, AppRc, KeyValue};
-use csls_core::config::{Language, Network};
+use csls_core::config::{AcAction, Language, Network};
 use csls_core::server;
 use csls_core::{deploy, doctor};
 
+const ACTIONS: [AcAction; 3] = [AcAction::Log, AcAction::Kick, AcAction::Ban];
 const NETS: [Network; 4] = [Network::Lan, Network::Vpn, Network::Internet, Network::Community];
 
 fn fill(a: &AppRc) {
@@ -22,6 +23,9 @@ fn fill(a: &AppRc) {
     s.set_set_wkey(c.workshop_authkey.as_str().into());
     s.set_set_upnp(c.upnp);
     s.set_set_skins(c.skins);
+    s.set_set_ac(cfg.anticheat.enabled);
+    s.set_set_ac_action(ACTIONS.iter().position(|x| *x == cfg.anticheat.action).unwrap_or(0) as i32);
+    s.set_set_ac_ban(cfg.anticheat.ban_minutes as i32);
     s.set_set_folder(c.install_dir.display().to_string().into());
     let list: Vec<KeyValue> = doctor::run(&cfg)
         .iter()
@@ -48,12 +52,28 @@ fn save(a: &AppRc) {
     c.workshop_authkey = s.get_set_wkey().trim().to_string();
     c.skins = s.get_set_skins();
     c.upnp = s.get_set_upnp();
+    cfg.anticheat.enabled = s.get_set_ac();
+    cfg.anticheat.action = ACTIONS[s.get_set_ac_action().clamp(0, 2) as usize];
+    cfg.anticheat.ban_minutes = s.get_set_ac_ban().max(0) as u32;
+    let c = &cfg.server;
     let restart =
         (c.network, c.port, c.tickrate, c.max_players, &c.gslt) != (old.network, old.port, old.tickrate, old.max_players, &old.gslt);
     match cfg.save() {
         Ok(()) => {
-            *a.cfg.borrow_mut() = cfg;
+            *a.cfg.borrow_mut() = cfg.clone();
             crate::restart_agent(a);
+            // skins and the anticheat settings reach a running server through deploy
+            if server::Server::new(&cfg).is_installed() {
+                let a = a.clone();
+                bg(
+                    move || deploy::deploy(&cfg, false, true),
+                    move |r| {
+                        if let Err(e) = r {
+                            a.error(&e);
+                        }
+                    },
+                );
+            }
             if new_language {
                 a.toast(&t("Restart the app to apply the language"));
                 return;
@@ -87,7 +107,7 @@ pub fn init(a: &AppRc) {
     let app = a.clone();
     s.on_set_update(move || {
         if app.live.borrow().running {
-            app.error(&anyhow::anyhow!(t("Stop the server?")));
+            app.error(&anyhow::anyhow!(t("Stop the server before updating it")));
             return;
         }
         match server::spawn_install(true) {

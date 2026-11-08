@@ -15,6 +15,12 @@ export component PlayersPage {
                 ActionList { rows: S.pl-now; empty: @tr("No players"); clicked(id, action) => { S.pl-now-action(id, action); } }
             }
             Group {
+                title: @tr("Admins");
+                description: @tr("Who may use admin commands in game, by role. Roles with the server console (sm_rcon) also need sm_login <password> in the game console, because a SteamID can be faked on this server.");
+                ActionList { rows: S.ad-rows; empty: @tr("No admins yet. Add one, or use Admin on a connected player"); clicked(id, action) => { S.ad-action(id, action); } }
+                HorizontalLayout { alignment: end; Button { text: @tr("Add admin"); clicked => { S.ad-add(); } } }
+            }
+            Group {
                 title: @tr("Saved skins");
                 description: @tr("Players with skins saved, also offline");
                 ActionList { rows: S.pl-saved; empty: @tr("Nothing saved"); clicked(id, action) => { S.pl-saved-action(id, action); } }
@@ -93,6 +99,24 @@ export component SanctionDialog {
             spacing: 8px;
             Button { text: @tr("Cancel"); clicked => { S.san-open = false; } }
             Button { text: @tr("Save"); primary: true; clicked => { S.san-confirm(); } }
+        }
+    }
+}
+
+export component AdminDialog {
+    Overlay {
+        card-height: 300px;
+        card-width: 520px;
+        Text { text: S.ad-title; font-size: 16px; font-weight: 700; color: Theme.text; }
+        EntryRow { title: "SteamID"; placeholder: "STEAM_1:0:123, [U:1:246] or 7656…"; field: 260px; text <=> S.ad-steamid; }
+        EntryRow { title: @tr("Name"); field: 260px; text <=> S.ad-name; }
+        ComboRow { title: @tr("Role"); model: S.ad-roles; index <=> S.ad-role; }
+        Rectangle { vertical-stretch: 1; }
+        HorizontalLayout {
+            alignment: end;
+            spacing: 8px;
+            Button { text: @tr("Cancel"); clicked => { S.ad-open = false; } }
+            Button { text: @tr("Save"); primary: true; clicked => { S.ad-save(); } }
         }
     }
 }

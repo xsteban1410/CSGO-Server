@@ -373,6 +373,7 @@ fn fill(a: &AppRc) {
         }
     }
     let s = a.s();
+    s.set_no_modes(a.modes.borrow().0.is_empty());
     s.set_md_mine(model(mine));
     s.set_md_builtin(model(builtin));
 }

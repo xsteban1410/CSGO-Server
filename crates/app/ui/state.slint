@@ -4,11 +4,28 @@ export { ActionRow, Btn }
 
 export struct ConsoleLine { text: string, category: string }
 export struct Card { id: string, title: string, badge: string, kind: string, can: bool, installed: bool, thumb: image, tip: string }
+export struct HubCard { id: string, title: string, kind: string, version: string, description: string, author: string, requires: string, tags: string, installed: bool, update: bool, code: bool, compatible: bool, busy: bool, thumb: image }
 export struct KeyValue { key: string, value: string, warn: bool }
 export struct ModeItem { id: string, title: string, subtitle: string, heading: bool }
 export struct RuleEdit { event: int, action: int, value: string }
 export struct Bar { label: string, value: string, frac: float }
 export struct TeamEdit { strip: bool, weapon: int, pistol: int, item: int, health: int, speed: string, color: string }
+
+// Tab numbers by name; the order of the rail in app.slint and of tab_index in main.rs.
+export global Tabs {
+    out property <int> server: 0;
+    out property <int> console: 1;
+    out property <int> players: 2;
+    out property <int> stats: 3;
+    out property <int> modes: 4;
+    out property <int> hub: 5;
+    out property <int> workshop: 6;
+    out property <int> plugins: 7;
+    out property <int> tasks: 8;
+    out property <int> backups: 9;
+    out property <int> updates: 10;
+    out property <int> settings: 11;
+}
 
 export global S {
     // navigation
@@ -58,7 +75,6 @@ export global S {
     in-out property <bool> setup-busy;
     in-out property <float> setup-progress;
     in-out property <string> setup-progress-text;
-    callback setup-only-join();
     callback setup-choose-folder();
     callback setup-download();
 
@@ -118,6 +134,18 @@ export global S {
     callback pl-search-changed();
     callback pl-history-action(string, string);
     callback pl-export(string);
+    // admins (Players tab)
+    in-out property <[ActionRow]> ad-rows;
+    in-out property <[string]> ad-roles;
+    in-out property <bool> ad-open;
+    in-out property <string> ad-title;
+    in-out property <string> ad-steamid;
+    in-out property <string> ad-name;
+    in-out property <int> ad-role;
+    callback ad-add();
+    callback ad-make(string, string);
+    callback ad-action(string, string);
+    callback ad-save();
     in-out property <bool> san-open;
     in-out property <string> san-title;
     in-out property <int> san-kind;
@@ -223,17 +251,32 @@ export global S {
     callback con-alias-add();
     callback con-alias-action(string, string);
 
-    // join
-    in-out property <string> jn-addr;
-    in-out property <bool> jn-vpn;
-    in-out property <string> jn-target;
-    in-out property <bool> jn-bridge;
-    callback jn-addr-changed();
-    callback jn-copy();
-    callback jn-stop-bridge();
-    callback jn-play();
-    callback jn-test();
-    callback jn-cs2();
+    // hub
+    in-out property <bool> no-modes;
+    callback hb-get(string);
+    in-out property <[HubCard]> hb-cards;
+    in-out property <string> hb-search;
+    in-out property <int> hb-filter;
+    in-out property <bool> hb-busy;
+    in-out property <string> hb-error;
+    in-out property <int> hb-updates;
+    in-out property <int> hb-installed;
+    in-out property <HubCard> hb-detail;
+    in-out property <bool> hb-detail-open;
+    callback hb-shown();
+    callback hb-refresh();
+    callback hb-filter-changed();
+    callback hb-open(string);
+    callback hb-install(string);
+    callback hb-remove(string);
+    callback hb-update-all();
+    // a friend's server over VPN (Server tab)
+    in-out property <string> fb-addr;
+    in-out property <string> fb-target;
+    in-out property <bool> fb-bridge;
+    callback fb-start();
+    callback fb-stop();
+    callback fb-copy();
 
     // settings
     in-out property <int> set-language;
@@ -247,6 +290,9 @@ export global S {
     in-out property <string> set-wkey;
     in-out property <bool> set-upnp;
     in-out property <bool> set-skins;
+    in-out property <bool> set-ac;
+    in-out property <int> set-ac-action;
+    in-out property <int> set-ac-ban;
     in-out property <string> set-folder;
     in-out property <[KeyValue]> set-doctor;
     callback set-save();

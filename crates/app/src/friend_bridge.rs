@@ -1,7 +1,8 @@
-//! Join tab: open CS:GO Legacy connecting to a server, with a VPN bridge if needed.
+//! Playing on a friend's server over a VPN: a local UDP bridge to it (Server tab), since the game only
+//! joins LAN servers that look local.
 use crate::i18n::t;
 use crate::{bg, AppRc};
-use csls_core::{net, server, steam_client};
+use csls_core::{net, server};
 use std::time::Duration;
 
 /// "IP" or "IP:PORT", with the default port if absent.
@@ -12,20 +13,6 @@ fn with_port(addr: &str) -> String {
     } else {
         format!("{a}:27030")
     }
-}
-
-/// Prepares the connection: with a bridge, starts it and returns the address to connect to.
-fn prepare(a: &AppRc) -> anyhow::Result<String> {
-    let s = a.s();
-    let dest = with_port(&s.get_jn_addr());
-    if dest.is_empty() {
-        s.set_jn_target("".into());
-        return Ok(dest);
-    }
-    let connect = if s.get_jn_vpn() { server::join_through_bridge(&dest)? } else { dest };
-    s.set_jn_bridge(server::bridge_running());
-    s.set_jn_target(format!("connect {connect}").into());
-    Ok(connect)
 }
 
 /// A2S_INFO through the bridge: checks the whole path without opening the game.
@@ -41,53 +28,42 @@ fn check(a: &AppRc, connect: String) {
     );
 }
 
+/// Starts the bridge to the friend's server and shows the address to type in the game.
+fn start(a: &AppRc) -> anyhow::Result<Option<String>> {
+    let s = a.s();
+    let dest = with_port(&s.get_fb_addr());
+    if dest.is_empty() {
+        return Ok(None);
+    }
+    let connect = server::join_through_bridge(&dest)?;
+    s.set_fb_bridge(server::bridge_running());
+    s.set_fb_target(format!("connect {connect}").into());
+    Ok(Some(connect))
+}
+
 pub fn init(a: &AppRc) {
     let s = a.s();
-    s.set_jn_bridge(server::bridge_running());
+    s.set_fb_bridge(server::bridge_running());
     let app = a.clone();
-    s.on_jn_addr_changed(move || {
-        let text = app.s().get_jn_addr();
-        if net::is_vpn_ip(text.trim().split(':').next().unwrap_or("")) {
-            app.s().set_jn_vpn(true);
-        }
-    });
-    let app = a.clone();
-    s.on_jn_copy(move || {
-        let text = app.s().get_jn_target().to_string();
+    s.on_fb_copy(move || {
+        let text = app.s().get_fb_target().to_string();
         app.copy(text);
     });
     let app = a.clone();
-    s.on_jn_stop_bridge(move || {
+    s.on_fb_stop(move || {
         server::stop_bridge();
-        app.s().set_jn_bridge(false);
+        app.s().set_fb_bridge(false);
+        app.s().set_fb_target("".into());
     });
     let app = a.clone();
-    s.on_jn_cs2(move || {
-        if let Err(e) = steam_client::launch_cs2() {
-            app.error(&e);
+    s.on_fb_start(move || match start(&app) {
+        Ok(Some(c)) => {
+            app.copy(format!("connect {c}"));
+            app.toast(&t("Bridge running. Paste the copied command in the game console"));
+            check(&app, c);
         }
-    });
-    let app = a.clone();
-    s.on_jn_test(move || match prepare(&app) {
-        Ok(c) if !c.is_empty() => check(&app, c),
-        Ok(_) => app.toast(&t("Write the server address first")),
+        Ok(None) => app.toast(&t("Write the server address first")),
         Err(e) => app.error(&e),
-    });
-    let app = a.clone();
-    s.on_jn_play(move || {
-        let r = prepare(&app).and_then(|c| {
-            steam_client::launch_csgo((!c.is_empty()).then_some(c.as_str())).map(drop)?;
-            Ok(c)
-        });
-        match r {
-            Ok(c) if !c.is_empty() => {
-                app.copy(format!("connect {c}"));
-                app.toast(&t("Opening. If it does not join by itself, paste the copied command in the console"));
-                check(&app, c);
-            }
-            Ok(_) => {}
-            Err(e) => app.error(&e),
-        }
     });
 }
 

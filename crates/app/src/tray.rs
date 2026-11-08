@@ -36,7 +36,7 @@ pub fn init(a: &AppRc) -> anyhow::Result<Tray> {
         }
     };
     tray.on_open(with(|a| show(a, None)));
-    tray.on_console(with(|a| show(a, Some(4))));
+    tray.on_console(with(|a| show(a, crate::tab_index("console"))));
     tray.on_change(with(|a| {
         show(a, Some(0));
         crate::wizard::open(a, true);

@@ -1,9 +1,11 @@
 //! Desktop app for csgo-legacy-server.
+mod admins_tab;
 mod backups_tab;
 mod console;
+mod friend_bridge;
 mod headless;
+mod hub_tab;
 mod i18n;
-mod join;
 mod modes_tab;
 mod panel;
 mod players;
@@ -267,7 +269,8 @@ impl App {
 
     /// Watches the mode and plugin folders: on change it recompiles/copies and hot-reloads.
     fn watch(self: &Rc<Self>) {
-        let mut dirs = vec![csls_core::paths::user_modes_dir(), csls_core::paths::user_plugins_dir()];
+        // the hub folder too: installing or removing an item there deploys and reloads the modes by itself
+        let mut dirs = vec![csls_core::paths::user_modes_dir(), csls_core::paths::user_plugins_dir(), csls_core::paths::hub_dir()];
         if let Ok(r) = csls_core::paths::resources_dir() {
             dirs.push(r.join("plugin"));
             dirs.push(r.join("cfg"));
@@ -498,7 +501,9 @@ fn build(cfg: Config) -> anyhow::Result<AppRc> {
     modes_tab::init(&a);
     workshop_tab::init(&a);
     console::init(&a);
-    join::init(&a);
+    friend_bridge::init(&a);
+    hub_tab::init(&a);
+    admins_tab::init(&a);
     settings::init(&a);
     plugins_tab::init(&a);
     schedule_tab::init(&a);
@@ -527,8 +532,9 @@ fn debug_open(a: &AppRc) {
 
 const APP_ID: &str = "io.github.xsteban1410.CsgoLegacyServer";
 
-fn tab_index(name: &str) -> Option<i32> {
-    ["server", "players", "modes", "workshop", "console", "plugins", "tasks", "backups", "stats", "updates", "join", "settings"]
+pub fn tab_index(name: &str) -> Option<i32> {
+    // the order of the Tabs global in state.slint
+    ["server", "console", "players", "stats", "modes", "hub", "workshop", "plugins", "tasks", "backups", "updates", "settings"]
         .iter()
         .position(|t| *t == name)
         .map(|i| i as i32)
@@ -540,6 +546,8 @@ fn run_screenshot(path: std::ffi::OsString, cfg: Config) -> anyhow::Result<()> {
     let a = build(cfg)?;
     a.ui.show()?;
     debug_open(&a);
+    // a page starts its own loading (Hub, Workshop) when first drawn, which a real window does at once
+    headless::draw(&window);
     let delay = std::env::var("CSLS_SCREENSHOT_DELAY").ok().and_then(|d| d.parse().ok()).unwrap_or(2);
     Timer::single_shot(Duration::from_secs(delay), move || {
         if let Err(e) = headless::save(&window, std::path::Path::new(&path)) {
