@@ -1,4 +1,0 @@
-# Metadata for cfg/modo_libre.cfg
-category = "classic"
-name = { en = "Free play", es = "Libre" }
-description = { en = "No rules: respawn, buy anywhere, and any weapon with !guns. Good for trying things", es = "Sin reglas: reaparición, compras en cualquier sitio y cualquier arma con !armas. Para probar cosas" }

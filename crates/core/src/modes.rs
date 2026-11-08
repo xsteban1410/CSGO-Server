@@ -1,6 +1,7 @@
 //! Game modes: metadata in modes/<id>.toml + rules in cfg/modo_<id>.cfg.
-//! The user's live in ~/.config/csgo-legacy-server/modes/<id>.toml + <id>.cfg and
-//! override official ones with the same id. A .cfg without a .toml is also a valid mode.
+//! Three layers, each overriding the one before for the same id: the engine's (none since modes moved to
+//! CSGO-Hub, kept for development), the hub items installed (`crate::hub`) and the user's own in
+//! ~/.config/csgo-legacy-server/modes/<id>.toml + <id>.cfg. A .cfg without a .toml is also a valid mode.
 use crate::config::Kind;
 use crate::paths;
 use anyhow::{bail, Context};
@@ -55,6 +56,8 @@ pub struct Mode {
     pub meta: ModeMeta,
     pub cfg: PathBuf,
     pub custom: bool,
+    /// The hub item it comes from.
+    pub hub: Option<String>,
 }
 
 impl Mode {
@@ -98,44 +101,63 @@ pub fn valid_id(id: &str) -> bool {
         && id.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
 }
 
+/// The modes by id, and the problems found loading them: a broken mode is left out, not fatal for the rest.
 #[derive(Debug, Clone, Default)]
-pub struct Modes(pub BTreeMap<String, Mode>);
+pub struct Modes(pub BTreeMap<String, Mode>, pub Vec<String>);
 
 impl Modes {
-    /// Official (resources) + user.
+    /// Engine (resources) + hub + user.
     pub fn load() -> crate::Result<Modes> {
         let r = paths::resources_dir()?;
-        Self::load_from(&r.join("modes"), &r.join("cfg"), &paths::user_modes_dir())
+        Ok(Self::load_from(&r.join("modes"), &r.join("cfg"), &crate::hub::installed(), &paths::user_modes_dir()))
     }
 
-    pub fn load_from(official_meta: &Path, official_cfg: &Path, user: &Path) -> crate::Result<Modes> {
-        let mut m = BTreeMap::new();
-        // oficiales: modes/<id>.toml + cfg/modo_<id>.cfg
+    pub fn load_from(official_meta: &Path, official_cfg: &Path, hub: &[crate::hub::Installed], user: &Path) -> Modes {
+        let mut m = Modes::default();
+        // engine: modes/<id>.toml + cfg/modo_<id>.cfg
         for e in read_dir_sorted(official_cfg) {
             let Some(id) = file_id(&e, "modo_", ".cfg") else { continue };
-            if !valid_id(&id) {
-                continue;
+            let meta = official_meta.join(format!("{id}.toml"));
+            m.add(id, &meta, e, false, None);
+        }
+        // hub items: <item>/modes/<id>.toml + <item>/cfg/modo_<id>.cfg
+        for i in hub {
+            for (id, cfg) in crate::hub::mode_files(i) {
+                let meta = i.modes_dir().join(format!("{id}.toml"));
+                m.add(id, &meta, cfg, false, Some(i.item.id.clone()));
             }
-            let meta = read_meta(&official_meta.join(format!("{id}.toml")))?;
-            m.insert(id.clone(), Mode { id, meta, cfg: e, custom: false });
         }
         // user's: <id>.toml + <id>.cfg
         for e in read_dir_sorted(user) {
             let Some(id) = file_id(&e, "", ".cfg") else { continue };
-            if !valid_id(&id) {
-                continue;
-            }
-            let mut meta = read_meta(&user.join(format!("{id}.toml")))?;
-            if meta.category.is_empty() {
-                meta.category = "custom".into();
-            }
-            m.insert(id.clone(), Mode { id, meta, cfg: e, custom: true });
+            m.add(id.clone(), &user.join(format!("{id}.toml")), e, true, None);
         }
-        Ok(Modes(m))
+        m
+    }
+
+    fn add(&mut self, id: String, meta: &Path, cfg: PathBuf, custom: bool, hub: Option<String>) {
+        if !valid_id(&id) {
+            return;
+        }
+        match read_meta(meta) {
+            Ok(mut meta) => {
+                if custom && meta.category.is_empty() {
+                    meta.category = "custom".into();
+                }
+                self.0.insert(id.clone(), Mode { id, meta, cfg, custom, hub });
+            }
+            Err(e) => self.1.push(format!("{e:#}")),
+        }
     }
 
     pub fn get(&self, id: &str) -> crate::Result<&Mode> {
-        self.0.get(id).ok_or_else(|| anyhow::anyhow!("unknown mode '{id}'. Modes: {}", self.ids().join(" ")))
+        self.0.get(id).ok_or_else(|| {
+            if self.0.is_empty() {
+                anyhow::anyhow!("no modes installed: get one from the hub, e.g. csgo-legacy-server hub install {id}")
+            } else {
+                anyhow::anyhow!("unknown mode '{id}'. Modes: {}. More in the hub: csgo-legacy-server hub list", self.ids().join(" "))
+            }
+        })
     }
 
     pub fn ids(&self) -> Vec<String> {
@@ -186,26 +208,43 @@ pub fn save_user_mode(dir: &Path, id: &str, meta: &ModeMeta, cfg: &str) -> crate
     Ok(p)
 }
 
+/// The modes of the hub items in crates/core/tests/fixtures/hub, for tests.
+#[cfg(test)]
+pub(crate) fn fixture_modes() -> Modes {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let hub = crate::hub::installed_in(&root.join("tests/fixtures/hub"));
+    Modes::load_from(&root.join("../../game/modes"), &root.join("../../game/cfg"), &hub, Path::new("/nonexistent"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn official_have_toml_and_cfg() {
+    fn hub_modes_load_and_the_engine_has_none() {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../game");
-        let m = Modes::load_from(&root.join("modes"), &root.join("cfg"), Path::new("/nonexistent")).unwrap();
-        assert!(m.0.len() >= 30);
+        assert!(Modes::load_from(&root.join("modes"), &root.join("cfg"), &[], Path::new("/nonexistent")).0.is_empty());
+        let m = fixture_modes();
+        assert!(m.0.len() >= 9 && m.1.is_empty(), "{:?}", m.1);
         for mode in m.0.values() {
-            assert!(!mode.meta.name.en.is_empty(), "{} without modes/{}.toml", mode.id, mode.id);
-            assert!(!mode.meta.category.is_empty(), "{} without a category", mode.id);
-        }
-        // and every toml has its cfg
-        for e in read_dir_sorted(&root.join("modes")) {
-            let id = file_id(&e, "", ".toml").unwrap();
-            assert!(m.0.contains_key(&id), "modes/{id}.toml without cfg/modo_{id}.cfg");
+            assert!(!mode.meta.name.en.is_empty() && !mode.meta.category.is_empty(), "{}", mode.id);
+            assert_eq!(mode.hub.as_deref(), Some(mode.id.as_str()));
         }
         assert_eq!(m.get("armsrace").unwrap().meta.game_type, Some(1));
         assert!(m.exclusive_prefixes().contains(&"gd_".to_string()));
+        assert!(Modes::default().get("awp").unwrap_err().to_string().contains("hub install awp"));
+    }
+
+    #[test]
+    fn a_broken_mode_does_not_take_the_others_down() {
+        let d = std::env::temp_dir().join(format!("csls-broken-{}", std::process::id()));
+        std::fs::create_dir_all(&d).unwrap();
+        std::fs::write(d.join("ok.cfg"), "sv_gravity 200\n").unwrap();
+        std::fs::write(d.join("bad.cfg"), "sv_gravity 200\n").unwrap();
+        std::fs::write(d.join("bad.toml"), "category = [").unwrap();
+        let m = Modes::load_from(Path::new("/nonexistent"), Path::new("/nonexistent"), &[], &d);
+        assert!(m.get("ok").is_ok() && m.get("bad").is_err() && m.1.len() == 1);
+        std::fs::remove_dir_all(d).ok();
     }
 
     #[test]
@@ -214,8 +253,9 @@ mod tests {
         std::fs::create_dir_all(&d).unwrap();
         std::fs::write(d.join("mine.cfg"), "sv_gravity 200\n").unwrap();
         save_user_mode(&d, "awp", &ModeMeta { name: Localized::same("Mi AWP"), ..Default::default() }, "x").unwrap();
-        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../game");
-        let m = Modes::load_from(&root.join("modes"), &root.join("cfg"), &d).unwrap();
+        let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+        let hub = crate::hub::installed_in(&root.join("tests/fixtures/hub"));
+        let m = Modes::load_from(Path::new("/nonexistent"), Path::new("/nonexistent"), &hub, &d);
         assert!(m.get("mine").unwrap().custom);
         assert_eq!(m.get("mine").unwrap().name("es"), "mine");
         assert_eq!(m.get("awp").unwrap().name("en"), "Mi AWP");
@@ -399,7 +439,13 @@ mod editor_tests {
         let d = std::env::temp_dir().join(format!("csls-exp-{}", std::process::id()));
         let cfg =
             save_user_mode(&d, "mine", &ModeMeta { name: Localized::same("Mine"), ..Default::default() }, "sv_gravity 200\n").unwrap();
-        let m = Mode { id: "mine".into(), meta: ModeMeta { name: Localized::same("Mine"), ..Default::default() }, cfg, custom: true };
+        let m = Mode {
+            id: "mine".into(),
+            meta: ModeMeta { name: Localized::same("Mine"), ..Default::default() },
+            cfg,
+            custom: true,
+            hub: None,
+        };
         let txt = export_mode(&m).unwrap();
         let d2 = d.join("otro");
         assert_eq!(import_mode(&d2, &txt).unwrap(), "mine");

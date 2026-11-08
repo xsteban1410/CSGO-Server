@@ -1,0 +1,11 @@
+id = "premier"
+kind = "mode"
+version = "1.0.0"
+api = 1
+author = "xsteban1410"
+license = "GPL-3.0-or-later"
+name = { en = "Premier", es = "Premier" }
+description = { en = "Premier rules: 5v5, first to 13 and map bans in warmup. Humans start balanced. A 12-12 is a draw unless you turn on the no-draw rule (overtime). No CS Rating, that needs Valve's servers", es = "Reglas de Premier: 5v5, a 13 rondas y vetos de mapa en el calentamiento. Los humanos empiezan repartidos. Un 12-12 es empate salvo que actives la regla sin empate (prórroga). Sin CS Rating, eso necesita los servidores de Valve" }
+requires = []
+tags = ["competitive"]
+preview = "preview.png"

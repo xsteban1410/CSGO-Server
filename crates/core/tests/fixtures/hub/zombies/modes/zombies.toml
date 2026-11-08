@@ -1,0 +1,5 @@
+# Metadata for cfg/modo_zombies.cfg
+# Fixed sides, part of the rules: humans on CT, zombies on T.
+category = "pve"
+name = { en = "Zombies", es = "Zombis" }
+description = { en = "Survive five waves of zombie bots with all the guns and infinite ammo. If you die, you turn into one", es = "Sobrevive a cinco oleadas de bots zombis con todas las armas y munición infinita. Si mueres, te conviertes en uno" }

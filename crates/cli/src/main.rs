@@ -129,6 +129,9 @@ enum Cmd {
     /// Share custom modes: export <mode> > file.toml, import file.toml, delete <mode>
     #[command(subcommand)]
     ModeFile(ModeFile),
+    /// Game modes, plugins and packs from CSGO-Hub
+    #[command(subcommand)]
+    Hub(HubCmd),
     /// UDP bridge for friends over VPN. Without arguments: server side (PORT+1 -> server)
     Bridge {
         /// Friend side: local port to listen on
@@ -214,6 +217,38 @@ enum Ws {
 }
 
 #[derive(Subcommand)]
+enum HubCmd {
+    /// What the hub has; `--installed` only what is installed
+    List {
+        #[arg(long)]
+        installed: bool,
+        #[arg(long)]
+        json: bool,
+    },
+    /// Search names, descriptions and tags
+    Search { text: Vec<String> },
+    /// Details of one item
+    Info { id: String },
+    /// Install items and what they need
+    Install {
+        #[arg(required = true)]
+        ids: Vec<String>,
+    },
+    /// Update the installed items with a newer version
+    Update,
+    /// Remove installed items
+    Remove {
+        #[arg(required = true)]
+        ids: Vec<String>,
+    },
+    /// Check item folders as the hub's CI does
+    Check {
+        #[arg(required = true)]
+        dirs: Vec<PathBuf>,
+    },
+}
+
+#[derive(Subcommand)]
 enum AgentAction {
     Start,
     Stop,
@@ -277,6 +312,108 @@ enum ModeFile {
     Export { mode: String },
     Import { file: std::path::PathBuf },
     Delete { mode: String },
+}
+
+fn hub_cmd(cfg: &Config, c: HubCmd) -> Result<()> {
+    use csls_core::hub;
+    let lang = csls_core::lang();
+    let line = |it: &hub::Item| format!("{:<22} {:<7} {:<9} {}", it.id, it.kind.label(), it.version, it.name.get(lang));
+    // deploy only when there is a server to deploy to
+    let redeploy = || -> Result<()> {
+        if cfg.install_dir().join("csgo/addons/sourcemod").is_dir() {
+            if let Some(e) = deploy::deploy(cfg, false, true)?.error_text() {
+                eprintln!("compile errors:\n{e}");
+            }
+        }
+        Ok(())
+    };
+    match c {
+        HubCmd::List { installed: true, json } => {
+            let items: Vec<hub::Item> = hub::installed().into_iter().map(|i| i.item).collect();
+            if json {
+                println!("{}", serde_json::to_string(&items)?);
+            } else {
+                items.iter().for_each(|it| println!("{}", line(it)));
+            }
+        }
+        HubCmd::List { installed: false, json } => {
+            let ix = hub::fetch_index()?;
+            if json {
+                println!("{}", serde_json::to_string(&ix.items)?);
+            } else {
+                let have: Vec<String> = hub::installed().into_iter().map(|i| i.item.id).collect();
+                for e in &ix.items {
+                    let mark = if have.contains(&e.item.id) { "*" } else { " " };
+                    println!("{mark} {}", line(&e.item));
+                }
+            }
+        }
+        HubCmd::Search { text } => {
+            let q = text.join(" ").to_lowercase();
+            for e in hub::fetch_index()?.items {
+                let it = &e.item;
+                let hay =
+                    format!("{} {} {} {} {}", it.id, it.name.en, it.name.es, it.description.get(lang), it.tags.join(" ")).to_lowercase();
+                if hay.contains(&q) {
+                    println!("{}", line(it));
+                }
+            }
+        }
+        HubCmd::Info { id } => {
+            let ix = hub::fetch_index()?;
+            let e = ix.get(&id)?;
+            let it = &e.item;
+            println!("{} ({} {}) by {}, {}", it.name.get(lang), it.kind.label(), it.version, it.author, it.license);
+            println!("{}", it.description.get(lang));
+            if !it.requires.is_empty() {
+                println!("Needs: {}", it.requires.join(", "));
+            }
+            if e.has_code {
+                println!("It brings SourceMod plugin code, compiled and run on your server.");
+            }
+        }
+        HubCmd::Install { ids } => {
+            let ix = hub::fetch_index()?;
+            for id in ids {
+                for done in hub::install(&ix, &id)? {
+                    println!("Installed {done}");
+                }
+            }
+            redeploy()?;
+        }
+        HubCmd::Update => {
+            let done = hub::update_all(&hub::fetch_index()?)?;
+            if done.is_empty() {
+                println!("Everything is up to date.");
+            } else {
+                println!("Updated {}", done.join(", "));
+                redeploy()?;
+            }
+        }
+        HubCmd::Remove { ids } => {
+            for id in ids {
+                hub::remove(&id)?;
+                println!("Removed {id}");
+            }
+            redeploy()?;
+        }
+        HubCmd::Check { dirs } => {
+            let mut bad = 0;
+            for d in dirs {
+                match hub::check_dir(&d) {
+                    Ok(it) => println!("ok   {}", it.id),
+                    Err(e) => {
+                        bad += 1;
+                        println!("FAIL {}: {e:#}", d.display());
+                    }
+                }
+            }
+            if bad > 0 {
+                bail!("{bad} item(s) failed");
+            }
+        }
+    }
+    Ok(())
 }
 
 fn watch_loop(cfg: &Config) -> Result<()> {
@@ -476,8 +613,15 @@ fn main() -> Result<()> {
             println!("Mode {} on {map}. Settings: {}", o.mode, o.extra(modes.get(&o.mode)?));
         }
         Cmd::Modes => {
-            for m in Modes::load()?.0.values() {
+            let modes = Modes::load()?;
+            for m in modes.0.values() {
                 println!("{:<12} {:<11} {}", m.id, m.meta.category, m.meta.description.get(lang));
+            }
+            for p in &modes.1 {
+                eprintln!("skipped: {p}");
+            }
+            if modes.0.is_empty() {
+                eprintln!("No modes installed. Get them from the hub: csgo-legacy-server hub install pack-all");
             }
         }
         Cmd::Maps => {
@@ -612,6 +756,7 @@ fn main() -> Result<()> {
                 ModeFile::Delete { mode } => modes::delete_user_mode(&dir, &mode)?,
             }
         }
+        Cmd::Hub(c) => hub_cmd(&cfg, c)?,
         Cmd::Nav { force } => {
             println!("Generating .nav (seconds to minutes)...");
             let m = srv.generate_nav(Duration::from_secs(600), force)?;

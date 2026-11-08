@@ -1,0 +1,11 @@
+id = "guardian"
+kind = "mode"
+version = "1.0.0"
+api = 1
+author = "xsteban1410"
+license = "GPL-3.0-or-later"
+name = { en = "Guardian", es = "Guardián" }
+description = { en = "Official co-op: defend the zone against waves of bots, on gd_ maps", es = "Cooperativo oficial: defiende la zona contra oleadas de bots, en mapas gd_" }
+requires = []
+tags = ["pve"]
+preview = "preview.png"

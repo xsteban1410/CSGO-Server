@@ -1,0 +1,11 @@
+id = "normal"
+kind = "mode"
+version = "1.0.0"
+api = 1
+author = "xsteban1410"
+license = "GPL-3.0-or-later"
+name = { en = "Normal", es = "Normal" }
+description = { en = "Rounds with $16000 every round, so you can always buy anything", es = "Rondas con 16000 $ cada ronda, así que siempre puedes comprar de todo" }
+requires = []
+tags = ["classic"]
+preview = "preview.png"

@@ -1,0 +1,11 @@
+id = "retake"
+kind = "mode"
+version = "1.0.0"
+api = 1
+author = "xsteban1410"
+license = "GPL-3.0-or-later"
+name = { en = "Retake", es = "Retake" }
+description = { en = "The bomb is already planted and you (CT) must defuse it against 5 bots guarding it", es = "La bomba ya está plantada y tú (CT) debes desactivarla contra 5 bots que la protegen" }
+requires = []
+tags = ["objective"]
+preview = "preview.png"

@@ -1,6 +1,0 @@
-# Metadata for cfg/modo_decoy.cfg
-category = "deathmatch"
-name = { en = "Decoy", es = "Señuelo" }
-description = { en = "Deathmatch with 1 HP and endless decoys: a direct hit kills", es = "Deathmatch con 1 de vida y señuelos sin fin: un impacto directo mata" }
-game_type = 1
-game_mode = 2

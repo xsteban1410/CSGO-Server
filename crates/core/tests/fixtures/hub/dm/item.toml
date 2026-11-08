@@ -1,0 +1,11 @@
+id = "dm"
+kind = "mode"
+version = "1.0.0"
+api = 1
+author = "xsteban1410"
+license = "GPL-3.0-or-later"
+name = { en = "Deathmatch", es = "Deathmatch" }
+description = { en = "Official deathmatch: buy from the menu, respawn at once, 10 minutes", es = "Deathmatch oficial: compras en el menú, reapareces al momento, 10 minutos" }
+requires = []
+tags = ["deathmatch"]
+preview = "preview.png"

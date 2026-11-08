@@ -75,7 +75,8 @@ pub fn list(cfg: &Config) -> crate::Result<Vec<Info>> {
         let src = std::fs::read_to_string(&p.main).unwrap_or_default();
         let (title, author, version, description) = parse_myinfo(&src);
         let includes = parse_includes(&src);
-        let dirs = [sm.join("scripting/include"), p.dir.clone(), p.main.parent().unwrap_or(&p.dir).to_path_buf()];
+        let dirs =
+            [sm.join("scripting/include"), res.join("plugin/include"), p.dir.clone(), p.main.parent().unwrap_or(&p.dir).to_path_buf()];
         let missing = includes.iter().filter(|n| !has_include(n, &dirs)).cloned().collect();
         let off = sm.join("plugins/disabled").join(format!("{}.smx", p.name)).is_file();
         out.push(Info {
@@ -93,6 +94,9 @@ pub fn list(cfg: &Config) -> crate::Result<Vec<Info>> {
     };
     let builtin = deploy::find_plugins(&res.join("plugin"));
     builtin.iter().for_each(|p| add(p, "builtin"));
+    for i in crate::hub::installed() {
+        deploy::find_plugins(&i.plugin_dir()).iter().for_each(|p| add(p, "hub"));
+    }
     deploy::find_plugins(&paths::user_plugins_dir()).iter().for_each(|p| add(p, "user"));
 
     // compiled plugins that came with SourceMod or were copied by hand

@@ -38,8 +38,8 @@ func startAgent(t *testing.T, e *env) *agentEnv {
 	}
 	cli := filepath.Join(e.root, "cli.sh")
 	// the CLI with the environment of this test
-	write(t, cli, fmt.Sprintf("#!/bin/sh\nexport XDG_CONFIG_HOME=%q XDG_DATA_HOME=%q XDG_RUNTIME_DIR=%q HOME=%q CSLS_NO_SYSTEMD=1 CSLS_RESOURCES=%q\nexec %q \"$@\"\n",
-		filepath.Join(e.root, "config"), filepath.Join(e.root, "data"), filepath.Join(e.root, "run"), e.root, filepath.Join(repo, "game"), cliBin), 0o755)
+	write(t, cli, fmt.Sprintf("#!/bin/sh\nexport XDG_CONFIG_HOME=%q XDG_DATA_HOME=%q XDG_RUNTIME_DIR=%q HOME=%q CSLS_NO_SYSTEMD=1 CSLS_RESOURCES=%q CSLS_HUB_DIR=%q\nexec %q \"$@\"\n",
+		filepath.Join(e.root, "config"), filepath.Join(e.root, "data"), filepath.Join(e.root, "run"), e.root, filepath.Join(repo, "game"), filepath.Join(repo, "crates", "core", "tests", "fixtures", "hub"), cliBin), 0o755)
 	if err := os.MkdirAll(filepath.Join(e.root, "data", "csgo-legacy-server"), 0o700); err != nil {
 		t.Fatal(err)
 	}

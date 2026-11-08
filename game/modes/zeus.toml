@@ -1,6 +1,0 @@
-# Metadata for cfg/modo_zeus.cfg
-category = "deathmatch"
-name = { en = "Zeus", es = "Zeus" }
-description = { en = "Deathmatch with a Zeus that never runs out", es = "Deathmatch con un Zeus que nunca se acaba" }
-game_type = 1
-game_mode = 2

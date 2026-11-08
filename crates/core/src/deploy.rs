@@ -32,8 +32,22 @@ impl Report {
     }
 }
 
+/// Plugins of the engine. Nothing from the hub or the user may take one of these names.
+pub const ENGINE_PLUGINS: &[&str] = &["modos", "csls_events", "csls_directconnect", "csls_admins", "csls_anticheat"];
+
 /// (plugin, gamedata) no longer used: nolobbyreservation (no license) -> csls_directconnect.
 const OBSOLETE: &[(&str, &str)] = &[("nolobbyreservation", "nolobbyreservation.games.txt")];
+/// Plugins the engine used to ship that are hub items now: removed unless the hub installed them again.
+const MOVED_TO_HUB: &[&str] = &[
+    "skins",
+    "modos_cheats",
+    "modos_aleatorio",
+    "modos_unabala",
+    "modos_vampiro",
+    "modos_jefe",
+    "modos_clutch",
+    "modos_zombies",
+];
 
 /// Plugins in a folder: top-level X.sp with `myinfo` (the rest are includes)
 /// and subfolders N/ with N/N.sp. Files with other names are skipped.
@@ -61,13 +75,14 @@ pub fn find_plugins(dir: &Path) -> Vec<Plugin> {
 
 /// Hash of the sources in a plugin's folder. Dates are no use here: a package keeps its build date, so
 /// after switching between versions an older source could be newer code than the .smx, or the other way round,
-/// and the plugin then no longer matches its translations.
+/// and the plugin then no longer matches its translations. The engine API (`plugin/include`) counts too,
+/// since every plugin is built against it.
 fn source_hash(dir: &Path) -> String {
     use std::hash::{DefaultHasher, Hash, Hasher};
-    let mut files: Vec<PathBuf> = std::fs::read_dir(dir)
-        .into_iter()
-        .flatten()
-        .flatten()
+    let api = paths::resources_dir().ok().map(|r| r.join("plugin/include"));
+    let mut files: Vec<PathBuf> = std::iter::once(dir.to_path_buf())
+        .chain(api)
+        .flat_map(|d| std::fs::read_dir(d).into_iter().flatten().flatten())
         .map(|e| e.path())
         .filter(|p| p.extension().is_some_and(|x| x == "sp" || x == "inc" || x == "txt"))
         .collect();
@@ -119,6 +134,8 @@ pub fn compile(sm: &Path, p: &Plugin) -> crate::Result<std::result::Result<(), S
     let tmp = out.with_extension("smx.tmp");
     let o = Command::new(spcomp(sm)?)
         .arg(format!("-i{}", sm.join("scripting/include").display()))
+        // the engine API (csls.inc) for every plugin, also the ones from the hub or the user
+        .args(paths::resources_dir().ok().map(|r| format!("-i{}", r.join("plugin/include").display())))
         .arg(format!("-i{}", p.dir.display()))
         .arg(&p.main)
         .arg(format!("-o{}", tmp.display()))
@@ -148,6 +165,13 @@ pub fn copy_writable(from: &Path, to: &Path) -> crate::Result<()> {
     Ok(())
 }
 
+fn copy_if_differs(from: &Path, to: &Path) -> crate::Result<()> {
+    if std::fs::read(from).ok() != std::fs::read(to).ok() {
+        copy_writable(from, to)?;
+    }
+    Ok(())
+}
+
 /// Copies the files that differ and says whether there were any.
 fn copy_glob(from: &Path, suffix: &str, to: &Path, rename: impl Fn(&str) -> String) -> crate::Result<bool> {
     std::fs::create_dir_all(to)?;
@@ -163,10 +187,16 @@ fn copy_glob(from: &Path, suffix: &str, to: &Path, rename: impl Fn(&str) -> Stri
     Ok(changed)
 }
 
-/// All the plugins (official + user) that apply with this config.
+/// Plugins of the installed hub items. None may take an engine plugin's name.
+fn hub_plugins(hub: &[crate::hub::Installed]) -> Vec<Plugin> {
+    hub.iter().flat_map(|i| find_plugins(&i.plugin_dir())).filter(|p| !ENGINE_PLUGINS.contains(&p.name.as_str())).collect()
+}
+
+/// All the plugins (engine + hub + user) that apply with this config.
 pub fn all_plugins(cfg: &Config) -> crate::Result<Vec<Plugin>> {
     let res = paths::resources_dir()?;
     let mut v = find_plugins(&res.join("plugin"));
+    v.extend(hub_plugins(&crate::hub::installed()));
     v.extend(find_plugins(&paths::user_plugins_dir()));
     if !cfg.server.skins {
         v.retain(|p| p.name != "skins");
@@ -212,20 +242,32 @@ pub fn deploy(cfg: &Config, force: bool, reload: bool) -> crate::Result<Report> 
         remove_smx(n);
         let _ = std::fs::remove_file(sm.join("gamedata").join(gd));
     }
-    // own plugins deployed earlier whose .sp no longer exists
+    for n in MOVED_TO_HUB.iter().filter(|n| !plugins.iter().any(|p| p.name == **n)) {
+        remove_smx(n);
+    }
+    // user and hub plugins deployed earlier whose .sp no longer exists (removed by hand or uninstalled)
+    let hub = crate::hub::installed();
     let manifest = paths::data_dir().join("user_plugins.txt");
-    let user: Vec<String> = find_plugins(&paths::user_plugins_dir()).into_iter().map(|p| p.name).collect();
+    let extra: Vec<String> = find_plugins(&paths::user_plugins_dir()).into_iter().chain(hub_plugins(&hub)).map(|p| p.name).collect();
     let before = std::fs::read_to_string(&manifest).unwrap_or_default();
-    r.removed = gone(&before, &user, &plugins).into_iter().filter(|n| crate::plugins::valid_name(n)).collect();
+    r.removed = gone(&before, &extra, &plugins).into_iter().filter(|n| crate::plugins::valid_name(n)).collect();
     for n in &r.removed {
         remove_smx(n);
     }
     std::fs::create_dir_all(paths::data_dir())?;
-    std::fs::write(&manifest, user.join("\n"))?;
+    std::fs::write(&manifest, extra.join("\n"))?;
 
-    // skins: the list generated when updating the game or the package's, in the chosen language
+    // data files of hub items (catalogs, lists) go to sourcemod/configs
+    for i in &hub {
+        copy_glob(&i.data_dir(), ".cfg", &sm.join("configs"), str::to_string)?;
+        copy_glob(&i.data_dir(), ".txt", &sm.join("configs"), str::to_string)?;
+    }
+    // skins: the list generated when updating the game or the one an item brings, in the chosen language
     let catalog = crate::skins_gen::catalog_name(cfg.language.as_str());
-    let skins = [paths::data_dir().join(&catalog), res.join("data").join(&catalog)].into_iter().find(|p| p.is_file());
+    let skins = [paths::data_dir().join(&catalog), res.join("data").join(&catalog)]
+        .into_iter()
+        .chain(hub.iter().map(|i| i.data_dir().join(&catalog)))
+        .find(|p| p.is_file());
     if let Some(s) = skins {
         std::fs::create_dir_all(sm.join("configs"))?;
         copy_writable(&s, &sm.join("configs/skins.cfg"))?;
@@ -233,7 +275,8 @@ pub fn deploy(cfg: &Config, force: bool, reload: bool) -> crate::Result<Report> 
     // giving special knives with GivePlayerItem requires bypassing Valve's rules
     let core = sm.join("configs/core.cfg");
     if let Ok(t) = std::fs::read_to_string(&core) {
-        let want = if cfg.server.skins { "no" } else { "yes" };
+        let off = (cfg.server.skins && plugins.iter().any(|p| p.name == "skins")) || hub.iter().any(|i| i.item.guidelines_off);
+        let want = if off { "no" } else { "yes" };
         let n = set_kv(&t, "FollowCSGOServerGuidelines", want);
         if n != t {
             std::fs::write(&core, n)?;
@@ -241,7 +284,31 @@ pub fn deploy(cfg: &Config, force: bool, reload: bool) -> crate::Result<Report> 
     }
 
     copy_glob(&res.join("cfg"), ".cfg", &csgo.join("cfg"), str::to_string)?;
-    copy_glob(&paths::user_modes_dir(), ".cfg", &csgo.join("cfg"), |n| format!("modo_{n}"))?;
+    // mode cfgs of the hub and the user; the ones gone since the last deploy are removed from the server
+    let mut cfgs: Vec<String> = Vec::new();
+    for i in &hub {
+        for (id, path) in crate::hub::mode_files(i) {
+            let n = format!("modo_{id}.cfg");
+            copy_if_differs(&path, &csgo.join("cfg").join(&n))?;
+            cfgs.push(n);
+        }
+    }
+    for e in std::fs::read_dir(paths::user_modes_dir()).into_iter().flatten().flatten() {
+        let n = e.file_name().to_string_lossy().into_owned();
+        if let Some(id) = n.strip_suffix(".cfg").filter(|id| crate::modes::valid_id(id)) {
+            let n = format!("modo_{id}.cfg");
+            copy_if_differs(&e.path(), &csgo.join("cfg").join(&n))?;
+            cfgs.push(n);
+        }
+    }
+    let cfg_manifest = paths::data_dir().join("deployed_cfgs.txt");
+    let before = std::fs::read_to_string(&cfg_manifest).unwrap_or_default();
+    for n in before.lines().filter(|n| n.starts_with("modo_") && n.ends_with(".cfg") && !n.contains('/')) {
+        if !cfgs.iter().any(|c| c == n) && !res.join("cfg").join(n).is_file() {
+            let _ = std::fs::remove_file(csgo.join("cfg").join(n));
+        }
+    }
+    std::fs::write(&cfg_manifest, cfgs.join("\n"))?;
     // Valve's Guardian rules are in maps/cfg, out of reach for exec; the plugin runs them from cfg/
     for e in std::fs::read_dir(csgo.join("maps/cfg")).into_iter().flatten().flatten() {
         let n = e.file_name().to_string_lossy().into_owned();
@@ -299,8 +366,12 @@ mod tests {
     fn finds_repo_plugins() {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../game/plugin");
         let n: Vec<String> = find_plugins(&root).into_iter().map(|p| p.name).collect();
-        assert!(n.contains(&"modos".into()) && n.contains(&"skins".into()) && n.contains(&"csls_directconnect".into()));
-        assert!(!n.contains(&"modos_extras".into()), "includes are not compiled on their own");
+        // only the engine's: modes, skins and the rest come from the hub
+        let mut want: Vec<String> = n.clone();
+        want.sort();
+        assert_eq!(want, ["csls_directconnect", "csls_events", "modos"]);
+        assert!(n.iter().all(|p| ENGINE_PLUGINS.contains(&p.as_str())));
+        assert!(!n.contains(&"modos_anarquia".into()), "includes are not compiled on their own");
     }
 
     #[test]

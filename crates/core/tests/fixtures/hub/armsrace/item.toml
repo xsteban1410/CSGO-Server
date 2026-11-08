@@ -1,0 +1,11 @@
+id = "armsrace"
+kind = "mode"
+version = "1.0.0"
+api = 1
+author = "xsteban1410"
+license = "GPL-3.0-or-later"
+name = { en = "Arms Race", es = "Carrera de armas" }
+description = { en = "Official: each kill gives you the next weapon, the first to the golden knife wins. Its own ar_ maps", es = "Oficial: cada baja te da el arma siguiente, gana el primero en llegar al cuchillo dorado. Mapas ar_ propios" }
+requires = []
+tags = ["objective"]
+preview = "preview.png"

@@ -130,6 +130,8 @@ func (e *env) run(args ...string) (string, error) {
 		"HOME="+e.root,
 		"CSLS_NO_SYSTEMD=1",
 		"CSLS_RESOURCES="+filepath.Join(repo, "game"),
+		// the repo has no modes: they come from the hub, here its test items
+		"CSLS_HUB_DIR="+filepath.Join(repo, "crates", "core", "tests", "fixtures", "hub"),
 	)
 	c.Env = append(c.Env, e.extra...)
 	o, err := c.CombinedOutput()

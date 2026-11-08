@@ -38,16 +38,25 @@ pub fn user_modes_dir() -> PathBuf {
     config_dir().join("modes")
 }
 
+/// Items installed from CSGO-Hub, one folder each. `CSLS_HUB_DIR` points elsewhere, for tests.
+pub fn hub_dir() -> PathBuf {
+    match std::env::var_os("CSLS_HUB_DIR") {
+        Some(p) if !p.is_empty() => PathBuf::from(p),
+        _ => data_dir().join("hub"),
+    }
+}
+
 /// User's own plugins (.sp, compiled automatically).
 pub fn user_plugins_dir() -> PathBuf {
     config_dir().join("plugins")
 }
 
 fn is_resources(p: &Path) -> bool {
-    p.join("modes").is_dir() && p.join("cfg").is_dir() && p.join("plugin").is_dir()
+    // modes/ is gone since modes moved to CSGO-Hub
+    p.join("cfg").is_dir() && p.join("plugin").is_dir()
 }
 
-/// Folder with cfg/, modes/, plugin/ and data/: $CSLS_RESOURCES, the package's
+/// Folder with cfg/, plugin/ and data/: $CSLS_RESOURCES, the package's
 /// (<prefix>/share/csgo-legacy-server) or, in development, the repo's game/.
 pub fn resources_dir() -> crate::Result<PathBuf> {
     let mut cand: Vec<PathBuf> = Vec::new();

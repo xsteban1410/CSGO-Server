@@ -1,0 +1,11 @@
+id = "zombies"
+kind = "mode"
+version = "1.0.0"
+api = 1
+author = "xsteban1410"
+license = "GPL-3.0-or-later"
+name = { en = "Zombies", es = "Zombis" }
+description = { en = "Survive five waves of zombie bots with all the guns and infinite ammo. If you die, you turn into one", es = "Sobrevive a cinco oleadas de bots zombis con todas las armas y munición infinita. Si mueres, te conviertes en uno" }
+requires = []
+tags = ["pve"]
+preview = "preview.png"

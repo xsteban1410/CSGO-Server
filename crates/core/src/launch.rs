@@ -290,8 +290,7 @@ mod tests {
     use super::*;
 
     fn setup() -> (Modes, Config, std::path::PathBuf) {
-        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../game");
-        let m = Modes::load_from(&root.join("modes"), &root.join("cfg"), Path::new("/nonexistent")).unwrap();
+        let m = crate::modes::fixture_modes();
         // tests run at once and each removes its folder at the end
         static NEXT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
         let n = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);

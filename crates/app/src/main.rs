@@ -627,7 +627,7 @@ mod tests {
         std::fs::remove_dir_all(d).unwrap();
     }
 
-    /// The tabs and flows wired together, on temporary folders with the real modes. Only one test does this: the
+    /// The tabs and flows wired together, on temporary folders with the hub test items. Only one test does this: the
     /// environment is shared by the whole process.
     #[test]
     fn the_app_runs_its_flows() {
@@ -637,13 +637,14 @@ mod tests {
         std::env::set_var("XDG_DATA_HOME", tmp.join("data"));
         std::env::set_var("XDG_RUNTIME_DIR", tmp.join("run"));
         std::env::set_var("CSLS_RESOURCES", concat!(env!("CARGO_MANIFEST_DIR"), "/../../game"));
+        std::env::set_var("CSLS_HUB_DIR", concat!(env!("CARGO_MANIFEST_DIR"), "/../core/tests/fixtures/hub"));
         let a = build(Config::default()).unwrap();
         let s = a.s();
         for tab in 0..12 {
             s.set_tab(tab);
         }
         assert_eq!(s.get_setup(), "welcome", "nothing installed yet");
-        assert!(s.get_md_builtin().row_count() > 10, "the modes tab shows the modes");
+        assert!(s.get_md_builtin().row_count() >= 9, "the modes tab shows the installed modes");
         assert_eq!(s.get_md_mine().row_count(), 0);
 
         // wizard: mode, then map, then what was chosen on the options page reaches the launch options

@@ -1,0 +1,11 @@
+id = "competitivo"
+kind = "mode"
+version = "1.0.0"
+api = 1
+author = "xsteban1410"
+license = "GPL-3.0-or-later"
+name = { en = "Competitive", es = "Competitivo" }
+description = { en = "The real thing: 5v5 with economy, first to 16 and sides swap at half time. Humans start balanced, bots fill the empty seats. A 15-15 is a draw unless you turn on the no-draw rule", es = "Lo de verdad: 5v5 con economía, a 16 rondas y cambio de lado al descanso. Los humanos empiezan repartidos y los bots ocupan los sitios libres. Un 15-15 es empate salvo que actives la regla sin empate" }
+requires = []
+tags = ["competitive"]
+preview = "preview.png"

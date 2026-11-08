@@ -1,4 +1,0 @@
-# Metadata for cfg/modo_vampiro.cfg
-category = "fun"
-name = { en = "Vampire", es = "Vampiro" }
-description = { en = "AK-47 and Deagle, and half the damage you deal heals you (up to 200 HP)", es = "AK-47 y Deagle, y la mitad del daño que haces te cura (hasta 200 de vida)" }

@@ -1,6 +1,0 @@
-# Metadata for cfg/modo_demolicion.cfg
-category = "objective"
-name = { en = "Demolition", es = "Demolición" }
-description = { en = "Official: bomb rounds where you get a new weapon each round for your kills. Small maps", es = "Oficial: rondas de bomba donde recibes un arma nueva cada ronda según tus bajas. Mapas pequeños" }
-game_type = 1
-game_mode = 1

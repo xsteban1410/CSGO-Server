@@ -1,4 +1,0 @@
-# Metadata for cfg/modo_escopetas.cfg
-category = "weapons"
-name = { en = "Shotguns", es = "Escopetas" }
-description = { en = "Everyone gets an XM1014 and a P250. Short rounds, no buying", es = "Todos con XM1014 y P250. Rondas cortas, sin comprar" }

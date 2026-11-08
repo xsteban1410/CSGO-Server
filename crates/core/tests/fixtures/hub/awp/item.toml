@@ -1,0 +1,11 @@
+id = "awp"
+kind = "mode"
+version = "1.0.0"
+api = 1
+author = "xsteban1410"
+license = "GPL-3.0-or-later"
+name = { en = "AWP", es = "AWP" }
+description = { en = "Everyone gets an AWP and a Deagle. Short rounds, no buying", es = "Todos con AWP y Deagle. Rondas cortas, sin comprar" }
+requires = []
+tags = ["weapons"]
+preview = "preview.png"
