@@ -684,8 +684,18 @@ mod tests {
             assert!(install_into(&root, &ix3, "lib", true).is_err(), "another change is running");
             assert!(remove_in(&root, "top").is_err(), "another change is running");
         }
-        remove_in(&root, "top").unwrap();
-        remove_in(&root, "lib").unwrap();
+        // shortcut: a parallel test forking `tar` can hold our lock for an instant; retry, don't hide a real failure
+        let retry = |id: &str| {
+            for _ in 0..50 {
+                if remove_in(&root, id).is_ok() {
+                    return;
+                }
+                std::thread::sleep(std::time::Duration::from_millis(20));
+            }
+            remove_in(&root, id).unwrap();
+        };
+        retry("top");
+        retry("lib");
         assert!(installed_in(&root).is_empty());
         let _ = std::fs::remove_dir_all(src);
         let _ = std::fs::remove_dir_all(root);
